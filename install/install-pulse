@@ -1,0 +1,777 @@
+#!/bin/bash
+
+if [ $# -eq 0 ]
+        then
+        echo "Needs Pulse repository url"
+        exit 1
+fi
+# To be defined
+PULSE_REPO_URL=$1
+PULSE_VERSION="3.1"
+ROOT_PASSWORD="siveo"
+ORGANISATION="Siveo"
+DEBIAN_VERSION=`cat /etc/*-release|grep VERSION_ID |cut -d '"' -f2`
+DOMAIN=`hostname -d`
+DNS_SERVER=`grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}' | cut -d : -f 1`
+GATEWAY_ADDRESS=`ip route | awk '/default/ { print $3 }'`
+PULSEMAIN_IP='192.168.1.6'
+
+ask() {
+    while true; do
+        if [ "${2:-}" = "Y" ]; then
+            prompt="Y/n"
+            default=Y
+        elif [ "${2:-}" = "N" ]; then
+            prompt="y/N"
+            default=N
+        else
+            prompt="y/n"
+            default=
+        fi
+        # Ask the question - use /dev/tty in case stdin is redirected from somewhere else
+        read -p "$1 [$prompt] " REPLY </dev/tty
+        # Default?
+        if [ -z "$REPLY" ]; then
+            REPLY=$default
+        fi
+        # Check if the reply is valid
+        case "$REPLY" in
+            Y*|y*) return 0 ;;
+            N*|n*) return 1 ;;
+        esac
+    done
+}
+
+choose_network_interface() {
+	local INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}'`
+	local RESULT=N
+
+	while [  ${RESULT} == "N" ]; do
+                read  -p "More than one network interface detected. Choose the interface having access to Pulse clients ($INTERFACES): " INTERFACE
+        if [ ! -z ${INTERFACE} ] && [[ ${INTERFACES} == *"${INTERFACE} "* ]]; then
+                RESULT=Y
+		echo ${INTERFACE}
+        else
+                RESULT=N
+        fi
+	done
+}
+
+check_network_config() {
+	echo "Checking network settings..."
+	
+	local NB_INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}' | wc -w`
+	
+	# Make sure that domain name is properly set
+	if [ -z ${DOMAIN} ]; then
+		echo "Please configure the domain"
+		exit 1
+	# Make sure that DNS server is properly set
+	elif [ -z ${DNS_SERVER} ]; then
+		echo "Please configure the DNS server"
+		exit 1
+	# Check number of interfaces
+	elif [ ${NB_INTERFACES} > "1" ]; then
+		INTERFACE=$(choose_network_interface)
+	else
+		INTERFACE=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1`
+	fi
+	IP_ADDRESS=`ifconfig ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
+	NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
+	NETMASK=`ifconfig ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2`
+	BCAST_ADDRESS=`ip address show ${INTERFACE} | grep 'inet .* brd ' | head -1 | sed -e 's/^.* brd \([0-9\.]*\) .*$/\1/'`
+	echo "====================================================================="
+	echo "PULSE_REPO_URL		: ${PULSE_REPO_URL}"
+	echo "PULSE_VERSION		: ${PULSE_VERSION}"
+	echo "ROOT_PASSWORD		: ${ROOT_PASSWORD}"
+	echo "ORGANISATION		: ${ORGANISATION}"
+	echo "DEBIAN_VERSION		: ${DEBIAN_VERSION}"
+	echo "DOMAIN			: ${DOMAIN}"
+	echo "INTERFACE			: ${INTERFACE}"
+	echo "IP_ADDRESS		: ${IP_ADDRESS}"
+	echo "NETWORK_ADDRESS		: ${NETWORK_ADDRESS}"
+	echo "NETMASK			: ${NETMASK}"
+	echo "BCAST_ADDRESS		: ${BCAST_ADDRESS}"
+	echo "GATEWAY_ADDRESS		: ${GATEWAY_ADDRESS}"
+	echo "DNS_SERVER		: ${DNS_SERVER}"
+	echo "=======================IF MULTISTE==================================="
+	echo "PULSEMAIN_IP		: ${PULSEMAIN_IP}"
+	echo "====================================================================="
+
+	echo "### Checking network settings... Done"
+
+	if ! ask "Are the above settings correct?"; then
+		echo "Edit the script to define the proper values for the above settings" 
+		exit 0
+	fi
+}
+
+configure_repos() {
+	echo "Configuring all necessary repos..."
+	
+	case ${DEBIAN_VERSION} in 
+		"7")
+			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
+			echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
+			wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
+			;;
+		"8")
+			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
+			;;
+		*)
+			;;
+	esac
+	
+	apt-get update
+	
+	echo "### Configuring all necessary repos... Done"
+}
+
+configure_apt_settings() {
+	echo "Defining a few settings for apt..."
+	
+	echo 'APT::Install-Recommends "0";' > /etc/apt/apt.conf.d/99local-config
+	echo 'APT::Install-Suggests "0";' >> /etc/apt/apt.conf.d/99local-config
+	echo 'APT::Get::AllowUnauthenticated "true";' >> /etc/apt/apt.conf.d/99local-config
+	echo 'Acquire::PDiffs "false";' >> /etc/apt/apt.conf.d/99local-config
+	
+	echo "### Defining a few settings for apt... Done"
+}
+
+configure_mysql_access() {
+	echo "Defining credentials to access mysql database..."
+	
+	rm -f /root/.my.cnf
+	touch /root/.my.cnf
+	chmod 600 /root/.my.cnf
+	echo -e "[mysql]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf
+	echo -e "\n[mysqladmin]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf
+	echo -e "\n[mysqlcheck]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf
+	echo -e "\n[mysqldump]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf 
+	
+	echo "### Defining credentials to access mysql database... Done"
+}
+
+prepare_debian() {
+	# Configure debian OS for Pulse
+	ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
+	configure_repos
+	configure_apt_settings
+}
+
+install_system_tools_and_deps() {
+	echo "Installing system tools and other dependencies needed by Pulse..."
+	
+	# Install needed tools
+	apt-get -y install multitail vim
+
+	# Configure vim
+	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
+	
+	# Install apache2 used by Pulse
+	apt-get -y install apache2
+	
+	# Install rng-tools used by pulse2-setup
+	apt-get -y install rng-tools
+	grep ^HRNGDEVICE /etc/default/rng-tools
+	if [ ! $? -eq 0 ]; then
+		echo "HRNGDEVICE=/dev/urandom" >> /etc/default/rng-tools
+	fi
+	service rng-tools restart
+	
+	# Install python network libraries used by pulse2-setup
+	apt-get -y install python-netifaces python-netaddr
+	
+	echo "### Installing system tools and other dependencies needed by Pulse... Done"
+}
+
+install_ldap_server() {
+	echo "Installing LDAP server..."
+	
+	# Define a few settings for ldap-server
+	echo "slapd slapd/password1 password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "slapd slapd/password2 password ${ROOT_PASSWORD}" | debconf-set-selections
+	
+	# Install ldap-server
+	apt-get -y install ldap-server
+	if [ ! $? -eq 0 ]; then
+		echo "LDAP server install failed"
+		exit 1
+	fi
+	
+	echo "### Installing LDAP server... Done"
+}
+
+install_mysql_server() {
+	echo "Installing MySQL server..."
+	
+	# Define a few settings for mysql-server
+	echo "mysql-server-5.5 mysql-server/root_password password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "mysql-server-5.5 mysql-server/root_password_again password ${ROOT_PASSWORD}" | debconf-set-selections
+	
+	# Install mysql-server
+	apt-get -y install mysql-server
+	if [ ! $? -eq 0 ]; then
+		echo "MySQL server install failed"
+		exit 1
+	fi
+	
+	echo "### Installing MySQL server... Done"
+}
+
+install_backuppc() {
+	echo "Installing backuppc..."
+	
+	# Define a few settings for backuppc
+	useradd backuppc
+	echo "backuppc  backuppc/reconfigure-webserver  multiselect     apache2" | debconf-set-selections
+	echo "backuppc  backuppc/tmppass password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "backuppc  backuppc/configuration-note     note" | debconf-set-selections
+	echo "backuppc  backuppc/restart-webserver      boolean true" | debconf-set-selections
+	echo "backuppc  backuppc/reconfigure-webserver  multiselect" | debconf-set-selections
+	
+	# Install backuppc
+	apt-get -y install backuppc
+	if [ ! $? -eq 0 ]; then
+		echo "backuppc install failed"
+		exit 1
+	fi
+	
+	# Configure Apache for backuppc
+	if [ ! -e /etc/apache2/sites-available/backuppc.conf ]; then
+		ln -s /etc/backuppc/apache.conf /etc/apache2/sites-available/backuppc.conf
+	fi
+	a2ensite backuppc.conf
+	service apache2 restart
+	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
+	
+	echo "### Installing backuppc... Done"
+}
+
+install_glpi() {
+	echo "Installing GLPI..."
+	
+	# Define a few settings for glpi
+	echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "glpi glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "glpi glpi/purge boolean false" | debconf-set-selections
+	echo "glpi glpi/db/dbname string glpi" | debconf-set-selections
+	echo "glpi glpi/dbconfig-reinstall boolean false" | debconf-set-selections
+	echo "glpi glpi/db/app-user string glpi" | debconf-set-selections
+	echo "glpi glpi/dbconfig-install boolean true" | debconf-set-selections
+	echo "glpi glpi/webserver multiselect apache, apache-ssl, apache-perl, apache2" | debconf-set-selections
+	echo "glpi glpi/configuration note" | debconf-set-selections
+	
+	# Install glpi
+	apt-get -y install glpi fusioninventory-for-glpi glpi-plugin-webservices php5-xmlrpc
+	if [ ! $? -eq 0 ]; then
+		echo "GLPI install failed"
+		exit 1
+	fi
+	
+	echo "### Installing GLPI... Done"
+}
+
+install_atftpd() {
+	echo "Installing atftp server..."
+	
+	apt-get -y install atftpd
+	if [ ! $? -eq 0 ]; then
+		echo "atftpd install failed"
+		exit 1
+	fi
+	
+	echo "### Installing atftp server... Done"
+}
+
+install_isc_dhcp_server() {
+	echo "Installing DHCP server..."
+	
+	apt-get -y install isc-dhcp-server
+	if [ ! $? -eq 0 ]; then
+		echo "isc-dhcp-server install failed"
+		exit 1
+	fi
+	
+	echo "### Installing DHCP server... Done"
+}
+
+install_samba() {
+	echo "Installing Samba server..."
+	
+	apt-get -y install samba
+	if [ ! $? -eq 0 ]; then
+		echo "samba install failed"
+		exit 1
+	fi
+	
+	echo "### Installing Samba server... Done"
+}
+
+install_nfs_kernel_server() {
+	echo "Installing NFS server..."
+	
+	apt-get -y install nfs-kernel-server
+	if [ ! $? -eq 0 ]; then
+		echo "nfs-kernel-server install failed"
+		exit 1
+	fi
+	
+	echo "### Installing NFS server... Done"
+}
+
+install_clonezilla() {
+	echo "Installing clonezilla..."
+	
+	apt-get -y install clonezilla pulse2-davos-client
+	if [ ! $? -eq 0 ]; then
+		echo "clonezilla install failed"
+		exit 1
+	fi
+	
+	echo "### Installing clonezilla... Done"
+}
+
+install_pulse_dependencies() {
+	# Install components needed by Pulse
+	install_system_tools_and_deps
+	install_ldap_server
+	install_mysql_server
+	install_backuppc
+	install_glpi
+	install_atftpd
+	install_isc_dhcp_server
+	install_samba
+	install_nfs_kernel_server
+	install_clonezilla
+	configure_mysql_access
+}
+
+install_pulse() {
+	echo "Installing Pulse..."
+	
+	apt-get -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-report mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-dlp-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-report python-mmc-services python-mmc-support python-mmc-update
+	if [ ! $? -eq 0 ]; then
+		echo "pulse install failed"
+		exit 1
+	fi
+	
+	# Enable services
+	sed 's/no/yes/' -i /etc/default/pulse2-cm /etc/default/pulse2-inventory-server /etc/default/pulse2-launchers /etc/default/pulse2-package-server /etc/default/pulse2-scheduler /etc/default/mmc-agent
+	
+	echo "### Installing Pulse... Done"
+}
+
+configure_atftpd() {
+	echo "Configuring atftp server..."
+	
+	sed -i 's!^USE_INETD.*$!USE_INETD=false!' /etc/default/atftpd
+	sed -i 's!/srv/tftp!--daemon --port 69 /var/lib/pulse2/imaging!' /etc/default/atftpd
+	service atftpd restart
+	
+	echo "### Configuring atftp server... Done"
+}
+
+configure_isc_dhcp_server() {
+	echo "Configuring DHCP server..."
+	
+	local DHCP_RANGE_START=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.100", $1, $2, $3)}'`
+	local DHCP_RANGE_END=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.200", $1, $2, $3)}'`
+	
+	# Configure the DHCP server
+	cp /usr/share/doc/mmc/contrib/imaging-server/dhcpd.conf /etc/dhcp/
+	sed -i "s/^INTERFACES=.*/INTERFACES=${INTERFACE}/" /etc/default/isc-dhcp-server
+	sed -i  "s/^.*\bpool\b.*$/    pool\ {/" /etc/dhcp/dhcpd.conf
+	sed -i "s/##PULSE2_NET##/${NETWORK_ADDRESS}/" /etc/dhcp/dhcpd.conf
+	sed -i "s/##PULSE2_NETMASK##/${NETMASK}/" /etc/dhcp/dhcpd.conf
+	sed -i "s/\"##PULSE2_BCAST##\"/${BCAST_ADDRESS}/" /etc/dhcp/dhcpd.conf
+	sed -i "s/##PULSE2_DOMAIN##/${DOMAIN}/" /etc/dhcp/dhcpd.conf
+	sed -i "s/\"##PULSE2_DNS##\"/${DNS_SERVER}/" /etc/dhcp/dhcpd.conf
+	sed -i "s/\"##PULSE2_GW##\"/${GATEWAY_ADDRESS}/" /etc/dhcp/dhcpd.conf
+	sed -i "s/##PULSE2_START##/${DHCP_RANGE_START}/" /etc/dhcp/dhcpd.conf
+	sed -i "s/##PULSE2_END##/${DHCP_RANGE_END}/" /etc/dhcp/dhcpd.conf
+	sed -i "s/##PULSE2_IP##/${IP_ADDRESS}/" /etc/dhcp/dhcpd.conf
+	service isc-dhcp-server restart
+	
+	echo "### Configuring DHCP server... Done"
+}
+
+configure_samba() {
+	echo "Configuring Samba server..."
+	
+	# Create needed shares and setup root password
+	cp /usr/share/doc/pulse2/contrib/samba/smb.conf /etc/samba/
+	echo -ne "${ROOT_PASSWORD}\n${ROOT_PASSWORD}\n" | smbpasswd -a -s root
+	service samba restart
+	
+	echo "### Configuring Samba server... Done"
+}
+
+configure_nfs_kernel_server() {
+	echo "Configuring NFS server..."
+	
+	# Create needed exports
+	cp /usr/share/doc/mmc/contrib/imaging-server/exports /etc/
+	service nfs-kernel-server restart
+	
+	echo "### Configuring NFS server... Done"
+}
+
+configure_clonezilla() {
+	echo "Configuring clonezilla..."
+	
+	# Create the folder needed for clonezilla
+	[ -L /home/partimag ] && rm -f /home/partimag
+	[ -d /home/partimag ] && rmdir /home/partimag
+	ln -s /var/lib/pulse2/imaging/masters/ /home/partimag
+	
+	echo "### Configuring clonezilla... Done"
+}
+
+configure_mmc() {
+	echo "Configuring mmc..."
+	
+	# Create /home/archives if needed
+	[ ! -d /home/archives ] &&  mkdir /home/archives
+	
+	# Configure LDAP for MMC
+	mmc-add-schema /usr/share/doc/mmc/contrib/base/mmc.schema /etc/ldap/schema/
+	grep "local4.* /var/log/ldap.log" /etc/syslog.conf
+	if [ ! $? -eq 0 ]; then
+		echo "local4.* /var/log/ldap.log" >> /etc/syslog.conf
+	fi
+	touch /var/log/ldap.log
+	service rsyslog restart
+	service slapd restart
+	
+	# Configure Apache for MMC
+	if [ ! -e /etc/apache2/sites-available/mmc.conf ]; then
+		ln -s /etc/mmc/apache/mmc.conf /etc/apache2/sites-available/
+	fi
+	a2ensite mmc.conf
+	service apache2 restart
+	
+	# Configure base.ini
+	local BASE_DN=`slapcat | grep -m 1 dn |awk '{print $2}'`
+	sed "s/^baseDN = .*$/baseDN = ${BASE_DN}/" -i /etc/mmc/plugins/base.ini
+	sed "s/^password = .*$/password = ${ROOT_PASSWORD}/" -i /etc/mmc/plugins/base.ini
+	sed 's/^disabled_panels.*/disabled_panels = shortcuts appstream/' -i /etc/mmc/plugins/dashboard.ini
+	sed 's/^disable = 0/disable = 1/' -i /etc/mmc/plugins/support.ini /etc/mmc/plugins/update.ini
+	service mmc-agent restart
+	echo "### Configuring mmc... Done"
+}
+
+configure_pulse_dependencies() {
+	# Configure components needed by Pulse
+	configure_samba
+	configure_nfs_kernel_server
+	configure_clonezilla
+	configure_mmc
+}
+
+reset_glpi_db() {
+	echo "Resetting glpi database for Pulse..."
+	
+	# Reinstall GLPI database
+	echo "drop database glpi;" | mysql -uroot
+	echo "drop user 'glpi'@'localhost';" | mysql -uroot
+	echo "glpi  glpi/dbconfig-reinstall boolean true" | debconf-set-selections
+	echo "glpi  glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+	dpkg-reconfigure -fnoninteractive glpi
+	
+	# Clean glpi users/profiles apart from glpi superadmin
+	local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
+	echo "${GLPI_SUPERADMIN_ID}" | grep -q '^[0-9]\+$'
+	if [ ! $? -eq 0 ]; then
+		echo "Unable to find super-admin ID in GLPI database."
+		exit 1
+	fi
+	echo "delete from glpi_users where name not like 'glpi';" | mysql -uroot glpi
+	echo "delete from glpi_profiles_users where id not like '${GLPI_SUPERADMIN_ID}';" | mysql -uroot glpi
+	
+	# Rename superadmin name to root and reset the password
+	echo "update glpi_users set name = 'root' where name = 'glpi';" | mysql -uroot glpi
+	echo "update glpi_users set password = MD5('${ROOT_PASSWORD}') where name = 'root';" | mysql -uroot glpi
+	
+	# Configure Organisation / Entity
+        while [[ $MAIN_ENTITY == '' ]]
+        do
+                read -p "Main entity name for GLPI: " MAIN_ENTITY
+                echo $MAIN_ENTITY
+        done
+	echo "UPDATE glpi_entities set completename='${ORGANISATION}' where id=0;" | mysql glpi
+	echo "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'${MAIN_ENTITY}','${ORGANISATION} > ${MAIN_ENTITY}');" | mysql glpi
+	echo "INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'${ORGANISATION}','${ORGANISATION}');" | mysql glpi
+	
+	# Enable LDAP auth for GLPI
+	local BASE_DN=`slapcat | grep -m 1 dn |awk '{print $2}'`
+	echo "insert into glpi_authldaps values (1,'LocalLDAP','127.0.0.1','${BASE_DN}','',389,'','uid',0,'','(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','','mobile','',0,0,0,'',NULL,'preferredlanguage','','','2012-11-02 17:03:27','',1,1,'','','','','','','','','');" | mysql -uroot glpi
+	
+	# Enable GLPI FusionInventory plugin
+	local SuperAdmin=`mysql -N -s -e 'SELECT id FROM glpi_profiles WHERE name="Super-Admin"' glpi;`
+	echo "INSERT INTO glpi_profilerights (profiles_id,name,rights) VALUES \
+        (${SuperAdmin},'plugin_fusioninventory_agent',23), \
+        (${SuperAdmin},'plugin_fusioninventory_blacklist',23), \
+        (${SuperAdmin},'plugin_fusioninventory_collect',23), \
+        (${SuperAdmin},'plugin_fusioninventory_configsecurity',31), \
+        (${SuperAdmin},'plugin_fusioninventory_configuration',3), \
+        (${SuperAdmin},'plugin_fusioninventory_credential',23), \
+        (${SuperAdmin},'plugin_fusioninventory_credentialip',23), \
+        (${SuperAdmin},'plugin_fusioninventory_deploymirror',23), \
+        (${SuperAdmin},'plugin_fusioninventory_esx',23), \
+        (${SuperAdmin},'plugin_fusioninventory_group',23), \
+        (${SuperAdmin},'plugin_fusioninventory_importxml',4), \
+        (${SuperAdmin},'plugin_fusioninventory_iprange',23), \
+        (${SuperAdmin},'plugin_fusioninventory_lock',23), \
+        (${SuperAdmin},'plugin_fusioninventory_menu',1), \
+        (${SuperAdmin},'plugin_fusioninventory_networkequipment',23), \
+        (${SuperAdmin},'plugin_fusioninventory_package',23), \
+        (${SuperAdmin},'plugin_fusioninventory_printer',23), \
+        (${SuperAdmin},'plugin_fusioninventory_remotecontrol',1), \
+        (${SuperAdmin},'plugin_fusioninventory_reportnetworkequipment',1), \
+        (${SuperAdmin},'plugin_fusioninventory_reportprinter',1), \
+        (${SuperAdmin},'plugin_fusioninventory_rulecollect',23), \
+        (${SuperAdmin},'plugin_fusioninventory_ruleentity',23), \
+        (${SuperAdmin},'plugin_fusioninventory_ruleimport',23), \
+        (${SuperAdmin},'plugin_fusioninventory_rulelocation',23), \
+        (${SuperAdmin},'plugin_fusioninventory_task',23), \
+        (${SuperAdmin},'plugin_fusioninventory_unmanaged',31), \
+        (${SuperAdmin},'plugin_fusioninventory_wol',1)" | mysql glpi
+    php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php
+    echo "update glpi_plugin_fusioninventory_entities SET  agent_base_url = 'http://127.0.0.1/glpi' , transfers_id_auto = '1'  WHERE id='1';" | mysql glpi
+    chown -R www-data /var/lib/glpi/files/_plugins/fusioninventory
+    # Add a few blacklists
+	echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', '00020003-0004-0005-0006-000700080009');" | mysql glpi
+	echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', 'Not Settable');" | mysql glpi
+	echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'Not Applicable');" | mysql glpi
+	echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', '-');" | mysql glpi
+	echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.');" | mysql glpi
+	# Two new rules for computers linking
+	echo "UPDATE glpi_rules SET ranking = ranking+2 WHERE ranking > 2 AND sub_type = 'PluginFusioninventoryInventoryRuleImport'" | mysql glpi
+	echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',3,'Computer mac + no serial + no uuid','','AND',1,'','NULL',0,'NULL',0);" | mysql glpi
+	echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',4,'Computer uuid + mac','','AND',1,'','NULL',0,'NULL',0);" | mysql glpi
+	local maxid=`echo "SELECT MAX(id) FROM glpi_rules" | mysql -s glpi`
+	local maxidmin=`expr ${maxid} - 1`
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','serial',9,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','uuid',9,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','itemtype',0,'Computer')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','mac',10,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','mac',8,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','uuid',10,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','uuid',8,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','itemtype',0,'Computer')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',10,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',8,'1')" | mysql glpi
+	echo "INSERT INTO glpi_ruleactions VALUES('','${maxidmin}','assign','_fusion',0)" | mysql glpi
+	echo "INSERT INTO glpi_ruleactions VALUES('','${maxid}','assign','_fusion',0)" | mysql glpi
+	# One rule for setting the default entity
+	echo "INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'Root','','AND',1,'','',0,'',0);" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES ('', (SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'tag',0,'*');" | mysql glpi
+	echo "INSERT INTO glpi_ruleactions VALUES ('',(SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id','1');" | mysql glpi
+	
+	# Enable GLPI Plugin WebServices
+	echo "CREATE TABLE glpi_plugin_webservices_clients ( id INT NOT NULL AUTO_INCREMENT, entities_id INT NOT NULL DEFAULT '0', is_recursive TINYINT( 1 ) NOT NULL DEFAULT '0', name VARCHAR( 255 ) NOT NULL , pattern VARCHAR( 255 ) NOT NULL , ip_start BIGINT NULL , ip_end BIGINT NULL , ipv6  VARCHAR( 255 ) NULL, username VARCHAR( 255 ) NULL , password VARCHAR( 255 ) NULL , do_log TINYINT NOT NULL DEFAULT '0', debug TINYINT NOT NULL DEFAULT '0', is_active TINYINT NOT NULL DEFAULT '0', deflate TINYINT NOT NULL DEFAULT '0', comment TEXT NULL , PRIMARY KEY (id), KEY entities_id (entities_id) );"| mysql glpi
+	echo "INSERT INTO glpi_plugin_webservices_clients (id, entities_id, is_recursive, name, pattern, ip_start, ip_end , ipv6 , do_log, is_active, comment) VALUES (NULL, 0, 1, 'Local','.*', INET_ATON('127.0.0.1'), INET_ATON('127.0.0.1'), '::1',1, 1, 'Allow all from local');" | mysql glpi
+	local webservicesId=`echo "SELECT id FROM glpi_plugins WHERE directory=\"webservices\"" | mysql -s glpi`
+	echo "UPDATE glpi_plugins SET state='1' WHERE id='${webservicesId}';" | mysql glpi
+	
+	rm -rf /usr/share/glpi/install/install.php	
+
+	echo "### Resetting glpi database for Pulse... Done"
+}
+
+reset_pulse_db() {
+	echo "Resetting Pulse database..."
+	
+	# Run pulse2-setup
+	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=http://${IP_ADDRESS}/glpi --glpi-dbhost=localhost --glpi-dbname=glpi --glpi-dbuser=glpi --glpi-dbpasswd=${ROOT_PASSWORD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=${IP_ADDRESS} --backuppc-entity=UUID1
+	if [ ! $? -eq 0 ]; then
+		echo "pulse2-setup failed"
+		exit 1
+	fi
+	
+	# Configure Davos
+	echo "diskless_folder = davos" >>/etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "diskless_kernel = vmlinuz" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "diskless_initrd = initrd.img" >>/etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "UPDATE BootService SET value = 'kernel ##PULSE2_NETDEVICE##/##PULSE2_DISKLESS_DIR##/##PULSE2_DISKLESS_KERNEL## ##PULSE2_KERNEL_OPTS## ##PULSE2_REVO_RAW## ##PULSE2_DISKLESS_OPTS## davos_action=SAVE_IMAGE\ninitrd ##PULSE2_NETDEVICE##/##PULSE2_DISKLESS_DIR##/##PULSE2_DISKLESS_INITRD##' WHERE id=3;"| mysql imaging
+	echo "UPDATE BootService SET value = 'kernel ##PULSE2_NETDEVICE##/##PULSE2_DISKLESS_DIR##/##PULSE2_DISKLESS_KERNEL## ##PULSE2_KERNEL_OPTS## ##PULSE2_DISKLESS_OPTS## davos_debug=1\ninitrd ##PULSE2_NETDEVICE##/##PULSE2_DISKLESS_DIR##/##PULSE2_DISKLESS_INITRD##' WHERE id = 4;" | mysql imaging
+	
+	# Restart all services
+	for SERV in `ls /etc/init.d/mmc-agent; ls /etc/init.d/pulse2-*`; do $SERV restart; done
+	
+	# Associate imaging server with root entity and generate default menu
+	pulse2-load-defaults --link-server --default-menu
+	if [ ! $? -eq 0 ]; then
+		echo "imaging server association failed"
+		exit 1
+	fi
+	
+	# Generate Pulse agents
+	/var/lib/pulse2/clients/generate-agents
+	if [ ! $? -eq 0 ]; then
+		echo "pulse agents generation failed"
+		exit 1
+	fi
+	
+	echo "### Resetting Pulse database... Done"
+}
+
+configure_pulse() {
+	# Configure or reconfigure Pulse
+	
+	# Initialise glpi database
+	reset_glpi_db
+	
+	# Initialise Pulse database
+	reset_pulse_db
+
+	echo "### Restart Pulse services..."
+	for SERV in pulse2-cm pulse2-dlp-server pulse2-inventory-server pulse2-launchers pulse2-package-server pulse2-scheduler mmc-agent
+		do service $SERV restart
+	done
+}
+
+install_multisite() {
+	echo "Installing dependencies..."
+	install_nfs_kernel_server
+	install_clonezilla
+
+	echo "Installing Pulse..."
+	apt-get -y install pulse2-package-server pulse2-imaging-server uuid-runtime
+	if [ ! $? -eq 0 ]; then
+		echo "pulse install failed"
+		exit 1
+	fi
+	
+	# Enable services
+	sed 's/no/yes/' -i /etc/default/pulse2-package-server 
+	
+	echo "### Installing Pulse multisite... Done"
+}
+
+
+configure_multisite() {
+	echo "### Configure dependencies..."
+	configure_nfs_kernel_server
+	configure_clonezilla
+
+	echo "### Configure Multisite..."
+	ssh-copy-id ${PULSEMAIN_IP}
+	while [[ $MULTISITE_ENTITY == '' ]]
+	do
+		echo "### Configure the entity for the multi-site"
+		echo "### The existing ones :"
+		EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\""
+		ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"
+		read -p ">> New entity name for the multi-site: " MULTISITE_ENTITY
+	done
+
+	PACKAGESERVER_UUID=`uuidgen`
+	echo "[main]" > /etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "public_ip = ${IP_ADDRESS}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    	echo "[mmc_agent]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    	echo "host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "[imaging_api]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "uuid = ${PACKAGESERVER_UUID}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "inventory_host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "glpi_mode = True" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+
+	echo "Configure the main Pulse..."
+
+	MAX_ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
+	ID=$((MAX_ID+1))
+	MAX_ENTITYID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(entities_id) FROM glpi_entities;' | mysql -s glpi")
+	ENTITYID=$((MAX_ENTITYID+1))
+	MAIN_ENTITY=$(ssh ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
+	ADD_ENTITYID="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}','${ENTITYID}',2,'${MULTISITE_ENTITY}','${MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
+	ssh ${PULSEMAIN_IP} ${ADD_ENTITYID}
+
+	PACKAGESERVER_UUID=`cat /etc/mmc/pulse2/package-server/package-server.ini.local|grep uuid| cut -d ' ' -f3`
+	CONFIG="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && service mmc-agent restart"
+	ssh ${PULSEMAIN_IP} ${CONFIG}
+
+	ImagingServer="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('Other imaging Server', 'https://${IP_ADDRESS}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
+	ssh ${PULSEMAIN_IP} ${ImagingServer}
+
+	UUID_IMAGING=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer  ORDER BY id DESC LIMIT 1'|mysql -s")
+	UUID_IMAGING='UUID'$UUID_IMAGING
+	ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+	UUID='UUID'$((ID+1))
+	ENTITY="echo \"INSERT INTO imaging.Entity values ('','${MULTISITE_ENTITY}','${UUID}','','C');\" | mysql imaging"
+	ssh ${PULSEMAIN_IP} ${ENTITY}
+	
+	LINK="pulse2-load-defaults --link-server --loc-id=${UUID} --imaging-id=${UUID_IMAGING} --default-menu"
+	ssh ${PULSEMAIN_IP} ${LINK}
+
+	service pulse2-package-server restart
+
+	echo "### Configuring Pulse multisite... Done"
+}
+
+sync_package_server(){
+	ssh -t ${PULSEMAIN_IP} ssh-copy-id ${IP_ADDRESS}
+	FOLDER="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
+	RSYNC="[ ! -f /usr/bin/rsync ] && aptitude install rsync"
+	ssh ${PULSEMAIN_IP} ${FOLDER}
+	ssh ${PULSEMAIN_IP} ${RSYNC}
+	eval $RSYNC
+	PACK_SYNC='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
+	ssh ${PULSEMAIN_IP} ${PACK_SYNC}
+	if [ $? -ne 0 ]; then
+                SYNC_CONF="sed -i '1 a\\
+# Sync package server \\
+package_detect_activate = 1 \\
+package_detect_loop = 60 \\
+package_mirror_loop = 5 \\
+package_mirror_target = ${IP_ADDRESS} \\
+package_mirror_command = /usr/bin/rsync \\
+package_mirror_command_options = -ar --delete \\
+package_mirror_level0_command_options = -d --delete \\
+package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa StrictHostKeyChecking=no Batchmode=yes PasswordAuthentication=no ServerAliveInterval=10 CheckHostIP=no ConnectTimeout=10 \\
+# END Sync' /etc/mmc/pulse2/package-server/package-server.ini.local"
+                ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
+        else
+                SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_ADDRESS}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
+                ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
+        fi
+
+}
+# And finally we run the functions
+
+check_network_config
+prepare_debian
+
+echo "====================================================================="
+if ask "Is the main Pulse server installation (y) or a multi-site installation (n)?"; then
+	install_pulse_dependencies
+	install_pulse
+	echo "====================================================================="
+	if ask "DHCP will be enabled ?"; then
+		install_isc_dhcp_server
+		configure_isc_dhcp_server
+	fi
+	echo "====================================================================="
+	if ask "PXE will be enabled ?"; then
+		install_atftpd
+		configure_atftpd
+	fi
+	configure_pulse_dependencies
+	configure_pulse
+else
+	install_multisite
+	configure_multisite
+	sync_package_server
+	echo "====================================================================="
+	if ask "DHCP will be enabled ?"; then
+		install_isc_dhcp_server
+		configure_isc_dhcp_server
+	fi
+	echo "====================================================================="
+	if ask "PXE will be enabled ?"; then
+		install_atftpd
+		configure_atftpd
+	fi
+	echo "====================================================================="
+fi
