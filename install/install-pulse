@@ -591,6 +591,11 @@ reset_pulse_db() {
 		exit 1
 	fi
 	
+	# Configure Launcher
+	echo "[rsync]" >> /etc/mmc/pulse2/launchers/launchers.ini.local
+	echo "rsync_path = /usr/bin/rsync" >> /etc/mmc/pulse2/launchers/launchers.ini.local
+	echo "resume = True" >> /etc/mmc/pulse2/launchers/launchers.ini.local
+
 	# Configure Davos
 	echo "diskless_folder = davos" >>/etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "diskless_kernel = vmlinuz" >> /etc/mmc/pulse2/package-server/package-server.ini.local
