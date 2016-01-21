@@ -682,6 +682,7 @@ configure_multisite() {
 	configure_clonezilla
 
 	echo "### Configure Multisite..."
+	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
 	ssh-copy-id ${PULSEMAIN_IP}
 
 	EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
@@ -721,7 +722,7 @@ configure_multisite() {
 	MAX_ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
 	ID=$((MAX_ID+1))
 	MAIN_ENTITY=$(ssh ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
-	ADD_ENTITYID="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}',1,2,'${MULTISITE_ENTITY}','${MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
+	ADD_ENTITYID="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}',0,2,'${MULTISITE_ENTITY}','${MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
 	ssh ${PULSEMAIN_IP} ${ADD_ENTITYID}
 
 	PACKAGESERVER_UUID=`cat /etc/mmc/pulse2/package-server/package-server.ini.local|grep uuid| cut -d ' ' -f3`
