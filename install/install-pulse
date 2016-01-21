@@ -44,19 +44,16 @@ ask() {
 
 choose_network_interface() {
 	local INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}'`
-	local NB_ETH=`ip -o link show | awk '{print $2,$9}'| grep UP| cut -d : -f 1| wc -l`
 	local RESULT=N
-	if [ ${NB_ETH} -gt 1 ]; then
-		while [  ${RESULT} == "N" ]; do
-                	read  -p "More than one network interface detected. Choose the interface having access to Pulse clients ($INTERFACES): " INTERFACE
-        		if [ ! -z ${INTERFACE} ] && [[ ${INTERFACES} == *"${INTERFACE} "* ]]; then
-                		RESULT=Y
+	while [  ${RESULT} == "N" ]; do
+		read  -p "More than one network interface detected. Choose the interface having access to Pulse clients ($INTERFACES): " INTERFACE
+		if [ ! -z ${INTERFACE} ] && [[ ${INTERFACES} == *"${INTERFACE} "* ]]; then
+			RESULT=Y
 			echo ${INTERFACE}
-        		else
-                	RESULT=N
-        		fi
-		done
-	fi
+		else
+			RESULT=N
+		fi
+	done
 }
 
 check_network_config() {
@@ -73,7 +70,7 @@ check_network_config() {
 		echo "Please configure the DNS server"
 		exit 1
 	# Check number of interfaces
-	elif [ ${NB_INTERFACES} > "1" ]; then
+	elif [ "x$NB_INTERFACES" != "x1" ]; then
 		INTERFACE=$(choose_network_interface)
 	else
 		INTERFACE=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1`
