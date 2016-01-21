@@ -512,7 +512,6 @@ reset_glpi_db() {
         while [[ $MAIN_ENTITY == '' ]]
         do
                 read -p "Main entity name for GLPI: " MAIN_ENTITY
-                echo $MAIN_ENTITY
         done
 	echo "UPDATE glpi_entities set completename='${ORGANISATION}' where id=0;" | mysql glpi
 	echo "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'${MAIN_ENTITY}','${ORGANISATION} > ${MAIN_ENTITY}');" | mysql glpi
@@ -577,10 +576,10 @@ reset_glpi_db() {
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','itemtype',0,'Computer')" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',10,'1')" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',8,'1')" | mysql glpi
-	echo "INSERT INTO glpi_ruleactions VALUES('','${maxidmin}','assign','_fusion',0)" | mysql glpi
-	echo "INSERT INTO glpi_ruleactions VALUES('','${maxid}','assign','_fusion',0)" | mysql glpi
+	echo "INSERT INTO glpi_ruleactions VALUES('','${maxidmin}','assign','_fusion',1)" | mysql glpi
+	echo "INSERT INTO glpi_ruleactions VALUES('','${maxid}','assign','_fusion',1)" | mysql glpi
 	# One rule for setting the default entity
-	echo "INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'Root','','AND',1,'','',0,'',0);" | mysql glpi
+	echo "INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MAIN_ENTITY}','','AND',1,'','',0,'',0);" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES ('', (SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'tag',0,'*');" | mysql glpi
 	echo "INSERT INTO glpi_ruleactions VALUES ('',(SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id','1');" | mysql glpi
 	
@@ -605,7 +604,7 @@ reset_pulse_db() {
 	echo "Resetting Pulse database..."
 	
 	# Run pulse2-setup
-	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=http://${IP_ADDRESS}/glpi --glpi-dbhost=localhost --glpi-dbname=glpi --glpi-dbuser=glpi --glpi-dbpasswd=${ROOT_PASSWORD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
+	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=http://${IP_ADDRESS}/glpi --glpi-dbhost=localhost --glpi-dbname=glpi --glpi-dbuser=glpi --glpi-dbpasswd=${ROOT_PASSWORD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1 --loc-name=${MAIN_ENTITY}
 	if [ ! $? -eq 0 ]; then
 		echo "pulse2-setup failed"
 		exit 1
@@ -697,6 +696,16 @@ configure_multisite() {
 		fi
 	done
 
+        # One rule for setting of the multi-site entitie
+        GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
+	GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
+	GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT MAX(id) FROM glpi_entities));\" | mysql glpi"
+	ssh ${PULSEMAIN_IP} ${GLPI_RULES}
+	ssh ${PULSEMAIN_IP} ${GLPI_RULECRITERIAS}
+	ssh ${PULSEMAIN_IP} ${GLPI_RULEACTIONS}
+
+
+
 	PACKAGESERVER_UUID=`uuidgen`
 	echo "[main]" > /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "public_ip = ${IP_ADDRESS}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
@@ -711,10 +720,8 @@ configure_multisite() {
 
 	MAX_ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
 	ID=$((MAX_ID+1))
-	MAX_ENTITYID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(entities_id) FROM glpi_entities;' | mysql -s glpi")
-	ENTITYID=$((MAX_ENTITYID+1))
 	MAIN_ENTITY=$(ssh ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
-	ADD_ENTITYID="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}','${ENTITYID}',2,'${MULTISITE_ENTITY}','${MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
+	ADD_ENTITYID="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}',1,2,'${MULTISITE_ENTITY}','${MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
 	ssh ${PULSEMAIN_IP} ${ADD_ENTITYID}
 
 	PACKAGESERVER_UUID=`cat /etc/mmc/pulse2/package-server/package-server.ini.local|grep uuid| cut -d ' ' -f3`
@@ -728,10 +735,10 @@ configure_multisite() {
 	UUID_IMAGING='UUID'$UUID_IMAGING
 	ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
 	UUID='UUID'$((ID+1))
-	ENTITY="echo \"INSERT INTO imaging.Entity values ('','${MULTISITE_ENTITY}','${UUID}','','C');\" | mysql imaging"
+	ENTITY="echo \"INSERT INTO imaging.Entity values ('','${MULTISITE_ENTITY}','${UUID}','','fr_FR');\" | mysql imaging"
 	ssh ${PULSEMAIN_IP} ${ENTITY}
 	
-	LINK="pulse2-load-defaults --link-server --loc-id=${UUID} --imaging-id=${UUID_IMAGING} --default-menu"
+	LINK="pulse2-load-defaults --link-server --loc-id=${UUID} --loc-name=${MULTISITE_ENTITY} --imaging-id=${UUID_IMAGING} --default-menu"
 	ssh ${PULSEMAIN_IP} ${LINK}
 
 	service pulse2-package-server restart
