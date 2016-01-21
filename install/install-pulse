@@ -44,17 +44,19 @@ ask() {
 
 choose_network_interface() {
 	local INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}'`
+	local NB_ETH=`ip -o link show | awk '{print $2,$9}'| grep UP| cut -d : -f 1| wc -l`
 	local RESULT=N
-
-	while [  ${RESULT} == "N" ]; do
-                read  -p "More than one network interface detected. Choose the interface having access to Pulse clients ($INTERFACES): " INTERFACE
-        if [ ! -z ${INTERFACE} ] && [[ ${INTERFACES} == *"${INTERFACE} "* ]]; then
-                RESULT=Y
-		echo ${INTERFACE}
-        else
-                RESULT=N
-        fi
-	done
+	if [ ${NB_ETH} -gt 1 ]; then
+		while [  ${RESULT} == "N" ]; do
+                	read  -p "More than one network interface detected. Choose the interface having access to Pulse clients ($INTERFACES): " INTERFACE
+        		if [ ! -z ${INTERFACE} ] && [[ ${INTERFACES} == *"${INTERFACE} "* ]]; then
+                		RESULT=Y
+			echo ${INTERFACE}
+        		else
+                	RESULT=N
+        		fi
+		done
+	fi
 }
 
 check_network_config() {
@@ -242,6 +244,13 @@ install_backuppc() {
 		ln -s /etc/backuppc/apache.conf /etc/apache2/sites-available/backuppc.conf
 	fi
 	a2ensite backuppc.conf
+	
+	grep -Gq Satisfy /etc/apache2/sites-available/backuppc.conf
+	if [ $? -ne 0 ]; then
+		sed "$ i\        Allow from $1" -i /etc/apache2/sites-available/backuppc.conf
+		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
+	fi
+
 	service apache2 restart
 	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
 	
@@ -338,7 +347,7 @@ install_pulse_dependencies() {
 	install_system_tools_and_deps
 	install_ldap_server
 	install_mysql_server
-	install_backuppc
+	install_backuppc ${IP_ADDRESS} 
 	install_glpi
 	install_atftpd
 	install_isc_dhcp_server
@@ -371,6 +380,14 @@ configure_atftpd() {
 	service atftpd restart
 	
 	echo "### Configuring atftp server... Done"
+}
+
+configure_backuppc() {
+	ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+	ID='UUID'${ID}
+	BACKUPPCSERVER_URL="echo \"INSERT INTO backup_servers (entity_uuid,backupserver_url) VALUES ('${ID}','http://${IP_ADDRESS}/backuppc/index.cgi');\"|mysql backuppc"
+	ssh ${PULSEMAIN_IP} ${BACKUPPCSERVER_URL} 
+	
 }
 
 configure_isc_dhcp_server() {
@@ -591,7 +608,7 @@ reset_pulse_db() {
 	echo "Resetting Pulse database..."
 	
 	# Run pulse2-setup
-	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=http://${IP_ADDRESS}/glpi --glpi-dbhost=localhost --glpi-dbname=glpi --glpi-dbuser=glpi --glpi-dbpasswd=${ROOT_PASSWORD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=${IP_ADDRESS} --backuppc-entity=UUID1
+	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=http://${IP_ADDRESS}/glpi --glpi-dbhost=localhost --glpi-dbname=glpi --glpi-dbuser=glpi --glpi-dbpasswd=${ROOT_PASSWORD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
 	if [ ! $? -eq 0 ]; then
 		echo "pulse2-setup failed"
 		exit 1
@@ -670,13 +687,17 @@ configure_multisite() {
 
 	echo "### Configure Multisite..."
 	ssh-copy-id ${PULSEMAIN_IP}
-	while [[ $MULTISITE_ENTITY == '' ]]
-	do
-		echo "### Configure the entity for the multi-site"
-		echo "### The existing ones :"
-		EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\""
-		ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"
-		read -p ">> New entity name for the multi-site: " MULTISITE_ENTITY
+
+	EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
+	LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
+	local RESULT=N
+	while [  ${RESULT} == "N" ]; do
+	read  -p "More than one entities are detected. Enter the new entity name for the multi-site ($LIST_ENTITIES): " 'MULTISITE_ENTITY'
+		if [ ! -z ${MULTISITE_ENTITY} ] && [[ ${LIST_ENTITIES} != *"${MULTISITE_ENTITY} "* ]]; then
+			RESULT=Y
+		else
+			RESULT=N
+		fi
 	done
 
 	PACKAGESERVER_UUID=`uuidgen`
@@ -774,6 +795,11 @@ else
 	install_multisite
 	configure_multisite
 	sync_package_server
+        echo "====================================================================="
+        if ask "BACKUPPC will be enable ?"; then
+                install_backuppc ${IP_ADDRESS}
+                configure_backuppc 
+        fi
 	echo "====================================================================="
 	if ask "DHCP will be enabled ?"; then
 		install_isc_dhcp_server
