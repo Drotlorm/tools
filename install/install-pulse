@@ -604,7 +604,7 @@ reset_pulse_db() {
 	echo "Resetting Pulse database..."
 	
 	# Run pulse2-setup
-	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=http://${IP_ADDRESS}/glpi --glpi-dbhost=localhost --glpi-dbname=glpi --glpi-dbuser=glpi --glpi-dbpasswd=${ROOT_PASSWORD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1 --loc-name=${MAIN_ENTITY}
+	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=http://${IP_ADDRESS}/glpi --glpi-dbhost=localhost --glpi-dbname=glpi --glpi-dbuser=glpi --glpi-dbpasswd=${ROOT_PASSWORD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1 
 	if [ ! $? -eq 0 ]; then
 		echo "pulse2-setup failed"
 		exit 1
