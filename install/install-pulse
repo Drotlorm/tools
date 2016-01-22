@@ -682,9 +682,11 @@ configure_multisite() {
 	configure_clonezilla
 
 	echo "### Configure Multisite..."
+	# Grant ssh without password from Pulse multisite to Pulse 
 	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
 	ssh-copy-id ${PULSEMAIN_IP}
 
+	# Create multisite entity
 	EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
 	LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
 	local RESULT=N
@@ -697,7 +699,7 @@ configure_multisite() {
 		fi
 	done
 
-        # One rule for setting of the multi-site entitie
+        # Create fusioninventory rule to affect all computer from/to multi-site entity
 	UPDATE_RANKING="echo \"UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity';\" | mysql glpi"
         GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
 	GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
@@ -708,32 +710,39 @@ configure_multisite() {
 	ssh ${PULSEMAIN_IP} ${GLPI_RULEACTIONS}
 
 
-
+	# Configure multi-site package server	
 	PACKAGESERVER_UUID=`uuidgen`
+	# Allow computer to reach package server
 	echo "[main]" > /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "public_ip = ${IP_ADDRESS}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	# Define MMC of the Pulse
     	echo "[mmc_agent]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
     	echo "host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "[imaging_api]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "uuid = ${PACKAGESERVER_UUID}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	# Define Pulse inventory server IP
 	echo "inventory_host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "glpi_mode = True" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 
 	echo "Configure the main Pulse..."
 
+	# Create the multisite entity in GLPI
 	MAX_ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
 	ID=$((MAX_ID+1))
 	MAIN_ENTITY=$(ssh ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
 	ADD_ENTITYID="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}','0','2','${MULTISITE_ENTITY}','${MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
 	ssh ${PULSEMAIN_IP} ${ADD_ENTITYID}
 
+	# Enable the Pulse packager to listen from everywhere
 	PACKAGESERVER_UUID=`cat /etc/mmc/pulse2/package-server/package-server.ini.local|grep uuid| cut -d ' ' -f3`
 	CONFIG="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && service mmc-agent restart"
 	ssh ${PULSEMAIN_IP} ${CONFIG}
 
-	ImagingServer="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('Other imaging Server', 'https://${IP_ADDRESS}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
+	# Insert multisite imaging server in Pulse imaging server database
+	ImagingServer="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('${MULTISITE_ENTITY}', 'https://${IP_ADDRESS}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
 	ssh ${PULSEMAIN_IP} ${ImagingServer}
 
+	# Create multisite imaging entity in Pulse imaging entities database 
 	UUID_IMAGING=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer  ORDER BY id DESC LIMIT 1'|mysql -s")
 	UUID_IMAGING='UUID'$UUID_IMAGING
 	ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
@@ -741,6 +750,7 @@ configure_multisite() {
 	ENTITY="echo \"INSERT INTO imaging.Entity values ('','${MULTISITE_ENTITY}','${UUID}','','fr_FR');\" | mysql imaging"
 	ssh ${PULSEMAIN_IP} ${ENTITY}
 	
+	# Register multisite package server in Pulse
 	LINK="pulse2-load-defaults --link-server --loc-id=${UUID} --loc-name=${MULTISITE_ENTITY} --imaging-id=${UUID_IMAGING} --default-menu"
 	ssh ${PULSEMAIN_IP} ${LINK}
 
@@ -750,14 +760,23 @@ configure_multisite() {
 }
 
 sync_package_server(){
+	# Enable package synchronisation between Pulse package server and multisite(s) packager server
+
+	# Grant ssh without password from Pulse to Pulse multisite
 	ssh -t ${PULSEMAIN_IP} ssh-copy-id ${IP_ADDRESS}
 	FOLDER="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
 	RSYNC="[ ! -f /usr/bin/rsync ] && aptitude install rsync"
 	ssh ${PULSEMAIN_IP} ${FOLDER}
+	
+	# Install rsync on Pulse and multisite
 	ssh ${PULSEMAIN_IP} ${RSYNC}
 	eval $RSYNC
+
+	# Test if the sync configuration is already configured on Pulse
 	PACK_SYNC='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
 	ssh ${PULSEMAIN_IP} ${PACK_SYNC}
+
+	# Enable sync configuration or add ip address for multiple multisite package server
 	if [ $? -ne 0 ]; then
                 SYNC_CONF="sed -i '1 a\\
 # Sync package server \\
