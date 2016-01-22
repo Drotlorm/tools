@@ -45,8 +45,9 @@ ask() {
 choose_network_interface() {
 	local INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}'`
 	local RESULT=N
+	local CHOICE_INTERFACE_TEXT=$1
 	while [  ${RESULT} == "N" ]; do
-		read  -p "More than one network interface detected. Choose the interface having access to Pulse clients ($INTERFACES): " INTERFACE
+		read  -p "${CHOICE_INTERFACE_TEXT} (${INTERFACES}): " INTERFACE
 		if [ ! -z ${INTERFACE} ] && [[ ${INTERFACES} == *"${INTERFACE} "* ]]; then
 			RESULT=Y
 			echo ${INTERFACE}
@@ -71,7 +72,8 @@ check_network_config() {
 		exit 1
 	# Check number of interfaces
 	elif [ "x$NB_INTERFACES" != "x1" ]; then
-		INTERFACE=$(choose_network_interface)
+		local CHOICE_INTERFACE_TEXT="More than one network interface detected. Choose the interface having access to Pulse clients"
+		INTERFACE=$(choose_network_interface "${CHOICE_INTERFACE_TEXT}")
 	else
 		INTERFACE=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1`
 	fi
@@ -162,13 +164,17 @@ install_system_tools_and_deps() {
 	echo "Installing system tools and other dependencies needed by Pulse..."
 	
 	# Install needed tools
-	apt-get -y install multitail vim
+	apt-get -y install multitail vim rsync
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
 	
-	# Install apache2 used by Pulse
-	apt-get -y install apache2
+	# Install apache2 and php used by Pulse
+	apt-get -y install apache2 php5
+	# Configure php to allow upload of files of 200M max
+	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php5/apache2/php.ini
+	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php5/apache2/php.ini
+	service apache2 restart
 	
 	# Install rng-tools used by pulse2-setup
 	apt-get -y install rng-tools
@@ -739,7 +745,10 @@ configure_multisite() {
 	ssh ${PULSEMAIN_IP} ${CONFIG}
 
 	# Insert multisite imaging server in Pulse imaging server database
-	ImagingServer="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('${MULTISITE_ENTITY}', 'https://${IP_ADDRESS}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
+	local CHOICE_INTERFACE_TEXT="Choose the interface connected to Pulse server"
+	local INTERFACE_TO_PULSE=$(choose_network_interface "${CHOICE_INTERFACE_TEXT}")
+	IP_REMOTE_PACKAGE_SERVER=`ifconfig ${INTERFACE_TO_PULSE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
+	ImagingServer="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('${MULTISITE_ENTITY}', 'https://${IP_REMOTE_PACKAGE_SERVER}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
 	ssh ${PULSEMAIN_IP} ${ImagingServer}
 
 	# Create multisite imaging entity in Pulse imaging entities database 
@@ -763,7 +772,7 @@ sync_package_server(){
 	# Enable package synchronisation between Pulse package server and multisite(s) packager server
 
 	# Grant ssh without password from Pulse to Pulse multisite
-	ssh -t ${PULSEMAIN_IP} ssh-copy-id ${IP_ADDRESS}
+	ssh -t ${PULSEMAIN_IP} ssh-copy-id ${IP_REMOTE_PACKAGE_SERVER}
 	FOLDER="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
 	RSYNC="[ ! -f /usr/bin/rsync ] && aptitude install rsync"
 	ssh ${PULSEMAIN_IP} ${FOLDER}
@@ -783,7 +792,7 @@ sync_package_server(){
 package_detect_activate = 1 \\
 package_detect_loop = 60 \\
 package_mirror_loop = 5 \\
-package_mirror_target = ${IP_ADDRESS} \\
+package_mirror_target = ${IP_REMOTE_PACKAGE_SERVER} \\
 package_mirror_command = /usr/bin/rsync \\
 package_mirror_command_options = -ar --delete \\
 package_mirror_level0_command_options = -d --delete \\
@@ -791,7 +800,7 @@ package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa Stri
 # END Sync' /etc/mmc/pulse2/package-server/package-server.ini.local"
                 ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
         else
-                SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_ADDRESS}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
+                SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_REMOTE_PACKAGE_SERVER}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
                 ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
         fi
 
