@@ -703,7 +703,7 @@ configure_multisite() {
 	UPDATE_RANKING="echo \"UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity';\" | mysql glpi"
         GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
 	GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
-	GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT MAX(id) FROM glpi_entities));\" | mysql glpi"
+	GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT id FROM glpi_entities WHERE name='${MULTISITE_ENTITY}');\" | mysql glpi"
 	ssh ${PULSEMAIN_IP} ${UPDATE_RANKING}
 	ssh ${PULSEMAIN_IP} ${GLPI_RULES}
 	ssh ${PULSEMAIN_IP} ${GLPI_RULECRITERIAS}
