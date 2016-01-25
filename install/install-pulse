@@ -17,36 +17,41 @@ GATEWAY_ADDRESS=`ip route | awk '/default/ { print $3 }'`
 PULSEMAIN_IP='192.168.1.6'
 
 ask() {
-    while true; do
-        if [ "${2:-}" = "Y" ]; then
-            prompt="Y/n"
-            default=Y
-        elif [ "${2:-}" = "N" ]; then
-            prompt="y/N"
-            default=N
-        else
-            prompt="y/n"
-            default=
-        fi
+	local TEXT=$1
+	local OPTION1=$2
+	local OPTION2=$3
+	local RESULT=N
+    while [ ${RESULT} == "N" ]; do
+        local PROMPT="$OPTION1/$OPTION2"
         # Ask the question - use /dev/tty in case stdin is redirected from somewhere else
-        read -p "$1 [$prompt] " REPLY </dev/tty
-        # Default?
-        if [ -z "$REPLY" ]; then
-            REPLY=$default
-        fi
+        read -p "${TEXT} [${PROMPT}] " REPLY </dev/tty
         # Check if the reply is valid
-        case "$REPLY" in
-            Y*|y*) return 0 ;;
-            N*|n*) return 1 ;;
+        case "${REPLY}" in
+            ${OPTION1^^}|${OPTION1,,})
+            	RESULT=Y
+            	echo ${OPTION1,,}
+            	;;
+            ${OPTION2^^}|${OPTION2,,})
+            	RESULT=Y
+            	echo ${OPTION2,,}
+            	;;
         esac
     done
+}
+
+get_user_input() {
+	local TEXT=$1
+	while [[ ${RESULT} == '' ]]; do
+		read -p "${TEXT} " RESULT
+	done
+	echo ${RESULT}
 }
 
 choose_network_interface() {
 	local INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}'`
 	local RESULT=N
 	local CHOICE_INTERFACE_TEXT=$1
-	while [  ${RESULT} == "N" ]; do
+	while [ ${RESULT} == "N" ]; do
 		read  -p "${CHOICE_INTERFACE_TEXT} (${INTERFACES}): " INTERFACE
 		if [ ! -z ${INTERFACE} ] && [[ ${INTERFACES} == *"${INTERFACE} "* ]]; then
 			RESULT=Y
@@ -57,11 +62,49 @@ choose_network_interface() {
 	done
 }
 
-check_network_config() {
-	echo "Checking network settings..."
-	
+get_multisite_entity() {
+	local EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
+	local LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
+	local RESULT=N
+	while [  ${RESULT} == "N" ]; do
+	read  -p "Enter the new entity name for the new site (current entitites: $LIST_ENTITIES): " 'MULTISITE_ENTITY'
+		if [ ! -z ${MULTISITE_ENTITY} ] && [[ ${LIST_ENTITIES} != *"${MULTISITE_ENTITY} "* ]]; then
+			RESULT=Y
+		else
+			RESULT=N
+		fi
+	done
+	echo ${MULTISITE_ENTITY}
+}
+
+get_user_options() {
 	local NB_INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}' | wc -w`
 	
+	echo "====================================================================="
+	if [ "x$NB_INTERFACES" != "x1" ]; then
+		INTERFACE=$(choose_network_interface "More than one network interface detected. Choose the interface having access to Pulse clients")
+	else
+		INTERFACE=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1`
+	fi
+	INSTALL_TYPE=$(ask "Is the main Pulse server installation (p) or a multi-site installation (m)?" p m)
+	
+	if [[ ${INSTALL_TYPE} == "p" ]]; then
+		MAIN_DHCP=$(ask "DHCP will be enabled ?" y n)
+		MAIN_PXE=$(ask "PXE will be enabled ?" y n)
+        MAIN_ENTITY=$(get_user_input "Main entity name for GLPI:")
+	else
+		INTERFACE_TO_PULSE=$(choose_network_interface "Choose the interface connected to Pulse server")
+		REMOTE_BACKUPPC=$(ask "BACKUPPC will be enable ?" y n)
+		REMOTE_DHCP=$(ask "DHCP will be enabled ?" y n)
+		REMOTE_PXE=$(ask "PXE will be enabled ?" y n)
+        MULTISITE_ENTITY=$(get_multisite_entity)
+	fi
+	echo "====================================================================="
+}
+
+check_network_config() {
+	echo "Checking network settings..."
+		
 	# Make sure that domain name is properly set
 	if [ -z ${DOMAIN} ]; then
 		echo "Please configure the domain"
@@ -70,17 +113,12 @@ check_network_config() {
 	elif [ -z ${DNS_SERVER} ]; then
 		echo "Please configure the DNS server"
 		exit 1
-	# Check number of interfaces
-	elif [ "x$NB_INTERFACES" != "x1" ]; then
-		local CHOICE_INTERFACE_TEXT="More than one network interface detected. Choose the interface having access to Pulse clients"
-		INTERFACE=$(choose_network_interface "${CHOICE_INTERFACE_TEXT}")
-	else
-		INTERFACE=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1`
 	fi
 	IP_ADDRESS=`ifconfig ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
 	NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
 	NETMASK=`ifconfig ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2`
 	BCAST_ADDRESS=`ip address show ${INTERFACE} | grep 'inet .* brd ' | head -1 | sed -e 's/^.* brd \([0-9\.]*\) .*$/\1/'`
+	IP_REMOTE_SERVER=`ifconfig ${INTERFACE_TO_PULSE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
 	echo "====================================================================="
 	echo "PULSE_REPO_URL		: ${PULSE_REPO_URL}"
 	echo "PULSE_VERSION		: ${PULSE_VERSION}"
@@ -88,20 +126,26 @@ check_network_config() {
 	echo "ORGANISATION		: ${ORGANISATION}"
 	echo "DEBIAN_VERSION		: ${DEBIAN_VERSION}"
 	echo "DOMAIN			: ${DOMAIN}"
-	echo "INTERFACE			: ${INTERFACE}"
+	echo "INTERFACE		: ${INTERFACE}"
 	echo "IP_ADDRESS		: ${IP_ADDRESS}"
 	echo "NETWORK_ADDRESS		: ${NETWORK_ADDRESS}"
 	echo "NETMASK			: ${NETMASK}"
 	echo "BCAST_ADDRESS		: ${BCAST_ADDRESS}"
 	echo "GATEWAY_ADDRESS		: ${GATEWAY_ADDRESS}"
 	echo "DNS_SERVER		: ${DNS_SERVER}"
-	echo "=======================IF MULTISTE==================================="
-	echo "PULSEMAIN_IP		: ${PULSEMAIN_IP}"
-	echo "====================================================================="
-
+	echo "MAIN_ENTITY		: ${MAIN_ENTITY}"
+	if [[ ${INSTALL_TYPE} == "m" ]]; then
+		echo "============================MULTISTE================================="
+		echo "PULSEMAIN_IP		: ${PULSEMAIN_IP}"
+		echo "INTERFACE_TO_PULSE	: ${INTERFACE_TO_PULSE}"
+		echo "IP_REMOTE_SERVER	: ${IP_REMOTE_SERVER}"
+		echo "MULTISITE_ENTITY	: ${MULTISITE_ENTITY}"
+		echo "====================================================================="
+	fi
 	echo "### Checking network settings... Done"
-
-	if ! ask "Are the above settings correct?"; then
+	
+	local CORRECT=$(ask "Are the above settings correct?" y n)
+	if [[ ${CORRECT} == "n" ]]; then
 		echo "Edit the script to define the proper values for the above settings" 
 		exit 0
 	fi
@@ -139,6 +183,18 @@ configure_apt_settings() {
 	echo "### Defining a few settings for apt... Done"
 }
 
+install_system_tools() {
+	echo "Installing system tools..."
+	
+	# Install needed tools
+	apt-get -y install multitail vim rsync
+
+	# Configure vim
+	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
+	
+	echo "### Installing system tools... Done"
+}
+
 configure_mysql_access() {
 	echo "Defining credentials to access mysql database..."
 	
@@ -158,23 +214,11 @@ prepare_debian() {
 	ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
 	configure_repos
 	configure_apt_settings
+	install_system_tools
 }
 
-install_system_tools_and_deps() {
-	echo "Installing system tools and other dependencies needed by Pulse..."
-	
-	# Install needed tools
-	apt-get -y install multitail vim rsync
-
-	# Configure vim
-	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
-	
-	# Install apache2 and php used by Pulse
-	apt-get -y install apache2 php5
-	# Configure php to allow upload of files of 200M max
-	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php5/apache2/php.ini
-	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php5/apache2/php.ini
-	service apache2 restart
+install_pulse2-setup_deps() {
+	echo "Installing tools needed by pulse2setup..."
 	
 	# Install rng-tools used by pulse2-setup
 	apt-get -y install rng-tools
@@ -187,7 +231,20 @@ install_system_tools_and_deps() {
 	# Install python network libraries used by pulse2-setup
 	apt-get -y install python-netifaces python-netaddr
 	
-	echo "### Installing system tools and other dependencies needed by Pulse... Done"
+	echo "### Installing tools needed by pulse2setup... Done"
+}
+
+install_apache() {
+	echo "Installing Apache2..."
+	
+	# Install apache2 and php used by Pulse
+	apt-get -y install apache2 php5
+	# Configure php to allow upload of files of 200M max
+	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php5/apache2/php.ini
+	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php5/apache2/php.ini
+	service apache2 restart
+	
+	echo "### Installing Apache2... Done"
 }
 
 install_ldap_server() {
@@ -248,12 +305,12 @@ install_backuppc() {
 	fi
 	a2ensite backuppc.conf
 	
-	grep -Gq Satisfy /etc/apache2/sites-available/backuppc.conf
-	if [ $? -ne 0 ]; then
-		sed "$ i\        Allow from $1" -i /etc/apache2/sites-available/backuppc.conf
+	if [[ ${INSTALL_TYPE} == "p" ]]; then
+		# Allow MMC to connect to backuppc
+		sed "$ i\        Allow from 127.0.0.1" -i /etc/apache2/sites-available/backuppc.conf
 		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
 	fi
-
+	
 	service apache2 restart
 	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
 	
@@ -347,13 +404,12 @@ install_clonezilla() {
 
 install_pulse_dependencies() {
 	# Install components needed by Pulse
-	install_system_tools_and_deps
+	install_pulse2-setup_deps
+	install_apache
 	install_ldap_server
 	install_mysql_server
-	install_backuppc ${IP_ADDRESS} 
+	install_backuppc
 	install_glpi
-	install_atftpd
-	install_isc_dhcp_server
 	install_samba
 	install_nfs_kernel_server
 	install_clonezilla
@@ -386,11 +442,23 @@ configure_atftpd() {
 }
 
 configure_backuppc() {
-	ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
-	ID='UUID'${ID}
-	BACKUPPCSERVER_URL="echo \"INSERT INTO backup_servers (entity_uuid,backupserver_url) VALUES ('${ID}','http://${IP_ADDRESS}/backuppc/index.cgi');\"|mysql backuppc"
-	ssh ${PULSEMAIN_IP} ${BACKUPPCSERVER_URL} 
+	echo "Configuring backuppc..."
 	
+	# Allow MMC to connect to backuppc server
+	grep -Gq Satisfy /etc/apache2/sites-available/backuppc.conf
+	if [ $? -ne 0 ]; then
+		sed "$ i\        Allow from ${PULSEMAIN_IP}" -i /etc/apache2/sites-available/backuppc.conf
+		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
+	fi
+	service apache2 restart
+	
+	# Add new site backuppc to Pulse database. Done on main Pulse server.
+	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+	ID='UUID'${ID}
+	local SSH_COMMAND="echo \"INSERT INTO backup_servers (entity_uuid,backupserver_url) VALUES ('${ID}','http://${IP_REMOTE_SERVER}/backuppc/index.cgi');\"|mysql backuppc"
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND} 
+	
+	echo "### Configuring backuppc... Done"
 }
 
 configure_isc_dhcp_server() {
@@ -515,10 +583,6 @@ reset_glpi_db() {
 	echo "update glpi_users set password = MD5('${ROOT_PASSWORD}') where name = 'root';" | mysql -uroot glpi
 	
 	# Configure Organisation / Entity
-        while [[ $MAIN_ENTITY == '' ]]
-        do
-                read -p "Main entity name for GLPI: " MAIN_ENTITY
-        done
 	echo "UPDATE glpi_entities set completename='${ORGANISATION}' where id=0;" | mysql glpi
 	echo "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'${MAIN_ENTITY}','${ORGANISATION} > ${MAIN_ENTITY}');" | mysql glpi
 	echo "INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'${ORGANISATION}','${ORGANISATION}');" | mysql glpi
@@ -632,14 +696,15 @@ reset_pulse_db() {
 	for SERV in `ls /etc/init.d/mmc-agent; ls /etc/init.d/pulse2-*`; do $SERV restart; done
 	
 	# Associate imaging server with root entity and generate default menu
-	pulse2-load-defaults --link-server --default-menu
+	echo "UPDATE ImagingServer SET associated=1 WHERE id=1;"| mysql imaging
 	if [ ! $? -eq 0 ]; then
 		echo "imaging server association failed"
 		exit 1
 	fi
 	
 	# Generate Pulse agents
-	/var/lib/pulse2/clients/generate-agents
+	#/var/lib/pulse2/clients/generate-agents
+	/var/lib/pulse2/clients/win32/generate-agent-pack.sh -i ${IP_ADDRESS} -t 
 	if [ ! $? -eq 0 ]; then
 		echo "pulse agents generation failed"
 		exit 1
@@ -663,12 +728,14 @@ configure_pulse() {
 	done
 }
 
-install_multisite() {
-	echo "Installing dependencies..."
+install_multisite_dependencies() {
+	# Install components needed by pulse multisite..."
 	install_nfs_kernel_server
 	install_clonezilla
+}
 
-	echo "Installing Pulse..."
+install_multisite() {
+	echo "Installing Pulse multisite..."
 	apt-get -y install pulse2-package-server pulse2-imaging-server uuid-runtime
 	if [ ! $? -eq 0 ]; then
 		echo "pulse install failed"
@@ -681,169 +748,156 @@ install_multisite() {
 	echo "### Installing Pulse multisite... Done"
 }
 
-
-configure_multisite() {
-	echo "### Configure dependencies..."
+configure_multisite_dependencies() {
+	#Configure components needed by pulse multisite
 	configure_nfs_kernel_server
 	configure_clonezilla
+}
 
-	echo "### Configure Multisite..."
-	# Grant ssh without password from Pulse multisite to Pulse 
-	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
-	ssh-copy-id ${PULSEMAIN_IP}
+configure_glpi_multisite() {
+	echo "Configuring GLPI for multisite..."
+	
+	# Create the multisite entity in GLPI. Done on main pulse server
+	local MAX_ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
+	local ID=$((MAX_ID+1))
+	local GLPI_MAIN_ENTITY=$(ssh ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
+	local SSH_COMMAND="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}','0','2','${MULTISITE_ENTITY}','${GLPI_MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	
+	# Create fusioninventory rule to affect all computer from/to multi-site entity. Done on main pulse server
+	local SSH_COMMAND_UPDATE_RANKING="echo \"UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity';\" | mysql glpi"
+    local SSH_COMMAND_GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
+	local SSH_COMMAND_GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
+	local SSH_COMMAND_GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT id FROM glpi_entities WHERE name='${MULTISITE_ENTITY}'));\" | mysql glpi"
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_UPDATE_RANKING}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULES}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULECRITERIAS}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULEACTIONS}
+	
+	echo "###Configuring GLPI for multisite... Done"
+}
 
-	# Create multisite entity
-	EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
-	LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
-	local RESULT=N
-	while [  ${RESULT} == "N" ]; do
-	read  -p "More than one entities are detected. Enter the new entity name for the multi-site ($LIST_ENTITIES): " 'MULTISITE_ENTITY'
-		if [ ! -z ${MULTISITE_ENTITY} ] && [[ ${LIST_ENTITIES} != *"${MULTISITE_ENTITY} "* ]]; then
-			RESULT=Y
-		else
-			RESULT=N
-		fi
-	done
-
-        # Create fusioninventory rule to affect all computer from/to multi-site entity
-	UPDATE_RANKING="echo \"UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity';\" | mysql glpi"
-        GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
-	GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
-	GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT id FROM glpi_entities WHERE name='${MULTISITE_ENTITY}');\" | mysql glpi"
-	ssh ${PULSEMAIN_IP} ${UPDATE_RANKING}
-	ssh ${PULSEMAIN_IP} ${GLPI_RULES}
-	ssh ${PULSEMAIN_IP} ${GLPI_RULECRITERIAS}
-	ssh ${PULSEMAIN_IP} ${GLPI_RULEACTIONS}
-
-
+configure_package_server_multisite() {
+	echo "Configuring Package Server for multisite..."
+	
 	# Configure multi-site package server	
-	PACKAGESERVER_UUID=`uuidgen`
+	local PACKAGESERVER_UUID=`uuidgen`
 	# Allow computer to reach package server
 	echo "[main]" > /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "public_ip = ${IP_ADDRESS}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	# Define MMC of the Pulse
-    	echo "[mmc_agent]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
-    	echo "host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "[mmc_agent]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "[imaging_api]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "uuid = ${PACKAGESERVER_UUID}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	# Define Pulse inventory server IP
 	echo "inventory_host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "glpi_mode = True" >> /etc/mmc/pulse2/package-server/package-server.ini.local
-
-	echo "Configure the main Pulse..."
-
-	# Create the multisite entity in GLPI
-	MAX_ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
-	ID=$((MAX_ID+1))
-	MAIN_ENTITY=$(ssh ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
-	ADD_ENTITYID="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}','0','2','${MULTISITE_ENTITY}','${MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
-	ssh ${PULSEMAIN_IP} ${ADD_ENTITYID}
-
-	# Enable the Pulse packager to listen from everywhere
-	PACKAGESERVER_UUID=`cat /etc/mmc/pulse2/package-server/package-server.ini.local|grep uuid| cut -d ' ' -f3`
-	CONFIG="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && service mmc-agent restart"
-	ssh ${PULSEMAIN_IP} ${CONFIG}
-
-	# Insert multisite imaging server in Pulse imaging server database
-	local CHOICE_INTERFACE_TEXT="Choose the interface connected to Pulse server"
-	local INTERFACE_TO_PULSE=$(choose_network_interface "${CHOICE_INTERFACE_TEXT}")
-	IP_REMOTE_PACKAGE_SERVER=`ifconfig ${INTERFACE_TO_PULSE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
-	ImagingServer="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('${MULTISITE_ENTITY}', 'https://${IP_REMOTE_PACKAGE_SERVER}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
-	ssh ${PULSEMAIN_IP} ${ImagingServer}
-
-	# Create multisite imaging entity in Pulse imaging entities database 
-	UUID_IMAGING=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer  ORDER BY id DESC LIMIT 1'|mysql -s")
-	UUID_IMAGING='UUID'$UUID_IMAGING
-	ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
-	UUID='UUID'$((ID+1))
-	ENTITY="echo \"INSERT INTO imaging.Entity values ('','${MULTISITE_ENTITY}','${UUID}','','fr_FR');\" | mysql imaging"
-	ssh ${PULSEMAIN_IP} ${ENTITY}
 	
-	# Register multisite package server in Pulse
-	LINK="pulse2-load-defaults --link-server --loc-id=${UUID} --loc-name=${MULTISITE_ENTITY} --imaging-id=${UUID_IMAGING} --default-menu"
-	ssh ${PULSEMAIN_IP} ${LINK}
-
-	service pulse2-package-server restart
-
-	echo "### Configuring Pulse multisite... Done"
+	# Enable the Pulse MMC to listen from everywhere. Done on main Pulse server
+	local SSH_COMMAND="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && service mmc-agent restart"
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	
+	# Insert multisite imaging server in Pulse imaging server database. Done on main Pulse server.
+	local SSH_COMMAND="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('${MULTISITE_ENTITY}', 'https://${IP_REMOTE_SERVER}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	
+	# Create multisite imaging entity in Pulse imaging entities database. Done on main Pulse server
+	local UUID_IMAGING=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer  ORDER BY id DESC LIMIT 1'|mysql -s")
+	UUID_IMAGING='UUID'${UUID_IMAGING}
+	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+	local UUID='UUID'$((ID+1))
+	local SSH_COMMAND="echo \"INSERT INTO imaging.Entity values ('','${MULTISITE_ENTITY}','${UUID}','','fr_FR');\" | mysql imaging"
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	# Register multisite package server in Pulse. Done on main Pulse server
+	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+	local SSH_COMMAND="echo \"UPDATE ImagingServer SET associated=1, fk_entity=${ID} WHERE packageserver_uuid='${PACKAGESERVER_UUID}';\"| mysql imaging"
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	
+	echo "###Configuring Package Server for multisite... Done"
 }
 
-sync_package_server(){
+configure_multisite() {
+	# Grant ssh without password from Pulse multisite to Pulse 
+	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
+	ssh-copy-id ${PULSEMAIN_IP}
+	
+	configure_glpi_multisite
+	configure_package_server_multisite
+	
+	echo "### Restart pulse2-package-server..."
+	service pulse2-package-server restart
+}
+
+sync_package_server() {
 	# Enable package synchronisation between Pulse package server and multisite(s) packager server
 
-	# Grant ssh without password from Pulse to Pulse multisite
-	ssh -t ${PULSEMAIN_IP} ssh-copy-id ${IP_REMOTE_PACKAGE_SERVER}
-	FOLDER="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
-	RSYNC="[ ! -f /usr/bin/rsync ] && aptitude install rsync"
-	ssh ${PULSEMAIN_IP} ${FOLDER}
-	
-	# Install rsync on Pulse and multisite
-	ssh ${PULSEMAIN_IP} ${RSYNC}
-	eval $RSYNC
+	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
+	ssh -t ${PULSEMAIN_IP} ssh-copy-id ${IP_REMOTE_SERVER}
+	local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-	# Test if the sync configuration is already configured on Pulse
-	PACK_SYNC='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
-	ssh ${PULSEMAIN_IP} ${PACK_SYNC}
+	# Test if the sync configuration is already configured on Pulse. Done on Pulse main server.
+	SSH_COMMAND='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-	# Enable sync configuration or add ip address for multiple multisite package server
+	# Enable sync configuration or add ip address for multiple multisite package server. Done on Pulse main server.
 	if [ $? -ne 0 ]; then
-                SYNC_CONF="sed -i '1 a\\
+		local SYNC_CONF="sed -i '1 a\\
 # Sync package server \\
 package_detect_activate = 1 \\
 package_detect_loop = 60 \\
 package_mirror_loop = 5 \\
-package_mirror_target = ${IP_REMOTE_PACKAGE_SERVER} \\
+package_mirror_target = ${IP_REMOTE_SERVER} \\
 package_mirror_command = /usr/bin/rsync \\
 package_mirror_command_options = -ar --delete \\
 package_mirror_level0_command_options = -d --delete \\
 package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa StrictHostKeyChecking=no Batchmode=yes PasswordAuthentication=no ServerAliveInterval=10 CheckHostIP=no ConnectTimeout=10 \\
 # END Sync' /etc/mmc/pulse2/package-server/package-server.ini.local"
-                ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
-        else
-                SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_REMOTE_PACKAGE_SERVER}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
-                ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
-        fi
-
+		ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
+	else
+		SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_REMOTE_SERVER}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
+		ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
+	fi
 }
+
 # And finally we run the functions
 
+get_user_options
 check_network_config
 prepare_debian
 
-echo "====================================================================="
-if ask "Is the main Pulse server installation (y) or a multi-site installation (n)?"; then
+if [[ ${INSTALL_TYPE} == "p" ]]; then
+	# Pulse main installation
 	install_pulse_dependencies
 	install_pulse
-	echo "====================================================================="
-	if ask "DHCP will be enabled ?"; then
+	if [[ ${MAIN_DHCP} == "y" ]]; then
 		install_isc_dhcp_server
 		configure_isc_dhcp_server
 	fi
-	echo "====================================================================="
-	if ask "PXE will be enabled ?"; then
+	if [[ ${MAIN_PXE} == "y" ]]; then
 		install_atftpd
 		configure_atftpd
 	fi
 	configure_pulse_dependencies
 	configure_pulse
 else
+	# Pulse multi-site installation
+	install_multisite_dependencies
 	install_multisite
+	configure_multisite_dependencies
 	configure_multisite
 	sync_package_server
-        echo "====================================================================="
-        if ask "BACKUPPC will be enable ?"; then
-                install_backuppc ${IP_ADDRESS}
-                configure_backuppc 
-        fi
-	echo "====================================================================="
-	if ask "DHCP will be enabled ?"; then
+	if [[ ${REMOTE_BACKUPPC} == "y" ]]; then
+		install_backuppc
+		configure_backuppc 
+	fi
+	if [[ ${REMOTE_DHCP} == "y" ]]; then
 		install_isc_dhcp_server
 		configure_isc_dhcp_server
 	fi
-	echo "====================================================================="
-	if ask "PXE will be enabled ?"; then
+	if [[ ${REMOTE_PXE} == "y" ]]; then
 		install_atftpd
 		configure_atftpd
 	fi
-	echo "====================================================================="
 fi
