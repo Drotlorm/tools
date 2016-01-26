@@ -311,7 +311,7 @@ install_backuppc() {
 	echo "backuppc  backuppc/reconfigure-webserver  multiselect" | debconf-set-selections
 	
 	# Install backuppc
-	apt-get -y install backuppc
+	apt-get -y install backuppc libfile-rsyncp-perl
 	if [ ! $? -eq 0 ]; then
 		echo "backuppc install failed"
 		exit 1
@@ -479,6 +479,9 @@ configure_backuppc() {
 	ID='UUID'${ID}
 	local SSH_COMMAND="echo \"INSERT INTO backup_servers (entity_uuid,backupserver_url) VALUES ('${ID}','http://${IP_REMOTE_SERVER}/backuppc/index.cgi');\"|mysql backuppc"
 	ssh ${PULSEMAIN_IP} ${SSH_COMMAND} 
+	
+	# Copy main Pulse backuppc key to local backuppc user
+	scp root@${PULSEMAIN_IP}:/var/lib/backuppc/.ssh/id_rsa /var/lib/backuppc/.ssh/
 	
 	echo "### Configuring backuppc... Done"
 }
