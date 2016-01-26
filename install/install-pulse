@@ -16,7 +16,7 @@ DNS_SERVER=`grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}' | cut -d : 
 GATEWAY_ADDRESS=`ip route | awk '/default/ { print $3 }'`
 PULSEMAIN_IP='192.168.1.6'
 SMTP="smtp.siveo.net:465"
-MAIL="support@siveo.net"
+MAIL_ADDRESS="support@siveo.net"
 
 ask() {
 	local TEXT=$1
@@ -89,6 +89,7 @@ get_user_options() {
 		INTERFACE=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1`
 	fi
 	INSTALL_TYPE=$(ask "Is the main Pulse server installation (p) or a multi-site installation (m)?" p m)
+	MAIL_PASSWORD=$(get_user_input "Enter the monitoring mail password:")
 	
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
 		MAIN_DHCP=$(ask "DHCP will be enabled ?" y n)
@@ -101,15 +102,6 @@ get_user_options() {
 		REMOTE_PXE=$(ask "PXE will be enabled ?" y n)
         MULTISITE_ENTITY=$(get_multisite_entity)
 	fi
-	local RESULT=N
-        while [ ${RESULT} == "N" ]; do
-                read  -p "Enter the monitoring mail password: " PMAIL
-                if [ ! -z ${PMAIL} ] ; then
-                        RESULT=Y
-                else
-                        RESULT=N
-                fi
-        done
 
 	echo "====================================================================="
 }
@@ -206,17 +198,18 @@ install_system_tools() {
 
 	# Configure mail monitoring
 	echo "mailhub=${SMTP}" > /etc/ssmtp/ssmtp.conf
-	echo "root=${MAIL}" >> /etc/ssmtp/ssmtp.conf
-	echo "AuthUser=${MAIL}" >> /etc/ssmtp/ssmtp.conf
-	echo "AuthPass=${PMAIL}" >> /etc/ssmtp/ssmtp.conf
+	echo "root=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
+	echo "AuthUser=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
+	echo "AuthPass=${MAIL_PASSWORD}" >> /etc/ssmtp/ssmtp.conf
 	echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf
 	echo "UseTLS=YES" >> /etc/ssmtp/ssmtp.conf
 	echo "root:`hostname -f`@siveo.net" > /etc/ssmtp/revaliases
 
 	# Configure XFS-Defrag
 	sed 's/^CRON=0$/CRON=1/' -i /etc/xfs-defrag.conf
-	sed 's/^#MAILTO=$/MAILTO=${MAIL}/' -i /etc/xfs-defrag.conf
+	sed "s/.*MAILTO=.*/MAILTO=${MAIL_ADDRESS}/" -i /etc/xfs-defrag.conf
 	sed "s/mail -s/mail -a \"From: ${ORGANISATION} <${ORGANISATION}@siveo.net>\" -s /g" -i /usr/sbin/xfs-defrag
+
 	echo "### Installing system tools... Done"
 }
 
