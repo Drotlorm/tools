@@ -285,7 +285,7 @@ install_backuppc() {
 	echo "Installing backuppc..."
 	
 	# Define a few settings for backuppc
-	useradd backuppc
+	useradd backuppc -md /var/lib/backuppc -s /bin/bash
 	echo "backuppc  backuppc/reconfigure-webserver  multiselect     apache2" | debconf-set-selections
 	echo "backuppc  backuppc/tmppass password ${ROOT_PASSWORD}" | debconf-set-selections
 	echo "backuppc  backuppc/configuration-note     note" | debconf-set-selections
