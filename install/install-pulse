@@ -15,6 +15,8 @@ DOMAIN=`hostname -d`
 DNS_SERVER=`grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}' | cut -d : -f 1`
 GATEWAY_ADDRESS=`ip route | awk '/default/ { print $3 }'`
 PULSEMAIN_IP='192.168.1.6'
+SMTP="smtp.siveo.net:465"
+MAIL="support@siveo.net"
 
 ask() {
 	local TEXT=$1
@@ -99,6 +101,16 @@ get_user_options() {
 		REMOTE_PXE=$(ask "PXE will be enabled ?" y n)
         MULTISITE_ENTITY=$(get_multisite_entity)
 	fi
+	local RESULT=N
+        while [ ${RESULT} == "N" ]; do
+                read  -p "Enter the monitoring mail password: " PMAIL
+                if [ ! -z ${PMAIL} ] ; then
+                        RESULT=Y
+                else
+                        RESULT=N
+                fi
+        done
+
 	echo "====================================================================="
 }
 
@@ -187,11 +199,24 @@ install_system_tools() {
 	echo "Installing system tools..."
 	
 	# Install needed tools
-	apt-get -y install multitail vim rsync
+	apt-get -y install multitail vim rsync ssmtp xfs-defrag
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
-	
+
+	# Configure mail monitoring
+	echo "mailhub=${SMTP}" > /etc/ssmtp/ssmtp.conf
+	echo "root=${MAIL}" >> /etc/ssmtp/ssmtp.conf
+	echo "AuthUser=${MAIL}" >> /etc/ssmtp/ssmtp.conf
+	echo "AuthPass=${PMAIL}" >> /etc/ssmtp/ssmtp.conf
+	echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf
+	echo "UseTLS=YES" >> /etc/ssmtp/ssmtp.conf
+	echo "root:`hostname -f`@siveo.net" > /etc/ssmtp/revaliases
+
+	# Configure XFS-Defrag
+	sed 's/^CRON=0$/CRON=1/' -i /etc/xfs-defrag.conf
+	sed 's/^#MAILTO=$/MAILTO=${MAIL}/' -i /etc/xfs-defrag.conf
+	sed "s/mail -s/mail -a \"From: ${ORGANISATION} <${ORGANISATION}@siveo.net>\" -s /g" -i /usr/sbin/xfs-defrag
 	echo "### Installing system tools... Done"
 }
 
