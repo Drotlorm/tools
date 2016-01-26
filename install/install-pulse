@@ -316,6 +316,10 @@ install_backuppc() {
 		echo "backuppc install failed"
 		exit 1
 	fi
+
+	# Copy Pulse ssh key 
+	cp -rf /root/.ssh /var/lib/backuppc/
+	chown -R backuppc:backuppc /var/lib/backuppc/
 	
 	# Configure Apache for backuppc
 	if [ ! -e /etc/apache2/sites-available/backuppc.conf ]; then
