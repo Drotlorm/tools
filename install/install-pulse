@@ -210,6 +210,11 @@ install_system_tools() {
 	sed "s/.*MAILTO=.*/MAILTO=${MAIL_ADDRESS}/" -i /etc/xfs-defrag.conf
 	sed "s/mail -s/mail -a \"From: ${ORGANISATION} <${ORGANISATION}@siveo.net>\" -s /g" -i /usr/sbin/xfs-defrag
 
+	if [[ ${DEBIAN_VERSION} == "8" ]]; then
+		apt-get -y install python-pip
+		pip install ssl-opt-out
+	fi
+	
 	echo "### Installing system tools... Done"
 }
 
