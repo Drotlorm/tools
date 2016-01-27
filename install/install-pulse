@@ -666,15 +666,15 @@ reset_glpi_db() {
 	echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',4,'Computer uuid + mac','','AND',1,'','NULL',0,'NULL',0);" | mysql glpi
 	local maxid=`echo "SELECT MAX(id) FROM glpi_rules" | mysql -s glpi`
 	local maxidmin=`expr ${maxid} - 1`
-	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','serial',9,'1')" | mysql glpi
-	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','uuid',9,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','serial',30,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','uuid',30,'1')" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','itemtype',0,'Computer')" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','mac',10,'1')" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','mac',8,'1')" | mysql glpi
-	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','uuid',10,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','uuid',30,'1')" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','uuid',8,'1')" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','itemtype',0,'Computer')" | mysql glpi
-	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',10,'1')" | mysql glpi
+	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',30,'1')" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',8,'1')" | mysql glpi
 	echo "INSERT INTO glpi_ruleactions VALUES('','${maxidmin}','assign','_fusion',1)" | mysql glpi
 	echo "INSERT INTO glpi_ruleactions VALUES('','${maxid}','assign','_fusion',1)" | mysql glpi
