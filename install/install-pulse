@@ -1,22 +1,117 @@
 #!/bin/bash
 
-if [ $# -eq 0 ]
-        then
-        echo "Needs Pulse repository url"
-        exit 1
-fi
 # To be defined
-PULSE_REPO_URL=$1
-PULSE_VERSION="3.1"
-ROOT_PASSWORD="siveo"
-ORGANISATION="Siveo"
-DEBIAN_VERSION=`cat /etc/*-release|grep VERSION_ID |cut -d '"' -f2`
-DOMAIN=`hostname -d`
-DNS_SERVER=`grep -m 1 nameserver /etc/resolv.conf | awk '{print $2}' | cut -d : -f 1`
-GATEWAY_ADDRESS=`ip route | awk '/default/ { print $3 }'`
-PULSEMAIN_IP='192.168.1.6'
 SMTP="smtp.siveo.net:465"
 MAIL_ADDRESS="support@siveo.net"
+
+display_usage() {
+	echo -e "\nUsage:\n$0 [--batch-mode [arguments]] | [--interactive-mode] \n"
+	echo -e "arguments:"
+	echo -e "\t[--pulse-repo-url=<pulse repo url>]"
+	echo -e "\t[--root-password=<root password>]"
+	echo -e "\t[--org-name=<organization name>]"
+	echo -e "\t[--interface-to-clients=<interface>]"
+	echo -e "\t[--enable-pulse-main= | --enable-multisite=[d]hcp|[p]xe|[b]ackuppc]"
+	echo -e "\t[--entity=<entity name>]"
+	echo -e "\t[--dhcp-dns-server=<dns server for DHCP clients>]"
+	echo -e "\t[--dhcp-gateway-address=<gateway address for DHCP clients>]"
+	echo -e "\t[--interface-to-main-pulse=<interface>]"
+	echo -e "\t[--main-pulse-ip=<IP address>]"
+	echo -e "\t[--mail-password=<support mail account password>]"
+}
+
+check_arguments() {
+	for i in "$@"; do
+		case $i in
+			--batch-mode*)
+				BATCH_MODE="y"
+				shift
+				;;
+			--interactive-mode*)
+				BATCH_MODE="n"
+				shift
+				;;
+			--pulse-repo-url=*)
+				PULSE_REPO_URL="${i#*=} ./"
+				shift
+				;;
+			--root-password=*)
+				ROOT_PASSWORD="${i#*=}"
+				shift
+				;;
+			--org-name=*)
+				ORGANISATION="${i#*=}"
+				shift
+				;;
+			--interface-to-clients=*)
+				INTERFACE="${i#*=}"
+				shift
+				;;
+			--enable-pulse-main=*)
+				INSTALL_TYPE="p"
+				OPTIONS="${i#*=}"
+				case "${OPTIONS}" in 
+					*d*)
+						MAIN_DHCP="y"
+						;;
+					*p*)
+						MAIN_PXE="y"
+						;;
+				esac
+				shift
+				;;
+			--enable-multisite=*)
+				INSTALL_TYPE="m"
+				OPTIONS="${i#*=}"
+				case "${OPTIONS}" in 
+					*b*)
+						REMOTE_BACKUPPC="y"
+						;;
+					*d*)
+						REMOTE_DHCP="y"
+						;;
+					*p*)
+						REMOTE_PXE="y"
+						;;
+				esac
+				shift
+				;;
+			--entity=*)
+				if [[ ${INSTALL_TYPE} == "p" ]]; then
+					MAIN_ENTITY="${i#*=}"
+				else
+					MULTISITE_ENTITY="${i#*=}"
+				fi
+				shift
+				;;
+			--dhcp-dns-server=*)
+				DNS_SERVER="${i#*=}"
+				shift
+				;;
+			--dhcp-gateway-address=*)
+				GATEWAY_ADDRESS="${i#*=}"
+				shift
+				;;
+			--interface-to-main-pulse=*)
+				INTERFACE_TO_PULSE="${i#*=}"
+				shift
+				;;
+			--main-pulse-ip=*)
+				PULSEMAIN_IP="${i#*=}"
+				shift
+				;;
+			--mail-password=*)
+				CONFIGURE_MONITORING="y"
+				MAIL_PASSWORD="${i#*=}"
+				shift
+				;;
+			*)
+            	# unknown option
+	            display_usage
+    			;;
+		esac
+	done
+}
 
 ask() {
 	local TEXT=$1
@@ -66,7 +161,7 @@ choose_network_interface() {
 
 get_multisite_entity() {
 	local EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
-	local LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
+	local LIST_ENTITIES=`ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
 	local RESULT=N
 	while [  ${RESULT} == "N" ]; do
 	read  -p "Enter the new entity name for the new site (current entitites: $LIST_ENTITIES): " 'MULTISITE_ENTITY'
@@ -80,17 +175,19 @@ get_multisite_entity() {
 }
 
 get_user_options() {
-	local NB_INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}' | wc -w`
+	PULSE_REPO_URL="$(get_user_input "Enter the URL of Pulse repository:") ./"
+	ROOT_PASSWORD=$(get_user_input "Enter the password of root:")
+	ORGANISATION=$(get_user_input "Enter the organization name:")
 	
+	local NB_INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}' | wc -w`
 	echo "====================================================================="
 	if [ "x$NB_INTERFACES" != "x1" ]; then
 		INTERFACE=$(choose_network_interface "More than one network interface detected. Choose the interface having access to Pulse clients")
 	else
 		INTERFACE=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1`
 	fi
-	INSTALL_TYPE=$(ask "Is the main Pulse server installation (p) or a multi-site installation (m)?" p m)
-	MAIL_PASSWORD=$(get_user_input "Enter the monitoring mail password:")
 	
+	INSTALL_TYPE=$(ask "Is the main Pulse server installation (p) or a multi-site installation (m)?" p m)
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
 		MAIN_DHCP=$(ask "DHCP will be enabled ?" y n)
 		MAIN_PXE=$(ask "PXE will be enabled ?" y n)
@@ -102,22 +199,30 @@ get_user_options() {
 		REMOTE_PXE=$(ask "PXE will be enabled ?" y n)
         MULTISITE_ENTITY=$(get_multisite_entity)
 	fi
-
+	if [[ ${MAIN_DHCP} == "y" || ${REMOTE_DHCP} == "y" ]]; then
+		DNS_SERVER=$(get_user_input "Enter the DNS server address for the DHCP clients:")
+		GATEWAY_ADDRESS=$(get_user_input "Enter the gateway address for the DHCP clients:")
+	fi
+	
+	CONFIGURE_MONITORING=$(ask "Do you wish to configure monitoring ?" y n)
+	if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
+		MAIL_PASSWORD=$(get_user_input "Enter the monitoring mail password:")
+	fi
 	echo "====================================================================="
 }
 
 check_network_config() {
 	echo "Checking network settings..."
-		
+	
+	DOMAIN=`hostname -d`
+	
 	# Make sure that domain name is properly set
 	if [ -z ${DOMAIN} ]; then
 		echo "Please configure the domain"
 		exit 1
-	# Make sure that DNS server is properly set
-	elif [ -z ${DNS_SERVER} ]; then
-		echo "Please configure the DNS server"
-		exit 1
 	fi
+	
+	DEBIAN_VERSION=`cat /etc/*-release|grep VERSION_ID |cut -d '"' -f2`
 	IP_ADDRESS=`ifconfig ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
 	NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
 	NETMASK=`ifconfig ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2`
@@ -125,7 +230,6 @@ check_network_config() {
 	IP_REMOTE_SERVER=`ifconfig ${INTERFACE_TO_PULSE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
 	echo "====================================================================="
 	echo "PULSE_REPO_URL		: ${PULSE_REPO_URL}"
-	echo "PULSE_VERSION		: ${PULSE_VERSION}"
 	echo "ROOT_PASSWORD		: ${ROOT_PASSWORD}"
 	echo "ORGANISATION		: ${ORGANISATION}"
 	echo "DEBIAN_VERSION		: ${DEBIAN_VERSION}"
@@ -137,7 +241,9 @@ check_network_config() {
 	echo "BCAST_ADDRESS		: ${BCAST_ADDRESS}"
 	echo "GATEWAY_ADDRESS		: ${GATEWAY_ADDRESS}"
 	echo "DNS_SERVER		: ${DNS_SERVER}"
-	echo "MAIN_ENTITY		: ${MAIN_ENTITY}"
+	if [[ ${INSTALL_TYPE} == "p" ]]; then
+		echo "MAIN_ENTITY		: ${MAIN_ENTITY}"
+	fi
 	if [[ ${INSTALL_TYPE} == "m" ]]; then
 		echo "============================MULTISTE================================="
 		echo "PULSEMAIN_IP		: ${PULSEMAIN_IP}"
@@ -147,11 +253,15 @@ check_network_config() {
 		echo "====================================================================="
 	fi
 	echo "### Checking network settings... Done"
-	
-	local CORRECT=$(ask "Are the above settings correct?" y n)
-	if [[ ${CORRECT} == "n" ]]; then
-		echo "Edit the script to define the proper values for the above settings" 
-		exit 0
+	if [[ ${BATCH_MODE} != "y" ]]; then
+		local CORRECT=$(ask "Are the above settings correct?" y n)
+		if [[ ${CORRECT} == "n" ]]; then
+			echo "Edit the script to define the proper values for the above settings" 
+			exit 0
+		fi
+	else
+		# Let the user have a look at the parameters
+		sleep 15s
 	fi
 }
 
@@ -191,24 +301,28 @@ install_system_tools() {
 	echo "Installing system tools..."
 	
 	# Install needed tools
-	apt-get -y install multitail vim rsync ssmtp xfs-defrag
+	apt-get -y install multitail vim rsync
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
 
 	# Configure mail monitoring
-	echo "mailhub=${SMTP}" > /etc/ssmtp/ssmtp.conf
-	echo "root=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
-	echo "AuthUser=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
-	echo "AuthPass=${MAIL_PASSWORD}" >> /etc/ssmtp/ssmtp.conf
-	echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf
-	echo "UseTLS=YES" >> /etc/ssmtp/ssmtp.conf
-	echo "root:`hostname -f`@siveo.net" > /etc/ssmtp/revaliases
-
-	# Configure XFS-Defrag
-	sed 's/^CRON=0$/CRON=1/' -i /etc/xfs-defrag.conf
-	sed "s/.*MAILTO=.*/MAILTO=${MAIL_ADDRESS}/" -i /etc/xfs-defrag.conf
-	sed "s/mail -s/mail -a \"From: ${ORGANISATION} <${ORGANISATION}@siveo.net>\" -s /g" -i /usr/sbin/xfs-defrag
+	 if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
+		apt-get -y install ssmtp xfs-defrag
+		
+		echo "mailhub=${SMTP}" > /etc/ssmtp/ssmtp.conf
+		echo "root=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
+		echo "AuthUser=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
+		echo "AuthPass=${MAIL_PASSWORD}" >> /etc/ssmtp/ssmtp.conf
+		echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf
+		echo "UseTLS=YES" >> /etc/ssmtp/ssmtp.conf
+		echo "root:`hostname -f`@siveo.net" > /etc/ssmtp/revaliases
+	
+		# Configure XFS-Defrag
+		sed 's/^CRON=0$/CRON=1/' -i /etc/xfs-defrag.conf
+		sed "s/.*MAILTO=.*/MAILTO=${MAIL_ADDRESS}/" -i /etc/xfs-defrag.conf
+		sed "s/mail -s/mail -a \"From: ${ORGANISATION} <${ORGANISATION}@siveo.net>\" -s /g" -i /usr/sbin/xfs-defrag
+	fi
 
 	if [[ ${DEBIAN_VERSION} == "8" ]]; then
 		apt-get -y install python-pip
@@ -480,10 +594,10 @@ configure_backuppc() {
 	service apache2 restart
 	
 	# Add new site backuppc to Pulse database. Done on main Pulse server.
-	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+	local ID=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
 	ID='UUID'${ID}
 	local SSH_COMMAND="echo \"INSERT INTO backup_servers (entity_uuid,backupserver_url) VALUES ('${ID}','http://${IP_REMOTE_SERVER}/backuppc/index.cgi');\"|mysql backuppc"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND} 
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND} 
 	
 	# Copy main Pulse backuppc key to local backuppc user
 	scp root@${PULSEMAIN_IP}:/var/lib/backuppc/.ssh/id_rsa /var/lib/backuppc/.ssh/
@@ -788,21 +902,21 @@ configure_glpi_multisite() {
 	echo "Configuring GLPI for multisite..."
 	
 	# Create the multisite entity in GLPI. Done on main pulse server
-	local MAX_ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
+	local MAX_ID=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
 	local ID=$((MAX_ID+1))
-	local GLPI_MAIN_ENTITY=$(ssh ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
+	local GLPI_MAIN_ENTITY=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
 	local SSH_COMMAND="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}','0','2','${MULTISITE_ENTITY}','${GLPI_MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 	
 	# Create fusioninventory rule to affect all computer from/to multi-site entity. Done on main pulse server
 	local SSH_COMMAND_UPDATE_RANKING="echo \"UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity';\" | mysql glpi"
     local SSH_COMMAND_GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT id FROM glpi_entities WHERE name='${MULTISITE_ENTITY}'));\" | mysql glpi"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_UPDATE_RANKING}
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULES}
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULECRITERIAS}
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULEACTIONS}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_UPDATE_RANKING}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULES}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULECRITERIAS}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULEACTIONS}
 	
 	echo "###Configuring GLPI for multisite... Done"
 }
@@ -826,23 +940,23 @@ configure_package_server_multisite() {
 	
 	# Enable the Pulse MMC to listen from everywhere. Done on main Pulse server
 	local SSH_COMMAND="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && service mmc-agent restart"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 	
 	# Insert multisite imaging server in Pulse imaging server database. Done on main Pulse server.
 	local SSH_COMMAND="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('${MULTISITE_ENTITY}', 'https://${IP_REMOTE_SERVER}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 	
 	# Create multisite imaging entity in Pulse imaging entities database. Done on main Pulse server
-	local UUID_IMAGING=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer  ORDER BY id DESC LIMIT 1'|mysql -s")
+	local UUID_IMAGING=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer  ORDER BY id DESC LIMIT 1'|mysql -s")
 	UUID_IMAGING='UUID'${UUID_IMAGING}
-	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+	local ID=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
 	local UUID='UUID'$((ID+1))
 	local SSH_COMMAND="echo \"INSERT INTO imaging.Entity values ('','${MULTISITE_ENTITY}','${UUID}','','fr_FR');\" | mysql imaging"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 	# Register multisite package server in Pulse. Done on main Pulse server
 	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
 	local SSH_COMMAND="echo \"UPDATE ImagingServer SET associated=1, fk_entity=${ID} WHERE packageserver_uuid='${PACKAGESERVER_UUID}';\"| mysql imaging"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 	
 	echo "###Configuring Package Server for multisite... Done"
 }
@@ -863,13 +977,13 @@ sync_package_server() {
 	# Enable package synchronisation between Pulse package server and multisite(s) packager server
 
 	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
-	ssh -t ${PULSEMAIN_IP} ssh-copy-id ${IP_REMOTE_SERVER}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -t ${PULSEMAIN_IP} ssh-copy-id ${IP_REMOTE_SERVER}
 	local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 
 	# Test if the sync configuration is already configured on Pulse. Done on Pulse main server.
 	SSH_COMMAND='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 
 	# Enable sync configuration or add ip address for multiple multisite package server. Done on Pulse main server.
 	if [ $? -ne 0 ]; then
@@ -884,16 +998,26 @@ package_mirror_command_options = -ar --delete \\
 package_mirror_level0_command_options = -d --delete \\
 package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa StrictHostKeyChecking=no Batchmode=yes PasswordAuthentication=no ServerAliveInterval=10 CheckHostIP=no ConnectTimeout=10 \\
 # END Sync' /etc/mmc/pulse2/package-server/package-server.ini.local"
-		ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
+		ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "${SYNC_CONF}"
 	else
 		SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_REMOTE_SERVER}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
-		ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
+		ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "${SYNC_CONF}"
 	fi
 }
 
 # And finally we run the functions
 
-get_user_options
+if [ $# -eq 0 ]; then
+	display_usage
+	exit 0
+else
+	check_arguments "$@"
+fi
+
+if [[ ${BATCH_MODE} == "n" ]]; then
+	echo "Entering interactive mode..."
+	get_user_options
+fi
 check_network_config
 prepare_debian
 
