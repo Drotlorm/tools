@@ -297,7 +297,7 @@ install_system_tools() {
 	echo "Installing system tools..."
 	
 	# Install needed tools
-	apt-get -y install multitail vim rsync
+	apt-get -y install multitail vim rsync sshpass
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -960,7 +960,7 @@ configure_package_server_multisite() {
 configure_multisite() {
 	# Grant ssh without password from Pulse multisite to Pulse 
 	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
-	ssh-copy-id -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP}
+	sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${PULSEMAIN_IP}
 	
 	configure_glpi_multisite
 	configure_package_server_multisite
@@ -973,7 +973,7 @@ sync_package_server() {
 	# Enable package synchronisation between Pulse package server and multisite(s) packager server
 
 	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -t ${PULSEMAIN_IP} ssh-copy-id -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${IP_REMOTE_SERVER}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -t ${PULSEMAIN_IP} sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${IP_REMOTE_SERVER}
 	local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
 	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 
