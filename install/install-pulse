@@ -50,30 +50,26 @@ check_arguments() {
 			--enable-pulse-main=*)
 				INSTALL_TYPE="p"
 				OPTIONS="${i#*=}"
-				case "${OPTIONS}" in 
-					*d*)
-						MAIN_DHCP="y"
-						;;
-					*p*)
-						MAIN_PXE="y"
-						;;
-				esac
+				if [[ "${OPTIONS}" == *d* ]]; then
+					MAIN_DHCP="y"
+				fi
+				if [[ "${OPTIONS}" == *p* ]]; then
+					MAIN_PXE="y"
+				fi
 				shift
 				;;
 			--enable-multisite=*)
 				INSTALL_TYPE="m"
 				OPTIONS="${i#*=}"
-				case "${OPTIONS}" in 
-					*b*)
-						REMOTE_BACKUPPC="y"
-						;;
-					*d*)
-						REMOTE_DHCP="y"
-						;;
-					*p*)
-						REMOTE_PXE="y"
-						;;
-				esac
+				if [[ "${OPTIONS}" == *b* ]]; then
+					REMOTE_BACKUPPC="y"
+				fi
+				if [[ "${OPTIONS}" == *d* ]]; then
+					REMOTE_DHCP="y"
+				fi
+				if [[ "${OPTIONS}" == *p* ]]; then
+					REMOTE_PXE="y"
+				fi
 				shift
 				;;
 			--entity=*)
@@ -964,7 +960,7 @@ configure_package_server_multisite() {
 configure_multisite() {
 	# Grant ssh without password from Pulse multisite to Pulse 
 	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
-	ssh-copy-id ${PULSEMAIN_IP}
+	ssh-copy-id -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP}
 	
 	configure_glpi_multisite
 	configure_package_server_multisite
@@ -977,7 +973,7 @@ sync_package_server() {
 	# Enable package synchronisation between Pulse package server and multisite(s) packager server
 
 	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -t ${PULSEMAIN_IP} ssh-copy-id ${IP_REMOTE_SERVER}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -t ${PULSEMAIN_IP} ssh-copy-id -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${IP_REMOTE_SERVER}
 	local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
 	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 
