@@ -1,0 +1,120 @@
+#!/bin/sh
+
+clear
+
+echo '================================='
+echo '       Windows Driver copy       '
+echo '================================='
+
+driverspath="/opt/sysprep/drivers/$1"
+# Detect the correct driver path
+if [ -d "/mnt/Windows/inf/driverpack" ]; then
+        driverspathcible='/mnt/Windows/inf/driverpack'
+else
+        driverspathcible='/mnt/Windows/Inf/driverpack'
+fi
+
+
+manufacturer=`dmidecode --type=system|sed -n 's/Manufacturer:\(.*\)/\1/p'|sed -e 's/^[ \t]*//' -e 's/[ \t]*$//'|awk '{for(i=1;i<NF;i++)printf "%s_",$i; if (NF) printf "%s",$NF; printf ORS}'|sed "s/[^_|a-z|A-Z|0-9]//g;"|head -n1`
+
+model=`dmidecode --type=system|sed -n 's/Product Name:\(.*\)/\1/p'|sed -e 's/^[ \t]*//' -e 's/[ \t]*$//'|awk '{for(i=1;i<NF;i++)printf "%s_",$i; if (NF) printf "%s",$NF; printf ORS}'|sed "s/[^_|a-z|A-Z|0-9]//g;"|head -n1`
+#manufacturer=""
+#model=""
+
+
+# If we have manufacturer/model couple, try to copy drivers
+if [ -n "$manufacturer" ] && [ -n "$model" ]; then
+    model_drivers_path="$driverspath/$manufacturer/$model/"
+        echo "Model : $model"
+    echo "Manufacturer :" $manufacturer
+else
+    # Asking user
+
+    # Choosing manufacturer
+    echo 'Cannot detect system model, please choose system manufacturer or choose 0 to skip drivers copy:' 
+    i=1
+    cd "$driverspath"
+    # Show manufacturer list
+    count=`ls -d */|wc -l`
+    echo $count
+    for z in `ls -d */`; do
+        echo "$i) $z" 
+        i=$((i+1))
+    done
+    echo -n 'Your choice : ' 
+    read input
+
+    # Checing if valid input
+    if [ $input -eq $input 2>/dev/null ] && [ $input -le $count ] && [ $input -ge 1 ]; then
+        i=1
+        for z in `ls -d */`; do
+            if [ $input -eq $i ]; then
+                manufacturer=$z
+            fi
+            i=$((i+1))
+        done
+    else
+        echo "Skipping driver copy."
+        exit 0
+    fi
+    # Choosing model
+    echo "Choose system model : "
+    i=1
+    cd "$driverspath/$manufacturer"
+    count=`ls -d */|wc -l`
+    # Show model list
+    for z in `ls -d */`; do
+        echo "$i) $z"
+        i=$((i+1))
+    done
+    echo -n 'Your choice : '
+    read input
+
+    # Checing if valid input
+    if [ $input -eq $input 2>/dev/null ] && [ $input -le $count ] && [ $input -ge 1 ]; then
+        i=1
+        for z in `ls -d */`; do
+            if [ $input -eq $i ]; then
+                model=$z
+            fi
+            i=$((i+1))
+        done
+    else
+        echo "Skipping driver copy."
+        exit 0
+    fi
+
+    if [ -n "$manufacturer" ] && [ -n "$model" ]; then
+        model_drivers_path="$driverspath/$manufacturer/$model"
+    else
+        echo "Skipping driver copy."
+        exit 0
+    fi
+fi
+
+# =========================================================
+# Copying drivers from drivers path
+# =========================================================
+
+# Copying generic drivers from $driverspath -> $driverspathcible
+if [ -d "$model_drivers_path/atheros" ]; then
+        echo "Copying atheros drivers from $driverspathcible"
+        cp -a "$driverspath/atheros" "$driverspathcible"
+fi
+if [ -d "$model_drivers_path/common" ]; then
+        echo "Copying common drivers from $driverspathcible"
+        cp -a "$driverspath/common" "$driverspathcible"
+fi
+if [ -d "$model_drivers_path" ]; then
+    echo "Copying drivers for $manufacturer_$model from $model_drivers_path"
+    cp -a "$model_drivers_path" "$driverspathcible"
+else
+    # No drivers found, creating directories
+    echo "Model not found, creating directory."
+    mkdir -p "$model_drivers_path"
+    echo 'Put here Model drivers files (inf, drivers and DriverStore)' > "$model_drivers_path/README"
+    echo '    inf                  : Copy it from C:\Windows\' >> "$model_drivers_path/README"
+    echo '    System32/drivers     : Copy it from C:\Windows\System32\' >> "$model_drivers_path/README"
+    echo '    System32/DriverStore : Copy it from C:\Windows\System32\' >> "$model_drivers_path/README"
+fi
+     
