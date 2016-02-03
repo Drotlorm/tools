@@ -3,6 +3,7 @@
 # To be defined
 SMTP="smtp.siveo.net:465"
 MAIL_ADDRESS="support@siveo.net"
+DRIVERS_PASSWORD='s3cr3t'
 
 display_usage() {
 	echo -e "\nUsage:\n$0 [--batch-mode [arguments]] | [--interactive-mode] \n"
@@ -631,6 +632,7 @@ configure_samba() {
 	# Create needed shares and setup root password
 	cp /usr/share/doc/pulse2/contrib/samba/smb.conf /etc/samba/
 	echo -ne "${ROOT_PASSWORD}\n${ROOT_PASSWORD}\n" | smbpasswd -a -s root
+	echo -ne "${DRIVERS_PASSWORD}\n${DRIVERS_PASSWORD}\n" | smbpasswd -a -s drivers
 	service samba restart
 	
 	echo "### Configuring Samba server... Done"
