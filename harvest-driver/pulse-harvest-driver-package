@@ -4,6 +4,11 @@ IP_PULSE="192.168.56.2"
 
 # =============================================================
 
+# Detect if Microsoft .NET Framework is installed as requiered
+wmic.exe product get name|grep  'NET Framework' -q
+if [ "$?" != 0 ]; then 
+	echo "You need to install Microsoft .NET Framework" && exit 1
+fi
 
 unzip -oq HarvestDrivers.zip
 cd HarvestDrivers
