@@ -626,6 +626,15 @@ configure_isc_dhcp_server() {
 	echo "### Configuring DHCP server... Done"
 }
 
+trick_clonezilla() {
+	echo "Configuring dummy DHCP server for Clonezilla..."
+	
+	touch /etc/dhcp/dhcpd.conf
+	echo "INTERFACES=${INTERFACE}" > /etc/default/isc-dhcp-server
+	
+	echo "### Configuring dummy DHCP server for Clonezilla... Done"
+}
+
 configure_samba() {
 	echo "Configuring Samba server..."
 	
@@ -1026,6 +1035,8 @@ if [[ ${INSTALL_TYPE} == "p" ]]; then
 	if [[ ${MAIN_DHCP} == "y" ]]; then
 		install_isc_dhcp_server
 		configure_isc_dhcp_server
+	else
+		trick_clonezilla
 	fi
 	if [[ ${MAIN_PXE} == "y" ]]; then
 		install_atftpd
@@ -1047,6 +1058,8 @@ else
 	if [[ ${REMOTE_DHCP} == "y" ]]; then
 		install_isc_dhcp_server
 		configure_isc_dhcp_server
+	else
+		trick_clonezilla
 	fi
 	if [[ ${REMOTE_PXE} == "y" ]]; then
 		install_atftpd
