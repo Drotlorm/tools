@@ -936,6 +936,7 @@ configure_package_server_multisite() {
 	# Allow computer to reach package server
 	echo "[main]" > /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "public_ip = ${IP_ADDRESS}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+	echo "public_mask = ${NETMASK}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	# Define MMC of the Pulse
 	echo "[mmc_agent]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 	echo "host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
