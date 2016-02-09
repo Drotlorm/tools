@@ -665,6 +665,9 @@ configure_clonezilla() {
 	[ -d /home/partimag ] && rmdir /home/partimag
 	ln -s /var/lib/pulse2/imaging/masters/ /home/partimag
 	
+	# Define log parameter for udp-sender
+	sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log /tmp/udp-sender.log\"/" /etc/drbl/drbl-ocs.conf
+	
 	echo "### Configuring clonezilla... Done"
 }
 
