@@ -376,6 +376,7 @@ install_apache() {
 	# Configure php to allow upload of files of 200M max
 	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php5/apache2/php.ini
 	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php5/apache2/php.ini
+	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php5/apache2/php.ini
 	service apache2 restart
 	
 	echo "### Installing Apache2... Done"
@@ -990,7 +991,7 @@ sync_package_server() {
 	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
 	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -t ${PULSEMAIN_IP} sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${IP_REMOTE_SERVER}
 	local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "${SSH_COMMAND}"
 
 	# Test if the sync configuration is already configured on Pulse. Done on Pulse main server.
 	SSH_COMMAND='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
