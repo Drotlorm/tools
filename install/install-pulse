@@ -589,6 +589,9 @@ configure_backuppc() {
 		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
 	fi
 	service apache2 restart
+
+	# Configure pulse2-uuid-resolver to acces mmc
+	sed "s/^host =.*/host = ${PULSEMAIN_IP}/" -i /etc/mmc/pulse2/uuid-resolver/uuid-resolver.ini
 	
 	# Add new site backuppc to Pulse database. Done on main Pulse server.
 	local ID=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
@@ -597,7 +600,7 @@ configure_backuppc() {
 	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND} 
 	
 	# Copy main Pulse backuppc key to local backuppc user
-	scp root@${PULSEMAIN_IP}:/var/lib/backuppc/.ssh/id_rsa /var/lib/backuppc/.ssh/
+	scp root@${PULSEMAIN_IP}:/var/lib/backuppc/.ssh/id_rsa* /var/lib/backuppc/.ssh/
 	
 	echo "### Configuring backuppc... Done"
 }
@@ -887,7 +890,7 @@ install_multisite_dependencies() {
 
 install_multisite() {
 	echo "Installing Pulse multisite..."
-	apt-get -y install pulse2-package-server pulse2-imaging-server uuid-runtime
+	apt-get -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver
 	if [ ! $? -eq 0 ]; then
 		echo "pulse install failed"
 		exit 1
