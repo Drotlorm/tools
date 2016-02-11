@@ -133,6 +133,31 @@ ask() {
     done
 }
 
+colored_echo() {
+    local color=$1;
+    if ! [[ $color =~ '^[0-9]$' ]] ; then
+       case $(echo $color | tr '[:upper:]' '[:lower:]') in
+        black) color=0 ;;
+        red) color=1 ;;
+        green) color=2 ;;
+        yellow) color=3 ;;
+        blue) color=4 ;;
+        magenta) color=5 ;;
+        cyan) color=6 ;;
+        white|*) color=7 ;; # white or invalid color
+       esac
+    fi
+    tput setaf $color;
+    echo "${@:2}";
+    tput sgr0;
+}
+
+exit_code() {
+    return=$?
+    if [ $return -ne 0 ];then coloredEcho red "### DEBUG Exit code" $return; fi
+}
+
+
 get_user_input() {
 	local TEXT=$1
 	while [[ ${RESULT} == '' ]]; do
@@ -177,7 +202,8 @@ get_user_options() {
 	ORGANISATION=$(get_user_input "Enter the organization name:")
 	
 	local NB_INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}' | wc -w`
-	echo "====================================================================="
+	colored_echo blue "### INFO Configuring all necessary repos..."
+	colored_echo blue "====================================================================="
 	if [ "x$NB_INTERFACES" != "x1" ]; then
 		INTERFACE=$(choose_network_interface "More than one network interface detected. Choose the interface having access to Pulse clients")
 	else
@@ -205,11 +231,11 @@ get_user_options() {
 	if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
 		MAIL_PASSWORD=$(get_user_input "Enter the monitoring mail password:")
 	fi
-	echo "====================================================================="
+	colored_echo blue "====================================================================="
 }
 
 check_network_config() {
-	echo "Checking network settings..."
+	colored_echo blue "### INFO Checking network settings..."
 	
 	DOMAIN=`hostname -d`
 	
@@ -225,7 +251,7 @@ check_network_config() {
 	NETMASK=`ifconfig ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2`
 	BCAST_ADDRESS=`ip address show ${INTERFACE} | grep 'inet .* brd ' | head -1 | sed -e 's/^.* brd \([0-9\.]*\) .*$/\1/'`
 	IP_REMOTE_SERVER=`ifconfig ${INTERFACE_TO_PULSE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
-	echo "====================================================================="
+	colored_echo blue "====================================================================="
 	echo "PULSE_REPO_URL		: ${PULSE_REPO_URL}"
 	echo "ROOT_PASSWORD		: ${ROOT_PASSWORD}"
 	echo "ORGANISATION		: ${ORGANISATION}"
@@ -242,14 +268,14 @@ check_network_config() {
 		echo "MAIN_ENTITY		: ${MAIN_ENTITY}"
 	fi
 	if [[ ${INSTALL_TYPE} == "m" ]]; then
-		echo "============================MULTISTE================================="
+		colored_echo blue "============================MULTISTE================================="
 		echo "PULSEMAIN_IP		: ${PULSEMAIN_IP}"
 		echo "INTERFACE_TO_PULSE	: ${INTERFACE_TO_PULSE}"
 		echo "IP_REMOTE_SERVER	: ${IP_REMOTE_SERVER}"
 		echo "MULTISITE_ENTITY	: ${MULTISITE_ENTITY}"
-		echo "====================================================================="
+		colored_echo blue "====================================================================="
 	fi
-	echo "### Checking network settings... Done"
+	colored_echo green "### Checking network settings... Done"
 	if [[ ${BATCH_MODE} != "y" ]]; then
 		local CORRECT=$(ask "Are the above settings correct?" y n)
 		if [[ ${CORRECT} == "n" ]]; then
@@ -263,7 +289,7 @@ check_network_config() {
 }
 
 configure_repos() {
-	echo "Configuring all necessary repos..."
+	colored_echo blue "### INFO Configuring all necessary repos..."
 	
 	case ${DEBIAN_VERSION} in 
 		"7")
@@ -280,22 +306,22 @@ configure_repos() {
 	
 	apt-get update
 	
-	echo "### Configuring all necessary repos... Done"
+	colored_echo blue "### INFO Configuring all necessary repos... Done"
 }
 
 configure_apt_settings() {
-	echo "Defining a few settings for apt..."
+	colored_echo green "### INFO Defining a few settings for apt..."
 	
 	echo 'APT::Install-Recommends "0";' > /etc/apt/apt.conf.d/99local-config
 	echo 'APT::Install-Suggests "0";' >> /etc/apt/apt.conf.d/99local-config
 	echo 'APT::Get::AllowUnauthenticated "true";' >> /etc/apt/apt.conf.d/99local-config
 	echo 'Acquire::PDiffs "false";' >> /etc/apt/apt.conf.d/99local-config
 	
-	echo "### Defining a few settings for apt... Done"
+	colored_echo blue "### INFO Defining a few settings for apt... Done"
 }
 
 install_system_tools() {
-	echo "Installing system tools..."
+	colored_echo green "### INFO Installing system tools..."
 	
 	# Install needed tools
 	apt-get -y install multitail vim rsync sshpass
@@ -326,11 +352,11 @@ install_system_tools() {
 		pip install ssl-opt-out
 	fi
 	
-	echo "### Installing system tools... Done"
+	colored_echo green "### INFO Installing system tools... Done"
 }
 
 configure_mysql_access() {
-	echo "Defining credentials to access mysql database..."
+	colored_echo blue "### INFO Defining credentials to access mysql database..."
 	
 	rm -f /root/.my.cnf
 	touch /root/.my.cnf
@@ -340,7 +366,7 @@ configure_mysql_access() {
 	echo -e "\n[mysqlcheck]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf
 	echo -e "\n[mysqldump]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf 
 	
-	echo "### Defining credentials to access mysql database... Done"
+	colored_echo green "### INFO Defining credentials to access mysql database... Done"
 }
 
 prepare_debian() {
@@ -352,7 +378,7 @@ prepare_debian() {
 }
 
 install_pulse2-setup_deps() {
-	echo "Installing tools needed by pulse2setup..."
+	colored_echo blue "### INFO Installing tools needed by pulse2setup..."
 	
 	# Install rng-tools used by pulse2-setup
 	apt-get -y install rng-tools
@@ -365,11 +391,11 @@ install_pulse2-setup_deps() {
 	# Install python network libraries used by pulse2-setup
 	apt-get -y install python-netifaces python-netaddr
 	
-	echo "### Installing tools needed by pulse2setup... Done"
+	colored_echo green "### INFO Installing tools needed by pulse2setup... Done"
 }
 
 install_apache() {
-	echo "Installing Apache2..."
+	colored_echo blue "### INFO Installing Apache2..."
 	
 	# Install apache2 and php used by Pulse
 	apt-get -y install apache2 php5
@@ -379,11 +405,11 @@ install_apache() {
 	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php5/apache2/php.ini
 	service apache2 restart
 	
-	echo "### Installing Apache2... Done"
+	colored_echo green "### INFO Installing Apache2... Done"
 }
 
 install_ldap_server() {
-	echo "Installing LDAP server..."
+	colored_echo blue "### INFO Installing LDAP server..."
 	
 	# Define a few settings for ldap-server
 	echo "slapd slapd/password1 password ${ROOT_PASSWORD}" | debconf-set-selections
@@ -392,15 +418,15 @@ install_ldap_server() {
 	# Install ldap-server
 	apt-get -y install ldap-server
 	if [ ! $? -eq 0 ]; then
-		echo "LDAP server install failed"
+		colored_echo red "### ER... LDAP server inst... failed"
 		exit 1
 	fi
 	
-	echo "### Installing LDAP server... Done"
+	colored_echo green "### INFO Installing LDAP server... Done"
 }
 
 install_mysql_server() {
-	echo "Installing MySQL server..."
+	colored_echo blue "### INFO Installing MySQL server..."
 	
 	# Define a few settings for mysql-server
 	echo "mysql-server-5.5 mysql-server/root_password password ${ROOT_PASSWORD}" | debconf-set-selections
@@ -409,15 +435,15 @@ install_mysql_server() {
 	# Install mysql-server
 	apt-get -y install mysql-server
 	if [ ! $? -eq 0 ]; then
-		echo "MySQL server install failed"
+		colored_echo red "### ER... MySQL server inst... failed"
 		exit 1
 	fi
 	
-	echo "### Installing MySQL server... Done"
+	colored_echo green "### INFO Installing MySQL server... Done"
 }
 
 install_backuppc() {
-	echo "Installing backuppc..."
+	colored_echo blue "### INFO Installing backuppc..."
 	
 	# Define a few settings for backuppc
 	useradd backuppc -md /var/lib/backuppc -s /bin/bash
@@ -430,7 +456,7 @@ install_backuppc() {
 	# Install backuppc
 	apt-get -y install backuppc libfile-rsyncp-perl
 	if [ ! $? -eq 0 ]; then
-		echo "backuppc install failed"
+		colored_echo red "### ER... backuppc inst... failed"
 		exit 1
 	fi
 
@@ -453,11 +479,11 @@ install_backuppc() {
 	service apache2 restart
 	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
 	
-	echo "### Installing backuppc... Done"
+	colored_echo green "### INFO Installing backuppc... Done"
 }
 
 install_glpi() {
-	echo "Installing GLPI..."
+	colored_echo blue "### INFO Installing GLPI..."
 	
 	# Define a few settings for glpi
 	echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
@@ -474,71 +500,71 @@ install_glpi() {
 	# Install glpi
 	apt-get -y install glpi fusioninventory-for-glpi glpi-plugin-webservices php5-xmlrpc
 	if [ ! $? -eq 0 ]; then
-		echo "GLPI install failed"
+		colored_echo red "### ER... GLPI inst... failed"
 		exit 1
 	fi
 	
-	echo "### Installing GLPI... Done"
+	colored_echo green "### INFO Installing GLPI... Done"
 }
 
 install_atftpd() {
-	echo "Installing atftp server..."
+	colored_echo blue "### INFO Installing atftp server..."
 	
 	apt-get -y install atftpd
 	if [ ! $? -eq 0 ]; then
-		echo "atftpd install failed"
+		colored_echo red "### ER... atftpd inst... failed"
 		exit 1
 	fi
 	
-	echo "### Installing atftp server... Done"
+	colored_echo green "### INFO Installing atftp server... Done"
 }
 
 install_isc_dhcp_server() {
-	echo "Installing DHCP server..."
+	colored_echo blue "### INFO Installing DHCP server..."
 	
 	apt-get -y install isc-dhcp-server
 	if [ ! $? -eq 0 ]; then
-		echo "isc-dhcp-server install failed"
+		colored_echo red "### ER... isc-dhcp-server inst... failed"
 		exit 1
 	fi
 	
-	echo "### Installing DHCP server... Done"
+	colored_echo green "### INFO Installing DHCP server... Done"
 }
 
 install_samba() {
-	echo "Installing Samba server..."
+	colored_echo blue "### INFO Installing Samba server..."
 	
 	apt-get -y install samba
 	if [ ! $? -eq 0 ]; then
-		echo "samba install failed"
+		colored_echo red "### ER... samba inst... failed"
 		exit 1
 	fi
 	
-	echo "### Installing Samba server... Done"
+	colored_echo green "### INFO Installing Samba server... Done"
 }
 
 install_nfs_kernel_server() {
-	echo "Installing NFS server..."
+	colored_echo blue "### INFO Installing NFS server..."
 	
 	apt-get -y install nfs-kernel-server
 	if [ ! $? -eq 0 ]; then
-		echo "nfs-kernel-server install failed"
+		colored_echo red "### ER... nfs-kernel-server inst... failed"
 		exit 1
 	fi
 	
-	echo "### Installing NFS server... Done"
+	colored_echo green "### INFO Installing NFS server... Done"
 }
 
 install_clonezilla() {
-	echo "Installing clonezilla..."
+	colored_echo blue "### INFO Installing clonezilla..."
 	
 	apt-get -y install clonezilla pulse2-davos-client
 	if [ ! $? -eq 0 ]; then
-		echo "clonezilla install failed"
+		colored_echo red "### ER... clonezilla inst... failed"
 		exit 1
 	fi
 	
-	echo "### Installing clonezilla... Done"
+	colored_echo green "### INFO Installing clonezilla... Done"
 }
 
 install_pulse_dependencies() {
@@ -556,32 +582,32 @@ install_pulse_dependencies() {
 }
 
 install_pulse() {
-	echo "Installing Pulse..."
+	colored_echo blue "### INFO Installing Pulse..."
 	
 	apt-get -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-report mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-dlp-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-report python-mmc-services python-mmc-support python-mmc-update
 	if [ ! $? -eq 0 ]; then
-		echo "pulse install failed"
+		colored_echo red "### ER... Pulse inst... failed"
 		exit 1
 	fi
 	
 	# Enable services
 	sed 's/no/yes/' -i /etc/default/pulse2-cm /etc/default/pulse2-inventory-server /etc/default/pulse2-launchers /etc/default/pulse2-package-server /etc/default/pulse2-scheduler /etc/default/mmc-agent
 	
-	echo "### Installing Pulse... Done"
+	colored_echo green "### INFO Installing Pulse... Done"
 }
 
 configure_atftpd() {
-	echo "Configuring atftp server..."
+	colored_echo blue "### INFO Configuring atftp server..."
 	
 	sed -i 's!^USE_INETD.*$!USE_INETD=false!' /etc/default/atftpd
 	sed -i 's!/srv/tftp!--daemon --port 69 /var/lib/pulse2/imaging!' /etc/default/atftpd
 	service atftpd restart
 	
-	echo "### Configuring atftp server... Done"
+	colored_echo green "### INFO Configuring atftp server... Done"
 }
 
 configure_backuppc() {
-	echo "Configuring backuppc..."
+	colored_echo blue "### INFO Configuring backuppc..."
 	
 	# Allow MMC to connect to backuppc server
 	grep -Gq Satisfy /etc/apache2/sites-available/backuppc.conf
@@ -603,11 +629,11 @@ configure_backuppc() {
 	# Copy main Pulse backuppc key to local backuppc user
 	scp root@${PULSEMAIN_IP}:/var/lib/backuppc/.ssh/id_rsa* /var/lib/backuppc/.ssh/
 	
-	echo "### Configuring backuppc... Done"
+	colored_echo green "### INFO Configuring backuppc... Done"
 }
 
 configure_isc_dhcp_server() {
-	echo "Configuring DHCP server..."
+	colored_echo blue "### INFO Configuring DHCP server..."
 	
 	local DHCP_RANGE_START=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.100", $1, $2, $3)}'`
 	local DHCP_RANGE_END=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.200", $1, $2, $3)}'`
@@ -627,20 +653,20 @@ configure_isc_dhcp_server() {
 	sed -i "s/##PULSE2_IP##/${IP_ADDRESS}/" /etc/dhcp/dhcpd.conf
 	service isc-dhcp-server restart
 	
-	echo "### Configuring DHCP server... Done"
+	colored_echo green "### INFO Configuring DHCP server... Done"
 }
 
 trick_clonezilla() {
-	echo "Configuring dummy DHCP server for Clonezilla..."
+	colored_echo blue "### INFO Configuring dummy DHCP server for Clonezilla..."
 	
 	touch /etc/dhcp/dhcpd.conf
 	echo "INTERFACES=${INTERFACE}" > /etc/default/isc-dhcp-server
 	
-	echo "### Configuring dummy DHCP server for Clonezilla... Done"
+	colored_echo green "### INFO Configuring dummy DHCP server for Clonezilla... Done"
 }
 
 configure_samba() {
-	echo "Configuring Samba server..."
+	colored_echo blue "### INFO Configuring Samba server..."
 	
 	# Create needed shares and setup root password
 	cp /usr/share/doc/pulse2/contrib/samba/smb.conf /etc/samba/
@@ -648,21 +674,21 @@ configure_samba() {
 	echo -ne "${DRIVERS_PASSWORD}\n${DRIVERS_PASSWORD}\n" | smbpasswd -a -s drivers
 	service samba restart
 	
-	echo "### Configuring Samba server... Done"
+	colored_echo green "### INFO Configuring Samba server... Done"
 }
 
 configure_nfs_kernel_server() {
-	echo "Configuring NFS server..."
+	colored_echo blue "### INFO Configuring NFS server..."
 	
 	# Create needed exports
 	cp /usr/share/doc/mmc/contrib/imaging-server/exports /etc/
 	service nfs-kernel-server restart
 	
-	echo "### Configuring NFS server... Done"
+	colored_echo green "### INFO Configuring NFS server... Done"
 }
 
 configure_clonezilla() {
-	echo "Configuring clonezilla..."
+	colored_echo blue "### INFO Configuring clonezilla..."
 	
 	# Create the folder needed for clonezilla
 	[ -L /home/partimag ] && rm -f /home/partimag
@@ -672,11 +698,11 @@ configure_clonezilla() {
 	# Define log parameter for udp-sender
 	sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log\"/" /etc/drbl/drbl-ocs.conf
 	
-	echo "### Configuring clonezilla... Done"
+	colored_echo green "### INFO Configuring clonezilla... Done"
 }
 
 configure_mmc() {
-	echo "Configuring mmc..."
+	colored_echo blue "### INFO Configuring mmc..."
 	
 	# Create /home/archives if needed
 	[ ! -d /home/archives ] &&  mkdir /home/archives
@@ -705,7 +731,7 @@ configure_mmc() {
 	sed 's/^disabled_panels.*/disabled_panels = shortcuts appstream/' -i /etc/mmc/plugins/dashboard.ini
 	sed 's/^disable = 0/disable = 1/' -i /etc/mmc/plugins/support.ini /etc/mmc/plugins/update.ini
 	service mmc-agent restart
-	echo "### Configuring mmc... Done"
+	colored_echo green "### INFO Configuring mmc... Done"
 }
 
 configure_pulse_dependencies() {
@@ -717,7 +743,7 @@ configure_pulse_dependencies() {
 }
 
 reset_glpi_db() {
-	echo "Resetting glpi database for Pulse..."
+	colored_echo blue "### INFO Resetting glpi database for Pulse..."
 	
 	# Reinstall GLPI database
 	echo "drop database glpi;" | mysql -uroot
@@ -730,7 +756,7 @@ reset_glpi_db() {
 	local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
 	echo "${GLPI_SUPERADMIN_ID}" | grep -q '^[0-9]\+$'
 	if [ ! $? -eq 0 ]; then
-		echo "Unable to find super-admin ID in GLPI database."
+		colored_echo red "### ER... Unable to find super-admin ID in GLPI databa... failed"
 		exit 1
 	fi
 	echo "delete from glpi_users where name not like 'glpi';" | mysql -uroot glpi
@@ -825,16 +851,16 @@ reset_glpi_db() {
 	#Clean GLPI installer file
 	rm -rf /usr/share/glpi/install/install.php	
 
-	echo "### Resetting glpi database for Pulse... Done"
+	colored_echo green "### INFO Resetting glpi database for Pulse... Done"
 }
 
 reset_pulse_db() {
-	echo "Resetting Pulse database..."
+	colored_echo blue "### INFO Resetting Pulse database..."
 	
 	# Run pulse2-setup
 	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=http://${IP_ADDRESS}/glpi --glpi-dbhost=localhost --glpi-dbname=glpi --glpi-dbuser=glpi --glpi-dbpasswd=${ROOT_PASSWORD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1 
 	if [ ! $? -eq 0 ]; then
-		echo "pulse2-setup failed"
+		colored_echo red "### ER... Pulse2-se... failed"
 		exit 1
 	fi
 	
@@ -853,7 +879,7 @@ reset_pulse_db() {
 	# Associate imaging server with root entity and generate default menu
 	echo "UPDATE ImagingServer SET associated=1 WHERE id=1;"| mysql imaging
 	if [ ! $? -eq 0 ]; then
-		echo "imaging server association failed"
+		colored_echo red "### ER... imaging server associat... failed"
 		exit 1
 	fi
 	
@@ -861,11 +887,11 @@ reset_pulse_db() {
 	#/var/lib/pulse2/clients/generate-agents
 	/var/lib/pulse2/clients/win32/generate-agent-pack.sh -i ${IP_ADDRESS} -t 
 	if [ ! $? -eq 0 ]; then
-		echo "pulse agents generation failed"
+		colored_echo red "### ER... pulse agents generat... failed"
 		exit 1
 	fi
 	
-	echo "### Resetting Pulse database... Done"
+	colored_echo green "### INFO Resetting Pulse database... Done"
 }
 
 configure_pulse() {
@@ -877,7 +903,7 @@ configure_pulse() {
 	# Initialise Pulse database
 	reset_pulse_db
 
-	echo "### Restart Pulse services..."
+	colored_echo blue "### INFO Restart Pulse services..."
 	for SERV in pulse2-cm pulse2-dlp-server pulse2-inventory-server pulse2-launchers pulse2-package-server pulse2-scheduler mmc-agent
 		do service $SERV restart
 	done
@@ -890,17 +916,17 @@ install_multisite_dependencies() {
 }
 
 install_multisite() {
-	echo "Installing Pulse multisite..."
+	colored_echo blue "### INFO Installing Pulse multisite..."
 	apt-get -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver
 	if [ ! $? -eq 0 ]; then
-		echo "pulse install failed"
+		colored_echo red "### ER... Pulse inst... failed"
 		exit 1
 	fi
 	
 	# Enable services
 	sed 's/no/yes/' -i /etc/default/pulse2-package-server 
 	
-	echo "### Installing Pulse multisite... Done"
+	colored_echo green "### INFO Installing Pulse multisite... Done"
 }
 
 configure_multisite_dependencies() {
@@ -910,7 +936,7 @@ configure_multisite_dependencies() {
 }
 
 configure_glpi_multisite() {
-	echo "Configuring GLPI for multisite..."
+	colored_echo blue "### INFO Configuring GLPI for multisite..."
 	
 	# Create the multisite entity in GLPI. Done on main pulse server
 	local MAX_ID=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
@@ -929,11 +955,11 @@ configure_glpi_multisite() {
 	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULECRITERIAS}
 	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULEACTIONS}
 	
-	echo "###Configuring GLPI for multisite... Done"
+	colored_echo green "### INFO Configuring GLPI for multisite... Done"
 }
 
 configure_package_server_multisite() {
-	echo "Configuring Package Server for multisite..."
+	colored_echo green "### INFO Configuring Package Server for multisite..."
 	
 	# Configure multi-site package server	
 	local PACKAGESERVER_UUID=`uuidgen`
@@ -970,7 +996,7 @@ configure_package_server_multisite() {
 	local SSH_COMMAND="echo \"UPDATE ImagingServer SET associated=1, fk_entity=${ID} WHERE packageserver_uuid='${PACKAGESERVER_UUID}';\"| mysql imaging"
 	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
 	
-	echo "###Configuring Package Server for multisite... Done"
+	colored_echo green "### INFO Configuring Package Server for multisite... Done"
 }
 
 configure_multisite() {
@@ -981,7 +1007,7 @@ configure_multisite() {
 	configure_glpi_multisite
 	configure_package_server_multisite
 	
-	echo "### Restart pulse2-package-server..."
+	colored_echo blue "### INFO Restart pulse2-package-server..."
 	service pulse2-package-server restart
 }
 
@@ -990,6 +1016,7 @@ sync_package_server() {
 
 	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
 	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -t ${PULSEMAIN_IP} sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${IP_REMOTE_SERVER}
+exit_code
 	local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
 	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "${SSH_COMMAND}"
 
