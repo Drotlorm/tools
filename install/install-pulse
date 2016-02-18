@@ -498,7 +498,7 @@ install_glpi() {
 	echo "glpi glpi/configuration note" | debconf-set-selections
 	
 	# Install glpi
-	apt-get -y install glpi fusioninventory-for-glpi glpi-plugin-webservices php5-xmlrpc
+	apt-get -y install glpi fusioninventory-for-glpi glpi-webservices php5-xmlrpc
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ER... GLPI inst... failed"
 		exit 1
