@@ -183,7 +183,7 @@ choose_network_interface() {
 
 get_multisite_entity() {
 	local EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
-	local LIST_ENTITIES=`ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
+	local LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
 	local RESULT=N
 	while [  ${RESULT} == "N" ]; do
 	read  -p "Enter the new entity name for the new site (current entitites: $LIST_ENTITIES): " 'MULTISITE_ENTITY'
@@ -621,10 +621,10 @@ configure_backuppc() {
 	sed "s/^host =.*/host = ${PULSEMAIN_IP}/" -i /etc/mmc/pulse2/uuid-resolver/uuid-resolver.ini
 	
 	# Add new site backuppc to Pulse database. Done on main Pulse server.
-	local ID=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
 	ID='UUID'${ID}
 	local SSH_COMMAND="echo \"INSERT INTO backup_servers (entity_uuid,backupserver_url) VALUES ('${ID}','http://${IP_REMOTE_SERVER}/backuppc/index.cgi');\"|mysql backuppc"
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND} 
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND} 
 	
 	# Copy main Pulse backuppc key to local backuppc user
 	scp root@${PULSEMAIN_IP}:/var/lib/backuppc/.ssh/id_rsa* /var/lib/backuppc/.ssh/
@@ -939,21 +939,21 @@ configure_glpi_multisite() {
 	colored_echo blue "### INFO Configuring GLPI for multisite..."
 	
 	# Create the multisite entity in GLPI. Done on main pulse server
-	local MAX_ID=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
+	local MAX_ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT MAX(id) FROM glpi_entities;' | mysql -s glpi")
 	local ID=$((MAX_ID+1))
-	local GLPI_MAIN_ENTITY=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
+	local GLPI_MAIN_ENTITY=$(ssh ${PULSEMAIN_IP} "echo 'SELECT completename FROM glpi_entities WHERE id='0';' | mysql -s glpi")
 	local SSH_COMMAND="echo \"INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES ('${ID}','0','2','${MULTISITE_ENTITY}','${GLPI_MAIN_ENTITY} > ${MULTISITE_ENTITY}');\" | mysql glpi"
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	
 	# Create fusioninventory rule to affect all computer from/to multi-site entity. Done on main pulse server
 	local SSH_COMMAND_UPDATE_RANKING="echo \"UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity';\" | mysql glpi"
     local SSH_COMMAND_GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT id FROM glpi_entities WHERE name='${MULTISITE_ENTITY}'));\" | mysql glpi"
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_UPDATE_RANKING}
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULES}
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULECRITERIAS}
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULEACTIONS}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_UPDATE_RANKING}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULES}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULECRITERIAS}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND_GLPI_RULEACTIONS}
 	
 	colored_echo green "### INFO Configuring GLPI for multisite... Done"
 }
@@ -978,23 +978,23 @@ configure_package_server_multisite() {
 	
 	# Enable the Pulse MMC to listen from everywhere. Done on main Pulse server
 	local SSH_COMMAND="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && service mmc-agent restart"
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	
 	# Insert multisite imaging server in Pulse imaging server database. Done on main Pulse server.
 	local SSH_COMMAND="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('${MULTISITE_ENTITY}', 'https://${IP_REMOTE_SERVER}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	
 	# Create multisite imaging entity in Pulse imaging entities database. Done on main Pulse server
-	local UUID_IMAGING=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer  ORDER BY id DESC LIMIT 1'|mysql -s")
+	local UUID_IMAGING=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer  ORDER BY id DESC LIMIT 1'|mysql -s")
 	UUID_IMAGING='UUID'${UUID_IMAGING}
-	local ID=$(ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
 	local UUID='UUID'$((ID+1))
 	local SSH_COMMAND="echo \"INSERT INTO imaging.Entity values ('','${MULTISITE_ENTITY}','${UUID}','','fr_FR');\" | mysql imaging"
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	# Register multisite package server in Pulse. Done on main Pulse server
 	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
 	local SSH_COMMAND="echo \"UPDATE ImagingServer SET associated=1, fk_entity=${ID} WHERE packageserver_uuid='${PACKAGESERVER_UUID}';\"| mysql imaging"
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	
 	colored_echo green "### INFO Configuring Package Server for multisite... Done"
 }
@@ -1015,14 +1015,15 @@ sync_package_server() {
 	# Enable package synchronisation between Pulse package server and multisite(s) packager server
 
 	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -t ${PULSEMAIN_IP} sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${IP_REMOTE_SERVER}
-exit_code
+	ssh -t ${PULSEMAIN_IP} "ssh-keyscan ${IP_REMOTE_SERVER} >> /root/.ssh/known_hosts"
+	ssh -t ${PULSEMAIN_IP} sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${IP_REMOTE_SERVER}
+
 	local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "${SSH_COMMAND}"
+	ssh ${PULSEMAIN_IP} "${SSH_COMMAND}"
 
 	# Test if the sync configuration is already configured on Pulse. Done on Pulse main server.
 	SSH_COMMAND='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
-	ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} ${SSH_COMMAND}
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
 	# Enable sync configuration or add ip address for multiple multisite package server. Done on Pulse main server.
 	if [ $? -ne 0 ]; then
@@ -1037,10 +1038,10 @@ package_mirror_command_options = -ar --delete \\
 package_mirror_level0_command_options = -d --delete \\
 package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa StrictHostKeyChecking=no Batchmode=yes PasswordAuthentication=no ServerAliveInterval=10 CheckHostIP=no ConnectTimeout=10 \\
 # END Sync' /etc/mmc/pulse2/package-server/package-server.ini.local"
-		ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "${SYNC_CONF}"
+		ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
 	else
 		SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_REMOTE_SERVER}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
-		ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no ${PULSEMAIN_IP} "${SYNC_CONF}"
+		ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
 	fi
 }
 
