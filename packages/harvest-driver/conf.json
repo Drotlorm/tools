@@ -16,7 +16,7 @@
 			"command": "
 # CHANGE THE FOLLOWING ADDRESS ACCORDING TO YOUR SERVER'S IP
 
-IP_PULSE=\"192.168.56.2\"
+IP_PULSE=\"@@PACKAGE_SERVER_PUBLIC_IP@@\"
 
 # =============================================================
 
