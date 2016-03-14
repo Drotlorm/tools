@@ -507,16 +507,16 @@ install_glpi() {
 	colored_echo green "### INFO Installing GLPI... Done"
 }
 
-install_atftpd() {
-	colored_echo blue "### INFO Installing atftp server..."
+install_tftp_server() {
+	colored_echo blue "### INFO Installing TFTP server..."
 	
-	apt-get -y install atftpd
+	apt-get -y install tftpd-hpa
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... atftpd inst... failed"
+		colored_echo red "### ER... TFTP server inst... failed"
 		exit 1
 	fi
 	
-	colored_echo green "### INFO Installing atftp server... Done"
+	colored_echo green "### INFO Installing TFTP server... Done"
 }
 
 install_isc_dhcp_server() {
@@ -596,14 +596,13 @@ install_pulse() {
 	colored_echo green "### INFO Installing Pulse... Done"
 }
 
-configure_atftpd() {
-	colored_echo blue "### INFO Configuring atftp server..."
+configure_tftp_server() {
+	colored_echo blue "### INFO Configuring TFTP server..."
 	
-	sed -i 's!^USE_INETD.*$!USE_INETD=false!' /etc/default/atftpd
-	sed -i 's!/srv/tftp!--daemon --port 69 /var/lib/pulse2/imaging!' /etc/default/atftpd
-	service atftpd restart
+	sed -i 's!^TFTP_DIRECTORY=.*$!TFTP_DIRECTORY="/var/lib/pulse2/imaging"!' /etc/default/tftpd-hpa
+	service tftpd-hpa restart
 	
-	colored_echo green "### INFO Configuring atftp server... Done"
+	colored_echo green "### INFO Configuring TFTP server... Done"
 }
 
 configure_backuppc() {
@@ -1072,8 +1071,8 @@ if [[ ${INSTALL_TYPE} == "p" ]]; then
 		trick_clonezilla
 	fi
 	if [[ ${MAIN_PXE} == "y" ]]; then
-		install_atftpd
-		configure_atftpd
+		install_tftp_server
+		configure_tftp_server
 	fi
 	configure_pulse_dependencies
 	configure_pulse
@@ -1095,7 +1094,7 @@ else
 		trick_clonezilla
 	fi
 	if [[ ${REMOTE_PXE} == "y" ]]; then
-		install_atftpd
-		configure_atftpd
+		install_tftp_server
+		configure_tftp_server
 	fi
 fi
