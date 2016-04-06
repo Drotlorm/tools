@@ -722,9 +722,8 @@ configure_backuppc() {
 	sed "s/^host =.*/host = ${PULSEMAIN_IP}/" -i /etc/mmc/pulse2/uuid-resolver/uuid-resolver.ini
 	
 	# Add new site backuppc to Pulse database. Done on main Pulse server.
-	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
-	ID='UUID'${ID}
-	local SSH_COMMAND="echo \"INSERT INTO backup_servers (entity_uuid,backupserver_url) VALUES ('${ID}','http://${IP_REMOTE_SERVER}/backuppc/index.cgi');\"|mysql backuppc"
+	local UUID_ENTITY=$(ssh ${PULSEMAIN_IP} "echo \"SELECT uuid FROM imaging.Entity WHERE name='${MULTISITE_ENTITY}' ORDER BY uuid DESC LIMIT 1\"|mysql -s")
+	local SSH_COMMAND="echo \"INSERT INTO backup_servers (entity_uuid,backupserver_url) VALUES ('${UUID_ENTITY}','http://${IP_REMOTE_SERVER}/backuppc/index.cgi');\"|mysql backuppc"
 	ssh ${PULSEMAIN_IP} ${SSH_COMMAND} 
 	
 	# Copy main Pulse backuppc key to local backuppc user
