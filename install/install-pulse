@@ -730,12 +730,22 @@ configure_backuppc() {
 	scp root@${PULSEMAIN_IP}:/var/lib/backuppc/.ssh/id_rsa* /var/lib/backuppc/.ssh/
 
 	# Copy mmc.ini and change mmc url
-	scp root@${PULSEMAIN_IP}:/etc/mmc/mmc.ini /etc/mmc/
-	sed -i "s/^url = https:\/\/127.0.0.1:7080$/url = https:\/\/${PULSEMAIN_IP}:7080/" /etc/mmc/mmc.ini
+        scp root@${PULSEMAIN_IP}:/etc/mmc/mmc.ini* /etc/mmc/
+        if grep -qe '^\[server_01\]$' /etc/mmc/mmc.ini.local &> /dev/null; then
+                sed -i "s/^url = https:\/\/127.0.0.1:7080$/url = https:\/\/${PULSEMAIN_IP}:7080/" /etc/mmc/mmc.ini
+        else
+                echo "[server_01]" > /etc/mmc/mmc.ini.local
+                echo "url = https://${PULSEMAIN_IP}:7080" >> /etc/mmc/mmc.ini.local
+        fi
 
-	# Copy base.ini, base.ini.local and ldap url
-	scp root@${PULSEMAIN_IP}:/etc/mmc/plugins/base.ini* /etc/mmc/plugins/
-	sed -i "s/^ldapurl = ldap:\/\/\([0-9]\{1,3\}\.\)\{3\}[0-9]\{1,3\}:389$/ldapurl = ldap:\/\/${PULSEMAIN_IP}:389/" /etc/mmc/plugins/base.ini
+        # Copy base.ini, base.ini.local and ldap url
+        scp root@${PULSEMAIN_IP}:/etc/mmc/plugins/base.ini* /etc/mmc/plugins/
+        if grep -qe "\[ldap\]" /etc/mmc/plugins/base.ini.local &> /dev/null; then
+                sed -i "s/^ldapurl = ldap:\/\/\([0-9]\{1,3\}\.\)\{3\}[0-9]\{1,3\}:389$/ldapurl = ldap:\/\/${PULSEMAIN_IP}:389/" /etc/mmc/plugins/base.ini
+        else
+                echo "[ldap]" >> /etc/mmc/plugins/base.ini.local
+                echo "ldapurl = ldap://${PULSEMAIN_IP}:389" >> /etc/mmc/plugins/base.ini.local
+        fi
 	
 	colored_echo green "### INFO Configuring backuppc... Done"
 }
