@@ -728,6 +728,14 @@ configure_backuppc() {
 	
 	# Copy main Pulse backuppc key to local backuppc user
 	scp root@${PULSEMAIN_IP}:/var/lib/backuppc/.ssh/id_rsa* /var/lib/backuppc/.ssh/
+
+	# Copy mmc.ini and change mmc url
+	scp root@${PULSEMAIN_IP}:/etc/mmc/mmc.ini /etc/mmc/
+	sed -i "s/^url = https:\/\/127.0.0.1:7080$/url = https:\/\/${PULSEMAIN_IP}:7080/" /etc/mmc/mmc.ini
+
+	# Copy base.ini, base.ini.local and ldap url
+	scp root@${PULSEMAIN_IP}:/etc/mmc/plugins/base.ini* /etc/mmc/plugins/
+	sed -i "s/^ldapurl = ldap:\/\/\([0-9]\{1,3\}\.\)\{3\}[0-9]\{1,3\}:389$/ldapurl = ldap:\/\/${PULSEMAIN_IP}:389/" /etc/mmc/plugins/base.ini
 	
 	colored_echo green "### INFO Configuring backuppc... Done"
 }
