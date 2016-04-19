@@ -289,6 +289,7 @@ get_user_options() {
         fi
 	else
 		INTERFACE_TO_PULSE=$(choose_network_interface "Choose the interface connected to Pulse server")
+		PULSEMAIN_IP=$(get_user_input "Enter main Pulse Server's IP address:")
 		REMOTE_BACKUPPC=$(ask "BACKUPPC will be enabled ?" y n)
 		REMOTE_DHCP=$(ask "DHCP will be enabled ?" y n)
 		REMOTE_PXE=$(ask "PXE will be enabled ?" y n)
