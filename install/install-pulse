@@ -659,7 +659,11 @@ install_nfs_kernel_server() {
 install_clonezilla() {
 	colored_echo blue "### INFO Installing clonezilla..."
 	
-	apt-get -y install clonezilla pulse2-davos-client
+	apt-get -y install clonezilla=3.12.8-drbl1 pulse2-davos-client
+	
+	# Hold clonezilla
+	echo "clonezilla hold"| dpkg --set-selections
+
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ER... clonezilla inst... failed"
 		exit 1
