@@ -281,6 +281,7 @@ get_user_options() {
 		if [[ ${MAIN_GLPI} == "n" ]]; then
 			get_glpi_server_details
 		fi
+		check_mysql_connection
 		CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
 		if [[ ${CREATE_ENTITY} == "y" ]]; then
         	MAIN_ENTITY=$(get_user_input "Main entity name for GLPI:")
@@ -297,6 +298,7 @@ get_user_options() {
 		if [[ ${GLPI_ON_PULSE} == "n" ]]; then
 			get_glpi_server_details
 		fi
+		check_mysql_connection
 		CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
 		if [[ ${CREATE_ENTITY} == "y" ]]; then
         	MULTISITE_ENTITY=$(get_multisite_entity)
@@ -315,6 +317,32 @@ get_user_options() {
 	fi
 	colored_echo blue "====================================================================="
 }
+
+check_mysql_connection() {
+        if [[ ${GLPI_DBHOST} == ${PULSEMAIN_IP} ]]; then
+                # Configure external listening for mysql
+                local SSH_COMMAND="sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/mysql/my.cnf"
+                ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+
+                # Create remote glpi user
+                local SSH_COMMAND="echo \"GRANT ALL PRIVILEGES ON ${GLPI_DBNAME}.* to '${GLPI_DBUSER}'@'${IP_REMOTE_SERVER}' identified by '${ROOT_PASSWORD}';\" |mysql -s"
+                ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+        else
+                local RESULT=N
+                while [[ ${RESULT} == "N" ]]; do
+                        ask "Do you have enabled mysql bind address for external connection?" y n
+                        ask "Do you have allow remote connection for mysql user ${GLPI_DBUSER} ?" y n
+                        echo "select 0;" | mysql -h${GLPI_DBHOST} -u${GLPI_DBUSER} -p${GLPI_DBPASSWD} ${GLPI_DBNAME} &> /dev/null
+                        if [[ $? == "0" ]]; then
+                                RESULT="Remote mysql connection succeded"
+                                echo $RESULT
+                        else
+                                echo "Check your settings"
+                        fi
+                done
+        fi
+}
+
 
 check_network_config() {
 	colored_echo blue "### INFO Checking network settings..."

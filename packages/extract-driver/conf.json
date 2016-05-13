@@ -1,0 +1,45 @@
+{
+	"commands":{
+		"postCommandSuccess":{
+			"command": "",
+			"name": ""
+		},
+		"installInit": {
+			"command": "",
+			"name": ""
+		},
+		"postCommandFailure":{
+		"command": "",
+		"name": ""
+		},
+
+
+
+		"command": {
+			{"command": "# CHANGE THE FOLLOWING ADDRESS ACCORDING TO YOUR SERVER'S IP\n\nIP_PULSE=\"@@PACKAGE_SERVER_PUBLIC_IP@@\"\n\n# =============================================================\n\n# Mount network share for copying the drivers\nnet use \\* \\\\\\\\${IP_PULSE}\\\\drivers /user:drivers s3cr3t\nDRIVE_LETTER=`net use | grep drivers | grep OK | awk '{print $2}' | awk -F ':' '{print $1}'`\nWINDOWS_FOLDER=`wmic os get Caption | sed -n '2p' | awk '{print $2 $3}'`\nDRIVERS_BASE=\"/cygdrive/${DRIVE_LETTER,,}/${WINDOWS_FOLDER}\"\n\n# Generate the folder structure\nMANUF=`wmic computersystem get manufacturer | sed -n '2p' | sed 's/[ \\t]*$//' | sed 's/ /_/'`\nMODEL=`wmic computersystem get model | sed -n '2p' | sed 's/[ \\t]*$//' | sed 's/ /_/'`\nif [ ! -a \"${DRIVERS_BASE}/${MANUF}/${MODEL}\" ]; then\n\tmkdir -p \"${DRIVERS_BASE}/${MANUF}/${MODEL}\"\nfi\n\npath=`pwd`\nmkdir Drivers\nwinpath=`cygpath -ws \"$path\"'\\'Drivers`\n\n# Extract the drivers\n./ddc.exe b /target:$winpath\ncp -an Drivers/* \"${DRIVERS_BASE}/${MANUF}/${MODEL}\"\ntree Drivers/\n\n# Finally unmount the network share\nnet use /DELETE ${DRIVE_LETTER}:\n",
+			"name": ""
+		},
+
+		"preCommand": {
+			"command": "",
+			"name": ""
+		}
+	},
+	"description": "Copy the device drivers to Pulse server",
+	"entity_id": "0",
+	"sub_packages": [],
+	"reboot": 0,
+	"version": "1.0",
+	"inventory": {
+		"associateinventory": "0",
+		"licenses": "",
+		"queries": {
+			"Qversion": "",
+			"Qvendor": "",
+			"boolcnd": "",
+			"Qsoftware": ""
+		}
+	},
+	"id": "f1101a5e-d96f-11e5-96bb-080027aa358f",
+	"name": "Extract drivers"
+}
