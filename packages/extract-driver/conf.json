@@ -25,7 +25,7 @@
 			"name": ""
 		}
 	},
-	"description": "Copy the device drivers to Pulse server",
+	"description": "Extract device drivers to Pulse server share (please edit to configure)",
 	"entity_id": "0",
 	"sub_packages": [],
 	"reboot": 0,
