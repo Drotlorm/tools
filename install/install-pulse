@@ -1019,11 +1019,7 @@ reset_pulse_db() {
 	echo "[rsync]" >> /etc/mmc/pulse2/launchers/launchers.ini.local
 	echo "rsync_path = /usr/bin/rsync" >> /etc/mmc/pulse2/launchers/launchers.ini.local
 	echo "resume = True" >> /etc/mmc/pulse2/launchers/launchers.ini.local
-
-	# Configure Davos
-	echo "UPDATE BootService SET value = 'kernel ##PULSE2_NETDEVICE##/##PULSE2_DISKLESS_DIR##/##PULSE2_DISKLESS_KERNEL## ##PULSE2_KERNEL_OPTS## ##PULSE2_REVO_RAW## ##PULSE2_DISKLESS_OPTS## davos_action=SAVE_IMAGE\ninitrd ##PULSE2_NETDEVICE##/##PULSE2_DISKLESS_DIR##/##PULSE2_DISKLESS_INITRD##' WHERE id=3;"| mysql imaging
-	echo "UPDATE BootService SET value = 'kernel ##PULSE2_NETDEVICE##/##PULSE2_DISKLESS_DIR##/##PULSE2_DISKLESS_KERNEL## ##PULSE2_KERNEL_OPTS## ##PULSE2_DISKLESS_OPTS## davos_debug=1\ninitrd ##PULSE2_NETDEVICE##/##PULSE2_DISKLESS_DIR##/##PULSE2_DISKLESS_INITRD##' WHERE id = 4;" | mysql imaging
-	
+		
 	# Restart all services
 	for SERV in `ls /etc/init.d/mmc-agent; ls /etc/init.d/pulse2-*`; do $SERV restart; done
 	
