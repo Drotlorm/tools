@@ -735,6 +735,7 @@ configure_tftp_server() {
 	colored_echo blue "### INFO Configuring TFTP server..."
 	
 	sed -i 's!^TFTP_DIRECTORY=.*$!TFTP_DIRECTORY="/var/lib/pulse2/imaging"!' /etc/default/tftpd-hpa
+	sed -i 's!^TFTP_OPTIONS=.*$!TFTP_OPTIONS="--secure --create"!' /etc/default/tftpd-hpa
 	service tftpd-hpa restart
 	
 	colored_echo green "### INFO Configuring TFTP server... Done"
