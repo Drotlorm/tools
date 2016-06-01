@@ -880,7 +880,7 @@ configure_pxelinux() {
 
 	# Create the utilities.menu
 	cp /usr/share/doc/pulse2-common/contrib/imaging/template/utilities.menu.in /var/lib/pulse2/imaging/tools/utilities.menu
-	sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}" /var/lib/pulse2/imaging/tools/utilities.menu
+	sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu
 
 	colored_echo green "### INFO Configuring pxelinux... Done"
 }
