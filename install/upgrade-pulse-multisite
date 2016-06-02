@@ -1,0 +1,40 @@
+#!/bin/bash
+
+colored_echo() {
+    local color=$1;
+    if ! [[ $color =~ '^[0-9]$' ]] ; then
+       case $(echo $color | tr '[:upper:]' '[:lower:]') in
+        black) color=0 ;;
+        red) color=1 ;;
+        green) color=2 ;;
+        yellow) color=3 ;;
+        blue) color=4 ;;
+        magenta) color=5 ;;
+        cyan) color=6 ;;
+        white|*) color=7 ;; # white or invalid color
+       esac
+    fi
+    tput setaf $color;
+    echo "${@:2}";
+    tput sgr0;
+}
+
+# List all Pulse server 
+pserver=(`cat /etc/mmc/pulse2/package-server/package-server.ini.local | grep package_mirror_target | sed 's/package_mirror_target = //'`)
+for m in "${pserver[@]}"
+do
+        colored_echo blue           "######################### Update server : ${m} ################"
+        ssh -t ${m} "apt-get -qq update"  2> /dev/null
+        ssh -t ${m} "TERM=$TERM DEBIAN_FRONTEND=dialog apt-get -qq -y dist-upgrade"  2> /dev/null
+        if [[ $? == 0 ]]; then
+                colored_echo yellow "######################### Need attention ###############################"
+                ssh -t ${m} "find /etc/ -name '*.dpkg-dist' -exec ls {} \;"  2> /dev/null
+                colored_echo green  "######################### Update serve Done ############################"
+                echo ""
+                echo ""
+        else
+                colored_echo red    "######################### Update server : ${m} Failed ##################"
+                ssh -t ${m} "find /etc/ -name '*.dpkg-dist' -exec ls {} \;"  2> /dev/null
+        fi
+done
+
