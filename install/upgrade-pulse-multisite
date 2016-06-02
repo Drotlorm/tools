@@ -29,7 +29,7 @@ do
         if [[ $? == 0 ]]; then
                 colored_echo yellow "######################### Need attention ###############################"
                 ssh -t ${m} "find /etc/ -name '*.dpkg-dist' -exec ls {} \;"  2> /dev/null
-                colored_echo green  "######################### Update serve Done ############################"
+                colored_echo green  "######################### Update server Done ###########################"
                 echo ""
                 echo ""
         else
