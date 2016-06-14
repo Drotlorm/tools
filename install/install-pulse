@@ -547,7 +547,7 @@ install_ldap_server() {
 	# Install ldap-server
 	apt-get -y install ldap-server
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... LDAP server inst... failed"
+		colored_echo red "### ERROR... LDAP server install... failed"
 		exit 1
 	fi
 
@@ -564,7 +564,7 @@ install_mysql_server() {
 	# Install mysql-server
 	apt-get -y install mysql-server
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... MySQL server inst... failed"
+		colored_echo red "### ERROR... MySQL server install... failed"
 		exit 1
 	fi
 
@@ -585,7 +585,7 @@ install_backuppc() {
 	# Install backuppc
 	apt-get -y install backuppc libfile-rsyncp-perl
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... backuppc inst... failed"
+		colored_echo red "### ERROR... backuppc install... failed"
 		exit 1
 	fi
 
@@ -629,7 +629,7 @@ install_glpi() {
 	# Install glpi
 	apt-get -y install glpi fusioninventory-for-glpi glpi-webservices php5-xmlrpc
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... GLPI inst... failed"
+		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
 	fi
 
@@ -639,9 +639,9 @@ install_glpi() {
 install_tftp_server() {
 	colored_echo blue "### INFO Installing TFTP server..."
 
-	apt-get -y install tftpd-hpa
+	apt-get -y install tftpd-hpa pulse2-register-pxe pulse2-utilities
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... TFTP server inst... failed"
+		colored_echo red "### ERROR... TFTP server install... failed"
 		exit 1
 	fi
 
@@ -653,7 +653,7 @@ install_isc_dhcp_server() {
 
 	apt-get -y install isc-dhcp-server
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... isc-dhcp-server inst... failed"
+		colored_echo red "### ERROR... isc-dhcp-server install... failed"
 		exit 1
 	fi
 
@@ -665,7 +665,7 @@ install_samba() {
 
 	apt-get -y install samba
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... samba inst... failed"
+		colored_echo red "### ERROR... samba install... failed"
 		exit 1
 	fi
 
@@ -677,7 +677,7 @@ install_nfs_kernel_server() {
 
 	apt-get -y install nfs-kernel-server
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... nfs-kernel-server inst... failed"
+		colored_echo red "### ERROR... nfs-kernel-server install... failed"
 		exit 1
 	fi
 
@@ -690,7 +690,7 @@ install_pxelinux() {
 	apt-get -y install pxelinux syslinux-common
 
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... pxelinux inst... failed"
+		colored_echo red "### ERRORROR... pxelinux install... failed"
 		exit 1
 	fi
 
@@ -706,7 +706,7 @@ install_clonezilla() {
 	echo "clonezilla hold"| dpkg --set-selections
 
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... clonezilla inst... failed"
+		colored_echo red "### ERROR... clonezilla install... failed"
 		exit 1
 	fi
 
@@ -735,7 +735,7 @@ install_pulse() {
 
 	apt-get -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-report mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-dlp-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-report python-mmc-services python-mmc-support python-mmc-update
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... Pulse inst... failed"
+		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
 	fi
 
@@ -861,7 +861,7 @@ configure_pxelinux() {
 	  mkdir /var/lib/pulse2/imaging/bootloader/
 	fi
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... Configuring pxelinux... failed"
+		colored_echo red "### ERROR... Configuring pxelinux... failed"
 		exit 1
 	fi
 	cp /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/
@@ -955,7 +955,7 @@ reset_glpi_db() {
 	local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
 	echo "${GLPI_SUPERADMIN_ID}" | grep -q '^[0-9]\+$'
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... Unable to find super-admin ID in GLPI databa... failed"
+		colored_echo red "### ERROR... Unable to find super-admin ID in GLPI databa... failed"
 		exit 1
 	fi
 	echo "delete from glpi_users where name not like 'glpi';" | mysql -uroot glpi
@@ -1059,7 +1059,7 @@ reset_pulse_db() {
 	# Run pulse2-setup
 	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=${GLPI_URL} --glpi-dbhost=${GLPI_DBHOST} --glpi-dbname=${GLPI_DBNAME} --glpi-dbuser=${GLPI_DBUSER} --glpi-dbpasswd=${GLPI_DBPASSWD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... Pulse2-se... failed"
+		colored_echo red "### ERROR... Pulse2-se... failed"
 		exit 1
 	fi
 
@@ -1074,7 +1074,7 @@ reset_pulse_db() {
 	# Associate imaging server with root entity and generate default menu
 	echo "UPDATE ImagingServer SET associated=1 WHERE id=1;"| mysql imaging
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... imaging server associat... failed"
+		colored_echo red "### ERROR... imaging server associat... failed"
 		exit 1
 	fi
 
@@ -1082,7 +1082,7 @@ reset_pulse_db() {
 	#/var/lib/pulse2/clients/generate-agents
 	/var/lib/pulse2/clients/win32/generate-agent-pack.sh -i ${IP_ADDRESS} -t
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... pulse agents generat... failed"
+		colored_echo red "### ERROR... pulse agents generat... failed"
 		exit 1
 	fi
 
@@ -1107,7 +1107,7 @@ install_multisite() {
 	colored_echo blue "### INFO Installing Pulse multisite..."
 	apt-get -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ER... Pulse inst... failed"
+		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
 	fi
 
