@@ -1185,6 +1185,15 @@ configure_package_server_multisite() {
 	local SSH_COMMAND="echo \"UPDATE ImagingServer SET associated=1, fk_entity=${ID} WHERE packageserver_uuid='${PACKAGESERVER_UUID}';\"| mysql imaging"
 	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
+        # Configure algo multi-site
+        SSH_COMMAND='grep -Gq "^mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local'
+        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+
+        if [ $? -ne 0 ]; then
+                local SSH_COMMAND='sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local; service pulse2-package-server restart'
+                ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+        fi
+
 	colored_echo green "### INFO Configuring Package Server for multisite... Done"
 }
 
