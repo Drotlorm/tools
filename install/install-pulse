@@ -325,7 +325,7 @@ check_mysql_connection() {
                 ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
                 # Create remote glpi user
-                local SSH_COMMAND="echo \"GRANT ALL PRIVILEGES ON ${GLPI_DBNAME}.* to '${GLPI_DBUSER}'@'${IP_REMOTE_SERVER}' identified by '${ROOT_PASSWORD}';\" |mysql -s"
+		local SSH_COMMAND="echo \"GRANT ALL PRIVILEGES ON ${GLPI_DBNAME}.* to '${GLPI_DBUSER}'@'${IP_REMOTE_SERVER}' identified by '${ROOT_PASSWORD}';\" |mysql -s"
                 ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
         else
                 local RESULT=N
@@ -1201,6 +1201,8 @@ configure_multisite() {
 	# Grant ssh without password from Pulse multisite to Pulse
 	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
 	sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${PULSEMAIN_IP}
+
+	check_mysql_connection
 
 	if [[ ${CREATE_ENTITY} == "y" ]]; then
 		configure_glpi_multisite
