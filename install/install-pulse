@@ -1046,7 +1046,7 @@ reset_glpi_db() {
 	echo "UPDATE glpi_plugins SET state='1' WHERE id='${webservicesId}';" | mysql glpi
 
 	# Allow only Pulse to use the GLPI Plugin Webservices
-	IFS=. read -r a b c d <<< "${PULSEMAIN_IP}"
+	IFS=. read -r a b c d <<< "${IP_ADDRESS}"
 	IP_DECIMAL=`printf '%s\n' "$((a * 256 ** 3 + b * 256 ** 2 + c * 256 +d))"`
 	echo "UPDATE glpi_plugin_webservices_clients SET name='Pulse Webservices', ip_start='${IP_DECIMAL}', ip_end='${IP_DECIMAL}', comment='Allow only Pulse IP' WHERE id='1';" | mysql -s glpi
 
