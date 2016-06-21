@@ -327,6 +327,9 @@ check_mysql_connection() {
                 # Create remote glpi user
 		local SSH_COMMAND="echo \"GRANT ALL PRIVILEGES ON ${GLPI_DBNAME}.* to '${GLPI_DBUSER}'@'${IP_REMOTE_SERVER}' identified by '${ROOT_PASSWORD}';\" |mysql -s"
                 ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+		
+		local SSH_COMMAND="service mysql restart"
+		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
         else
                 local RESULT=N
                 while [[ ${RESULT} == "N" ]]; do
