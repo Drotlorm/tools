@@ -452,7 +452,8 @@ install_system_tools() {
 
 	# Configure mail monitoring
 	 if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
-		apt-get -y install ssmtp xfs-defrag
+		urpmi --auto ssmtp 
+		#xfs-defrag
 
 		echo "mailhub=${SMTP}" > /etc/ssmtp/ssmtp.conf
 		echo "root=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
@@ -502,15 +503,15 @@ install_pulse2-setup_deps() {
 	colored_echo blue "### INFO Installing tools needed by pulse2setup..."
 
 	# Install rng-tools used by pulse2-setup
-	apt-get -y install rng-tools
+	urpmi --auto rng-tools
 	grep ^HRNGDEVICE /etc/default/rng-tools
 	if [ ! $? -eq 0 ]; then
 		echo "HRNGDEVICE=/dev/urandom" >> /etc/default/rng-tools
 	fi
-	service rng-tools restart
+	service rngd restart
 
 	# Install python network libraries used by pulse2-setup
-	apt-get -y install python-netifaces python-netaddr
+	urpmi --auto python-netifaces python-netaddr
 
 	colored_echo green "### INFO Installing tools needed by pulse2setup... Done"
 }
@@ -519,7 +520,7 @@ install_apache() {
 	colored_echo blue "### INFO Installing Apache2..."
 
 	# Install apache2 and php used by Pulse
-	apt-get -y install apache2 php5
+	urpmi --auto apache php-cgi
 	# Configure php to allow upload of files of 200M max
 	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php5/apache2/php.ini
 	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php5/apache2/php.ini
@@ -537,7 +538,7 @@ install_ldap_server() {
 	echo "slapd slapd/password2 password ${ROOT_PASSWORD}" | debconf-set-selections
 
 	# Install ldap-server
-	apt-get -y install ldap-server
+	urpmi --auto openldap-servers
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... LDAP server install... failed"
 		exit 1
@@ -554,7 +555,7 @@ install_mysql_server() {
 	echo "mysql-server-5.5 mysql-server/root_password_again password ${ROOT_PASSWORD}" | debconf-set-selections
 
 	# Install mysql-server
-	apt-get -y install mysql-server
+	urpmi --auto mariadb
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... MySQL server install... failed"
 		exit 1
@@ -575,7 +576,7 @@ install_backuppc() {
 	echo "backuppc  backuppc/reconfigure-webserver  multiselect" | debconf-set-selections
 
 	# Install backuppc
-	apt-get -y install backuppc libfile-rsyncp-perl
+	urpmi --auto  backuppc perl-File-RsyncP
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... backuppc install... failed"
 		exit 1
@@ -619,7 +620,8 @@ install_glpi() {
 	echo "glpi glpi/configuration note" | debconf-set-selections
 
 	# Install glpi
-	apt-get -y install glpi fusioninventory-for-glpi glpi-webservices php5-xmlrpc
+	urpmi --auto glpi php-xmlrpc
+	# fusioninventory-for-glpi glpi-webservices
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
