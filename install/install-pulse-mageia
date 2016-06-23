@@ -421,19 +421,11 @@ configure_repos() {
 	colored_echo blue "### INFO Configuring all necessary repos..."
 
 	case ${MAGEIA_VERSION} in
-		"7")
-			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
-			echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
-			wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
-			;;
-		"8")
-			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
-			;;
 		*)
 			;;
 	esac
 
-	apt-get update
+	urpmi.update -a
 
 	colored_echo blue "### INFO Configuring all necessary repos... Done"
 }
@@ -453,7 +445,7 @@ install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	apt-get -y install multitail vim rsync sshpass mysql-client
+	urpmi --auto  install multitail vim rsync sshpass mysql-client
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -477,7 +469,7 @@ install_system_tools() {
 	fi
 
 	if [[ ${MAGEIA_VERSION} == "6" ]]; then
-		urpmi python-pip
+		urpmi --auto python-pip
 		pip install ssl-opt-out
 	fi
 
@@ -501,8 +493,8 @@ configure_mysql_access() {
 prepare_debian() {
 	# Configure debian OS for Pulse
 	ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
-	configure_repos
-	configure_apt_settings
+	#configure_repos
+	#configure_apt_settings
 	install_system_tools
 }
 
