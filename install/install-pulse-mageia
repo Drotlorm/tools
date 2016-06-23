@@ -355,7 +355,7 @@ check_network_config() {
 		exit 1
 	fi
 
-	DEBIAN_VERSION=`cat /etc/*-release|grep VERSION_ID |cut -d '"' -f2`
+	MAGEIA_VERSION=`cat /etc/*-release|grep VERSION_ID |cut -d '=' -f2`
 	IP_ADDRESS=`ifconfig ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
 	NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
 	NETMASK=`ifconfig ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2`
@@ -379,7 +379,7 @@ check_network_config() {
 	echo "PULSE_REPO_URL		: ${PULSE_REPO_URL}"
 	echo "ROOT_PASSWORD		: ${ROOT_PASSWORD}"
 	echo "ORGANISATION		: ${ORGANISATION}"
-	echo "DEBIAN_VERSION		: ${DEBIAN_VERSION}"
+	echo "MAGEIA_VERSION		: ${MAGEIA_VERSION}"
 	echo "DOMAIN			: ${DOMAIN}"
 	echo "INTERFACE		: ${INTERFACE}"
 	echo "IP_ADDRESS		: ${IP_ADDRESS}"
@@ -420,7 +420,7 @@ check_network_config() {
 configure_repos() {
 	colored_echo blue "### INFO Configuring all necessary repos..."
 
-	case ${DEBIAN_VERSION} in
+	case ${MAGEIA_VERSION} in
 		"7")
 			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
 			echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
@@ -476,8 +476,8 @@ install_system_tools() {
 		sed "s/mail -s/mail -a \"From: ${ORGANISATION} <${ORGANISATION}@siveo.net>\" -s /g" -i /usr/sbin/xfs-defrag
 	fi
 
-	if [[ ${DEBIAN_VERSION} == "8" ]]; then
-		apt-get -y install python-pip
+	if [[ ${MAGEIA_VERSION} == "6" ]]; then
+		urpmi python-pip
 		pip install ssl-opt-out
 	fi
 
