@@ -666,7 +666,7 @@ install_nfs_kernel_server() {
 install_pxelinux() {
 	colored_echo blue "### INFO Installing pxelinux..."
 
-	urpmi --auto pxelinux syslinux-common
+	urpmi --auto pxelinux syslinux
 
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERRORROR... pxelinux install... failed"
