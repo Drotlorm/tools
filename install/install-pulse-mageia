@@ -681,9 +681,6 @@ install_clonezilla() {
 
 	urpmi --auto clonezilla pulse2-davos-client
 
-	# Hold clonezilla
-	echo "clonezilla hold"| dpkg --set-selections
-
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... clonezilla install... failed"
 		exit 1
