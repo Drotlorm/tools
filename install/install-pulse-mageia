@@ -510,9 +510,9 @@ install_apache() {
 	# Install apache2 and php used by Pulse
 	urpmi --auto apache php-cgi
 	# Configure php to allow upload of files of 200M max
-	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php5/apache2/php.ini
-	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php5/apache2/php.ini
-	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php5/apache2/php.ini
+	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php.ini
+	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php.ini
+	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php.ini
 	service httpd restart
 
 	colored_echo green "### INFO Installing Apache2... Done"
