@@ -430,22 +430,11 @@ configure_repos() {
 	colored_echo blue "### INFO Configuring all necessary repos... Done"
 }
 
-configure_apt_settings() {
-	colored_echo green "### INFO Defining a few settings for apt..."
-
-	echo 'APT::Install-Recommends "0";' > /etc/apt/apt.conf.d/99local-config
-	echo 'APT::Install-Suggests "0";' >> /etc/apt/apt.conf.d/99local-config
-	echo 'APT::Get::AllowUnauthenticated "true";' >> /etc/apt/apt.conf.d/99local-config
-	echo 'Acquire::PDiffs "false";' >> /etc/apt/apt.conf.d/99local-config
-
-	colored_echo blue "### INFO Defining a few settings for apt... Done"
-}
-
 install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	urpmi --auto multitail vim rsync sshpass mysql-client
+	urpmi --auto multitail vim rsync sshpass mysql-client vim-common
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -495,7 +484,6 @@ prepare_debian() {
 	# Configure debian OS for Pulse
 	ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
 	#configure_repos
-	#configure_apt_settings
 	install_system_tools
 }
 
