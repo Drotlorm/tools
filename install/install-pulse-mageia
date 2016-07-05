@@ -654,7 +654,7 @@ install_samba() {
 install_nfs_kernel_server() {
 	colored_echo blue "### INFO Installing NFS server..."
 
-	urpmi --auto nfs-kernel-server
+	urpmi --auto nfs-utils
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... nfs-kernel-server install... failed"
 		exit 1
