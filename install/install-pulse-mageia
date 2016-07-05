@@ -525,7 +525,7 @@ install_apache() {
 	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php5/apache2/php.ini
 	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php5/apache2/php.ini
 	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php5/apache2/php.ini
-	service apache2 restart
+	service httpd restart
 
 	colored_echo green "### INFO Installing Apache2... Done"
 }
@@ -755,7 +755,7 @@ configure_backuppc() {
 		sed "$ i\        Allow from ${PULSEMAIN_IP}" -i /etc/apache2/sites-available/backuppc.conf
 		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
 	fi
-	service apache2 restart
+	service httpd restart
 
 	# Configure pulse2-uuid-resolver to acces mmc
 	sed "s/^host =.*/host = ${PULSEMAIN_IP}/" -i /etc/mmc/pulse2/uuid-resolver/uuid-resolver.ini
