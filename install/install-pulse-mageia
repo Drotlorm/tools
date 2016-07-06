@@ -430,22 +430,11 @@ configure_repos() {
 	colored_echo blue "### INFO Configuring all necessary repos... Done"
 }
 
-configure_apt_settings() {
-	colored_echo green "### INFO Defining a few settings for apt..."
-
-	echo 'APT::Install-Recommends "0";' > /etc/apt/apt.conf.d/99local-config
-	echo 'APT::Install-Suggests "0";' >> /etc/apt/apt.conf.d/99local-config
-	echo 'APT::Get::AllowUnauthenticated "true";' >> /etc/apt/apt.conf.d/99local-config
-	echo 'Acquire::PDiffs "false";' >> /etc/apt/apt.conf.d/99local-config
-
-	colored_echo blue "### INFO Defining a few settings for apt... Done"
-}
-
 install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	urpmi --auto  install multitail vim rsync sshpass mysql-client
+	urpmi --auto multitail vim rsync sshpass mysql-client vim-common
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -491,11 +480,10 @@ configure_mysql_access() {
 	colored_echo green "### INFO Defining credentials to access mysql database... Done"
 }
 
-prepare_debian() {
+prepare_mageia() {
 	# Configure debian OS for Pulse
 	ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
 	#configure_repos
-	#configure_apt_settings
 	install_system_tools
 }
 
@@ -522,10 +510,10 @@ install_apache() {
 	# Install apache2 and php used by Pulse
 	urpmi --auto apache php-cgi
 	# Configure php to allow upload of files of 200M max
-	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php5/apache2/php.ini
-	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php5/apache2/php.ini
-	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php5/apache2/php.ini
-	service apache2 restart
+	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php.ini
+	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php.ini
+	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php.ini
+	service httpd restart
 
 	colored_echo green "### INFO Installing Apache2... Done"
 }
@@ -569,12 +557,7 @@ install_backuppc() {
 
 	# Define a few settings for backuppc
 	useradd backuppc -md /var/lib/backuppc -s /bin/bash
-	echo "backuppc  backuppc/reconfigure-webserver  multiselect     apache2" | debconf-set-selections
-	echo "backuppc  backuppc/tmppass password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "backuppc  backuppc/configuration-note     note" | debconf-set-selections
-	echo "backuppc  backuppc/restart-webserver      boolean true" | debconf-set-selections
-	echo "backuppc  backuppc/reconfigure-webserver  multiselect" | debconf-set-selections
-
+	
 	# Install backuppc
 	urpmi --auto  backuppc perl-File-RsyncP
 	if [ ! $? -eq 0 ]; then
@@ -586,6 +569,7 @@ install_backuppc() {
 	cp -rf /root/.ssh /var/lib/backuppc/
 	chown -R backuppc:backuppc /var/lib/backuppc/
 
+	if false; then
 	# Configure Apache for backuppc
 	if [ ! -e /etc/apache2/sites-available/backuppc.conf ]; then
 		ln -s /etc/backuppc/apache.conf /etc/apache2/sites-available/backuppc.conf
@@ -597,8 +581,8 @@ install_backuppc() {
 		sed "$ i\        Allow from 127.0.0.1" -i /etc/apache2/sites-available/backuppc.conf
 		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
 	fi
-
-	service apache2 restart
+	fi
+	service httpd restart
 	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
 
 	colored_echo green "### INFO Installing backuppc... Done"
@@ -607,6 +591,7 @@ install_backuppc() {
 install_glpi() {
 	colored_echo blue "### INFO Installing GLPI..."
 
+	if false; then
 	# Define a few settings for glpi
 	echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
 	echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
@@ -618,7 +603,7 @@ install_glpi() {
 	echo "glpi glpi/dbconfig-install boolean true" | debconf-set-selections
 	echo "glpi glpi/webserver multiselect apache, apache-ssl, apache-perl, apache2" | debconf-set-selections
 	echo "glpi glpi/configuration note" | debconf-set-selections
-
+        fi
 	# Install glpi
 	urpmi --auto glpi php-xmlrpc
 	# fusioninventory-for-glpi glpi-webservices
@@ -633,7 +618,7 @@ install_glpi() {
 install_tftp_server() {
 	colored_echo blue "### INFO Installing TFTP server..."
 
-	apt-get -y install tftpd-hpa pulse2-register-pxe pulse2-utilities
+	urpmi --auto install tftpd-hpa pulse2-register-pxe pulse2-utilities
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... TFTP server install... failed"
 		exit 1
@@ -645,7 +630,7 @@ install_tftp_server() {
 install_isc_dhcp_server() {
 	colored_echo blue "### INFO Installing DHCP server..."
 
-	apt-get -y install isc-dhcp-server
+	urpmi --auto dhcp-server
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... isc-dhcp-server install... failed"
 		exit 1
@@ -657,7 +642,7 @@ install_isc_dhcp_server() {
 install_samba() {
 	colored_echo blue "### INFO Installing Samba server..."
 
-	apt-get -y install samba
+	urpmi --auto samba
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... samba install... failed"
 		exit 1
@@ -669,7 +654,7 @@ install_samba() {
 install_nfs_kernel_server() {
 	colored_echo blue "### INFO Installing NFS server..."
 
-	apt-get -y install nfs-kernel-server
+	urpmi --auto nfs-utils
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... nfs-kernel-server install... failed"
 		exit 1
@@ -681,7 +666,7 @@ install_nfs_kernel_server() {
 install_pxelinux() {
 	colored_echo blue "### INFO Installing pxelinux..."
 
-	apt-get -y install pxelinux syslinux-common
+	urpmi --auto pxelinux syslinux
 
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERRORROR... pxelinux install... failed"
@@ -694,10 +679,7 @@ install_pxelinux() {
 install_clonezilla() {
 	colored_echo blue "### INFO Installing clonezilla..."
 
-	apt-get -y install clonezilla pulse2-davos-client
-
-	# Hold clonezilla
-	echo "clonezilla hold"| dpkg --set-selections
+	urpmi --auto clonezilla pulse2-davos-client
 
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... clonezilla install... failed"
@@ -727,7 +709,7 @@ install_pulse_dependencies() {
 install_pulse() {
 	colored_echo blue "### INFO Installing Pulse..."
 
-	apt-get -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-report mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-dlp-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-report python-mmc-services python-mmc-support python-mmc-update
+	urpmi --auto pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-report mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-dlp-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-report python-mmc-services python-mmc-support python-mmc-update
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -758,7 +740,7 @@ configure_backuppc() {
 		sed "$ i\        Allow from ${PULSEMAIN_IP}" -i /etc/apache2/sites-available/backuppc.conf
 		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
 	fi
-	service apache2 restart
+	service httpd restart
 
 	# Configure pulse2-uuid-resolver to acces mmc
 	sed "s/^host =.*/host = ${PULSEMAIN_IP}/" -i /etc/mmc/pulse2/uuid-resolver/uuid-resolver.ini
@@ -1256,7 +1238,7 @@ if [[ ${BATCH_MODE} == "n" ]]; then
 	get_user_options
 fi
 check_network_config
-prepare_debian
+prepare_mageia
 
 if [[ ${INSTALL_TYPE} == "p" ]]; then
 	# Pulse main installation
