@@ -453,7 +453,7 @@ install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	apt-get -y install multitail vim rsync sshpass mysql-client
+	apt-get -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -1079,8 +1079,7 @@ reset_pulse_db() {
 	fi
 
 	# Generate Pulse agents
-	#/var/lib/pulse2/clients/generate-agents
-	/var/lib/pulse2/clients/win32/generate-agent-pack.sh -i ${IP_ADDRESS} -t
+	/var/lib/pulse2/clients/generate-agents
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... pulse agents generat... failed"
 		exit 1
@@ -1105,7 +1104,7 @@ install_multisite_dependencies() {
 
 install_multisite() {
 	colored_echo blue "### INFO Installing Pulse multisite..."
-	apt-get -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver
+	apt-get -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse2-launchers
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -1113,6 +1112,7 @@ install_multisite() {
 
 	# Enable services
 	sed 's/no/yes/' -i /etc/default/pulse2-package-server
+	sed 's/no/yes/' -i /etc/default/pulse2-launchers
 
 	colored_echo green "### INFO Installing Pulse multisite... Done"
 }
@@ -1136,7 +1136,7 @@ configure_glpi_multisite() {
 
 	# Create fusioninventory rule to affect all computer from/to multi-site entity. Done on main pulse server
 	local SSH_COMMAND_UPDATE_RANKING="echo \"UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity';\" | mysql glpi"
-    local SSH_COMMAND_GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
+  local SSH_COMMAND_GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT id FROM glpi_entities WHERE name='${MULTISITE_ENTITY}'));\" | mysql glpi"
 	ssh ${GLPI_DBHOST} ${SSH_COMMAND_UPDATE_RANKING}
@@ -1185,16 +1185,55 @@ configure_package_server_multisite() {
 	local SSH_COMMAND="echo \"UPDATE ImagingServer SET associated=1, fk_entity=${ID} WHERE packageserver_uuid='${PACKAGESERVER_UUID}';\"| mysql imaging"
 	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-        # Configure algo multi-site
-        SSH_COMMAND='grep -Gq "^mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local'
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-
-        if [ $? -ne 0 ]; then
-                local SSH_COMMAND='sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local; service pulse2-package-server restart'
-                ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-        fi
+	# Configure algo multi-site
+	local SSH_COMMAND='grep -Gq "^mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local'
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	if [ $? -ne 0 ]; then
+		local SSH_COMMAND='sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local; service pulse2-package-server restart'
+		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	fi
 
 	colored_echo green "### INFO Configuring Package Server for multisite... Done"
+}
+
+configure_launcher_multisite() {
+	colored_echo green "### INFO Configuring Launchers for multisite..."
+
+	# Copy launchers configuration from main Pulse
+	scp root@${PULSEMAIN_IP}:/etc/mmc/pulse2/launchers/launchers.ini.local /etc/mmc/pulse2/launchers/
+
+	# Configure the scheduler. Done on main Pulse server
+	local PULSEMAIN_NETWORK_ADDRESS=`echo ${PULSEMAIN_IP} | cut -d"." -f1-3`".0"
+	local SSH_COMMAND='grep -Gq "^host = 0.0.0.0" /etc/mmc/pulse2/scheduler/scheduler.ini.local'
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	# If the scheduler has never been configured as a multi-site scheduler, we will configure it
+	if [ $? -ne 0 ]; then
+		local SSH_COMMAND="echo -e \"[scheduler]\nhost = 0.0.0.0\nusername = username\npassword = password\nenablessl = True\npreferred_network = ${PULSEMAIN_NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local"
+		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+		local SSH_COMMAND="echo -e \"[scheduler_01]\nhost = ${PULSEMAIN_IP}\n[launcher_01]\nbind = ${PULSEMAIN_IP}\" >> /etc/mmc/pulse2/launchers/launchers.ini.local && service pulse2-launchers restart"
+		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+		local SSH_COMMAND="echo -e \"[launcher_01]\nhost=${PULSEMAIN_IP}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${PULSEMAIN_NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && service pulse2-scheduler restart"
+		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	fi
+	local SSH_COMMAND="sed '0,/^preferred_network = .*/ s/^preferred_network = .*$/& ${NETWORK_ADDRESS}\/${NETMASK}/' -i /etc/mmc/pulse2/scheduler/scheduler.ini.local"
+	ssh ${PULSEMAIN_IP} "${SSH_COMMAND}"
+
+	# Find out the highest Launcher Id as defined in scheduler. Done on main pulse server
+	local MAX_LAUNCHER_ID=$(ssh ${PULSEMAIN_IP} "grep launcher_.. /etc/mmc/pulse2/scheduler/scheduler.ini.local | cut -d _ -f2 | cut -c1-2 | sort -r | head -1")
+	local LAUNCHER_ID=`printf "%02d" $((${MAX_LAUNCHER_ID} + 1))`
+	local SSH_COMMAND="echo -e \"[launcher_${LAUNCHER_ID}]\nhost=${IP_REMOTE_SERVER}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && service pulse2-scheduler restart"
+	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+
+	# Configure multi-site launchers
+	# Configure the link to the scheduler on main Pulse
+	echo -e "[scheduler_01]\nhost = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/launchers/launchers.ini.local
+	# Configure the launcher
+	echo -e "[launcher_${LAUNCHER_ID}]\nbind = ${IP_REMOTE_SERVER}" >> /etc/mmc/pulse2/launchers/launchers.ini.local
+
+	# Restart launcher service
+	service pulse2-launchers restart
+
+	colored_echo green "### INFO Configuring Launchers for multisite... Done"
 }
 
 configure_multisite() {
@@ -1209,6 +1248,7 @@ configure_multisite() {
 	fi
 
 	configure_package_server_multisite
+	configure_launcher_multisite
 
 	colored_echo blue "### INFO Restart pulse2-package-server..."
 	service pulse2-package-server restart
