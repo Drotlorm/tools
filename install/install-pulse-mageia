@@ -632,7 +632,7 @@ install_isc_dhcp_server() {
 
 	urpmi --auto dhcp-server
 	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ERROR... isc-dhcp-server install... failed"
+		colored_echo red "### ERROR... dhcpd install... failed"
 		exit 1
 	fi
 
@@ -793,7 +793,7 @@ configure_isc_dhcp_server() {
 	sed -i "s/##PULSE2_START##/${DHCP_RANGE_START}/" /etc/dhcp/dhcpd.conf
 	sed -i "s/##PULSE2_END##/${DHCP_RANGE_END}/" /etc/dhcp/dhcpd.conf
 	sed -i "s/##PULSE2_IP##/${IP_ADDRESS}/" /etc/dhcp/dhcpd.conf
-	service isc-dhcp-server restart
+	service dhcpd restart
 
 	colored_echo green "### INFO Configuring DHCP server... Done"
 }
