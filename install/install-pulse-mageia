@@ -782,7 +782,7 @@ configure_isc_dhcp_server() {
 
 	# Configure the DHCP server
 	cp /usr/share/doc/mmc/contrib/imaging-server/dhcpd.conf /etc/dhcp/
-	sed -i "s/^INTERFACES=.*/INTERFACES=${INTERFACE}/" /etc/default/isc-dhcp-server
+	#sed -i "s/^INTERFACES=.*/INTERFACES=${INTERFACE}/" /etc/default/isc-dhcp-server
 	sed -i  "s/^.*\bpool\b.*$/    pool\ {/" /etc/dhcp/dhcpd.conf
 	sed -i "s/##PULSE2_NET##/${NETWORK_ADDRESS}/" /etc/dhcp/dhcpd.conf
 	sed -i "s/##PULSE2_NETMASK##/${NETMASK}/" /etc/dhcp/dhcpd.conf
