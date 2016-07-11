@@ -835,7 +835,7 @@ configure_samba() {
 	colored_echo blue "### INFO Configuring Samba server..."
 
 	# Create needed shares and setup root password
-	cp /usr/share/doc/pulse2/contrib/samba/smb.conf /etc/samba/
+	cp /usr/share/doc/pulse2-common/contrib/samba/smb.conf /etc/samba/
 	echo -ne "${ROOT_PASSWORD}\n${ROOT_PASSWORD}\n" | smbpasswd -a -s root
 	echo -ne "${DRIVERS_PASSWORD}\n${DRIVERS_PASSWORD}\n" | smbpasswd -a -s drivers
 	service samba restart
@@ -1100,6 +1100,7 @@ install_multisite_dependencies() {
 	install_nfs_kernel_server
 	install_pxelinux
 	install_clonezilla
+	install_samba
 }
 
 install_multisite() {
@@ -1122,6 +1123,7 @@ configure_multisite_dependencies() {
 	configure_nfs_kernel_server
 	configure_pxelinux
 	configure_clonezilla
+	configure_samba
 }
 
 configure_glpi_multisite() {
