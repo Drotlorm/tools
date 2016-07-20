@@ -1180,7 +1180,7 @@ configure_package_server_multisite() {
 	UUID_IMAGING='UUID'${UUID_IMAGING}
 	local GLPI_ENTITY_ID=`mysql -h${GLPI_DBHOST} -u${GLPI_DBUSER} -p${GLPI_DBPASSWD} ${GLPI_DBNAME} -s -r -e "SELECT id FROM ${GLPI_DBNAME}.glpi_entities WHERE name='${MULTISITE_ENTITY}';"`
 	local UUID='UUID'${GLPI_ENTITY_ID}
-	local SSH_COMMAND="echo \"INSERT INTO imaging.Entity values ('','${MULTISITE_ENTITY}','${UUID}','','fr_FR');\" | mysql imaging"
+	local SSH_COMMAND="echo \"INSERT INTO imaging.Entity (name, uuid, pxe_keymap) values ('${MULTISITE_ENTITY}','${UUID}','fr_FR');\" | mysql imaging"
 	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	# Register multisite package server in Pulse. Done on main Pulse server
 	local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
