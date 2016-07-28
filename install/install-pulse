@@ -740,7 +740,7 @@ install_pulse() {
 	fi
 
 	# Enable services
-	sed 's/no/yes/' -i /etc/default/pulse2-cm /etc/default/pulse2-inventory-server /etc/default/pulse2-launchers /etc/default/pulse2-package-server /etc/default/pulse2-scheduler /etc/default/mmc-agent
+	sed 's/no/yes/' -i /etc/default/pulse2-inventory-server /etc/default/pulse2-launchers /etc/default/pulse2-package-server /etc/default/pulse2-scheduler /etc/default/mmc-agent
 
 	colored_echo green "### INFO Installing Pulse... Done"
 }
@@ -864,15 +864,15 @@ configure_pxelinux() {
 		colored_echo red "### ERROR... Configuring pxelinux... failed"
 		exit 1
 	fi
-	cp /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/
-	cp /usr/lib/syslinux/modules/bios/ldlinux.c32 /var/lib/pulse2/imaging/bootloader/
-	cp /usr/lib/syslinux/modules/bios/lib* /var/lib/pulse2/imaging/bootloader/
-	cp /usr/lib/syslinux/modules/bios/hdt.c32  /var/lib/pulse2/imaging/bootloader/
-	cp /usr/lib/syslinux/modules/bios/reboot.c32  /var/lib/pulse2/imaging/bootloader/
-	cp /usr/lib/syslinux/modules/bios/poweroff.c32 /var/lib/pulse2/imaging/bootloader/
-	cp /usr/lib/syslinux/modules/bios/vesamenu.c32 /var/lib/pulse2/imaging/bootloader/
-	cp /usr/lib/syslinux/modules/bios/inventory.c32 /var/lib/pulse2/imaging/bootloader/
-	cp /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader/
+	ln /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/
+	ln /usr/lib/syslinux/modules/bios/ldlinux.c32 /var/lib/pulse2/imaging/bootloader/
+	ln /usr/lib/syslinux/modules/bios/lib* /var/lib/pulse2/imaging/bootloader/
+	ln /usr/lib/syslinux/modules/bios/hdt.c32  /var/lib/pulse2/imaging/bootloader/
+	ln /usr/lib/syslinux/modules/bios/reboot.c32  /var/lib/pulse2/imaging/bootloader/
+	ln /usr/lib/syslinux/modules/bios/poweroff.c32 /var/lib/pulse2/imaging/bootloader/
+	ln /usr/lib/syslinux/modules/bios/vesamenu.c32 /var/lib/pulse2/imaging/bootloader/
+	ln /usr/lib/syslinux/modules/bios/inventory.c32 /var/lib/pulse2/imaging/bootloader/
+	ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader/
 
 	# Create the symlink for pxelinux to find the bootmenus
 	cd /var/lib/pulse2/imaging/bootloader/
@@ -1090,7 +1090,7 @@ reset_pulse_db() {
 
 restart_pulse_services() {
 	colored_echo blue "### INFO Restart Pulse services..."
-	for SERV in pulse2-cm pulse2-dlp-server pulse2-inventory-server pulse2-launchers pulse2-package-server pulse2-scheduler mmc-agent
+	for SERV in pulse2-dlp-server pulse2-inventory-server pulse2-launchers pulse2-package-server pulse2-scheduler mmc-agent
 		do service $SERV restart
 	done
 }
