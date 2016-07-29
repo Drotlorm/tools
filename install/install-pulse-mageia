@@ -538,16 +538,14 @@ install_ldap_server() {
 install_mysql_server() {
 	colored_echo blue "### INFO Installing MySQL server..."
 
-	# Define a few settings for mysql-server
-	echo "mysql-server-5.5 mysql-server/root_password password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "mysql-server-5.5 mysql-server/root_password_again password ${ROOT_PASSWORD}" | debconf-set-selections
-
 	# Install mysql-server
 	urpmi --auto mariadb mariadb-client
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... MySQL server install... failed"
 		exit 1
 	fi
+
+	mysqladmin password ${ROOT_PASSWORD}
 
 	colored_echo green "### INFO Installing MySQL server... Done"
 }
