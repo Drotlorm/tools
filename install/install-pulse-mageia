@@ -545,7 +545,28 @@ install_mysql_server() {
 		exit 1
 	fi
 
-	mysqladmin password ${ROOT_PASSWORD}
+	mysql_started=`service mysqld status`
+	tfile=`mktemp`
+	if [ ! -f "$tfile" ]; then
+		return 1
+        fi
+
+cat << EOF > $tfile
+USE mysql;
+UPDATE user SET password=PASSWORD("${ROOT_PASSWORD}") WHERE user='root';
+FLUSH PRIVILEGES;
+EOF
+       if grep -q 'PASSWORD("")' $tfile; then
+                return 1
+	elif [ "$mysql_started" = "0" ]; then
+	# 0 => service started
+	# 3 => service stopped
+		mysql --no-defaults -u root -h localhost <$tfile >/dev/null
+	else
+		/usr/sbin/mysqld --bootstrap --user=mysql --skip-grant-tables <$tfile
+	fi
+	rm -f $tfile
+
 
 	colored_echo green "### INFO Installing MySQL server... Done"
 }
