@@ -939,7 +939,6 @@ reset_glpi_db() {
 	echo "drop user 'glpi'@'localhost';" | mysql -uroot
 	echo "glpi  glpi/dbconfig-reinstall boolean true" | debconf-set-selections
 	echo "glpi  glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
-	dpkg-reconfigure -fnoninteractive glpi
 
 	# Clean glpi users/profiles apart from glpi superadmin
 	local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
