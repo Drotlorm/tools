@@ -593,15 +593,7 @@ install_glpi() {
 	if false; then
 	# Define a few settings for glpi
 	echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "glpi glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "glpi glpi/purge boolean false" | debconf-set-selections
 	echo "glpi glpi/db/dbname string glpi" | debconf-set-selections
-	echo "glpi glpi/dbconfig-reinstall boolean false" | debconf-set-selections
-	echo "glpi glpi/db/app-user string glpi" | debconf-set-selections
-	echo "glpi glpi/dbconfig-install boolean true" | debconf-set-selections
-	echo "glpi glpi/webserver multiselect apache, apache-ssl, apache-perl, apache2" | debconf-set-selections
-	echo "glpi glpi/configuration note" | debconf-set-selections
         fi
 	# Install glpi
 	urpmi --auto glpi php-xmlrpc
