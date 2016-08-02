@@ -589,6 +589,7 @@ install_backuppc() {
 install_glpi() {
 	colored_echo blue "### INFO Installing GLPI..."
 
+	# TODO: Use tools/cliinstall.php
 	if false; then
 	# Define a few settings for glpi
 	echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
