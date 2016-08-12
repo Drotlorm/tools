@@ -1,40 +1,89 @@
 #!/bin/bash
+if [[ $1 == "-h" || $1 == "--help" || $# -eq 0 ]]; then
+  echo -e "\n"
+  echo "Name: `basename $0`"
+  echo "Usage: Help to update your Pulse multisite installation and execute remote command"
+  echo -e "\nSample : `basename $0` upgrade"
+  echo "Sample : `basename $0` execute command"
+  echo "Sample : `basename $0` update-pxelinux"
+  echo -e "\n"
+  exit 0
+fi
 
 colored_echo() {
-    local color=$1;
-    if ! [[ $color =~ '^[0-9]$' ]] ; then
-       case $(echo $color | tr '[:upper:]' '[:lower:]') in
-        black) color=0 ;;
-        red) color=1 ;;
-        green) color=2 ;;
-        yellow) color=3 ;;
-        blue) color=4 ;;
-        magenta) color=5 ;;
-        cyan) color=6 ;;
-        white|*) color=7 ;; # white or invalid color
-       esac
-    fi
-    tput setaf $color;
-    echo "${@:2}";
-    tput sgr0;
+  local color=$1;
+  if ! [[ $color =~ '^[0-9]$' ]] ; then
+    case $(echo $color | tr '[:upper:]' '[:lower:]') in
+      black) color=0 ;;
+      red) color=1 ;;
+      green) color=2 ;;
+      yellow) color=3 ;;
+      blue) color=4 ;;
+      magenta) color=5 ;;
+      cyan) color=6 ;;
+      white|*) color=7 ;; # white or invalid color
+    esac
+  fi
+  tput setaf $color;
+  echo "${@:2}";
+  tput sgr0;
 }
 
-# List all Pulse server 
+# List all Pulse server
 pserver=(`cat /etc/mmc/pulse2/package-server/package-server.ini.local | grep package_mirror_target | sed 's/package_mirror_target = //'`)
-for m in "${pserver[@]}"
-do
-        colored_echo blue           "######################### Update server : ${m} ################"
-        ssh -t ${m} "apt-get -qq update"  2> /dev/null
-        ssh -t ${m} "TERM=$TERM DEBIAN_FRONTEND=dialog apt-get -qq -y dist-upgrade"  2> /dev/null
-        if [[ $? == 0 ]]; then
-                colored_echo yellow "######################### Need attention ###############################"
-                ssh -t ${m} "find /etc/ -name '*.dpkg-dist' -exec ls {} \;"  2> /dev/null
-                colored_echo green  "######################### Update server Done ###########################"
-                echo ""
-                echo ""
-        else
-                colored_echo red    "######################### Update server : ${m} Failed ##################"
-                ssh -t ${m} "find /etc/ -name '*.dpkg-dist' -exec ls {} \;"  2> /dev/null
-        fi
-done
 
+upgrade () {
+  for m in "${pserver[@]}"
+  do
+    colored_echo blue "######################### Update server : ${m} ################"
+    ssh -t ${m} "apt-get -qq update"  2> /dev/null
+    ssh -t ${m} "TERM=$TERM DEBIAN_FRONTEND=dialog apt-get -qq -y dist-upgrade"  2> /dev/null
+    if [[ $? == 0 ]]; then
+      colored_echo yellow "######################### Need attention ###############################"
+      ssh -t ${m} "find /etc/ -name '*.dpkg-dist' -exec ls {} \;"  2> /dev/null
+      colored_echo green "######################### Update server Done ###########################"
+      echo ""
+      echo ""
+    else
+      colored_echo red "######################### Update server : ${m} Failed ##################"
+      ssh -t ${m} "find /etc/ -name '*.dpkg-dist' -exec ls {} \;"  2> /dev/null
+    fi
+  done
+}
+
+execute () {
+  for m in "${pserver[@]}"
+  do
+    colored_echo blue "######################### Execute "$1" on ${m} ################"
+    ssh -t ${m} "$1" 2> /dev/null
+  done
+}
+
+update-pxelinux () {
+  for m in "${pserver[@]}"
+  do
+    colored_echo blue "######################### Update PXELINUX on ${m} ################"
+    ssh -t ${m} "rm /var/lib/pulse2/imaging/bootloader/pxelinux.0" 2> /dev/null
+    ssh -t ${m} "rm /var/lib/pulse2/imaging/bootloader/*.c32" 2> /dev/null
+    ssh -t ${m} "rm /var/lib/pulse2/imaging/bootloader/pci.ids" 2> /dev/null
+    ssh -t ${m} "cp /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/" 2> /dev/null
+    ssh -t ${m} "cp /usr/lib/syslinux/modules/bios/ldlinux.c32 /var/lib/pulse2/imaging/bootloader/" 2> /dev/null
+    ssh -t ${m} "cp /usr/lib/syslinux/modules/bios/lib* /var/lib/pulse2/imaging/bootloader/" 2> /dev/null
+    ssh -t ${m} "cp /usr/lib/syslinux/modules/bios/hdt.c32 /var/lib/pulse2/imaging/bootloader/" 2> /dev/null
+    ssh -t ${m} "cp /usr/lib/syslinux/modules/bios/reboot.c32 /var/lib/pulse2/imaging/bootloader/" 2> /dev/null
+    ssh -t ${m} "cp /usr/lib/syslinux/modules/bios/poweroff.c32 /var/lib/pulse2/imaging/bootloader/" 2> /dev/null
+    ssh -t ${m} "cp /usr/lib/syslinux/modules/bios/vesamenu.c32 /var/lib/pulse2/imaging/bootloader/" 2> /dev/null
+    ssh -t ${m} "cp /usr/lib/syslinux/modules/bios/inventory.c32 /var/lib/pulse2/imaging/bootloader/" 2> /dev/null
+    ssh -t ${m} "cp /usr/share/misc/pci.ids /var/lib/pulse2/imaging/bootloader/" 2> /dev/null
+  done
+}
+
+if [ $1 == "upgrade" ]; then
+  upgrade
+  elif [ $1 == "execute" ]; then
+  execute "$2"
+  elif [ $1 == "update-pxelinux" ]; then
+  update-pxelinux
+  else
+  exit 0
+fi
