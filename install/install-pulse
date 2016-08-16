@@ -449,6 +449,18 @@ configure_apt_settings() {
 	colored_echo blue "### INFO Defining a few settings for apt... Done"
 }
 
+
+install_bind_server() {
+	        colored_echo green "### INFO Installing bind server..."
+		apt-get -y install python-mc-network web-mmc-network bind9
+	        pushd /usr/share/doc/mmc/contrib/network
+			gunzip dnszone.schema.gz
+			gunzip dhcp.schema.gz
+			mmc-add-schema dnszone.schema /etc/ldap/schema
+			mmc-add-schema dhcp.schema /etc/ldap/schema
+		popd
+	}
+
 install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
