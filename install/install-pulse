@@ -24,6 +24,7 @@ display_usage() {
 	echo -e "\t[--glpi-dbname=<database name>]"
 	echo -e "\t[--glpi-dbuser=<database username>]"
 	echo -e "\t[--glpi-dbpasswd=<database user password>]"
+	echo -e "\t[--glpi-dbrootpasswd=<mysql root password>]"
 	echo -e "\t[--mail-password=<support mail account password>]"
 }
 
@@ -128,6 +129,10 @@ check_arguments() {
 				;;
 			--glpi-dbpasswd=*)
 				GLPI_DBPASSWD="${i#*=}"
+				shift
+				;;
+			--glpi-dbrootpasswd=*)
+				GLPI_DBROOTPASSWD="${i#*=}"
 				shift
 				;;
 			--mail-password=*)
@@ -257,6 +262,7 @@ get_glpi_server_details() {
 	GLPI_DBNAME=$(get_user_input "Enter the name of GLPI database:")
 	GLPI_DBUSER=$(get_user_input "Enter the user account to access GLPI database:")
 	GLPI_DBPASSWD=$(get_user_input "Enter the password to access GLPI database:")
+	GLPI_DBROOTPASSWD=$(get_user_input "Enter the mysql root password for the mysql server hosting glpi database:")
 }
 
 get_user_options() {
@@ -392,6 +398,9 @@ check_network_config() {
 	echo "GLPI_DBNAME		: ${GLPI_DBNAME}"
 	echo "GLPI_DBUSER		: ${GLPI_DBUSER}"
 	echo "GLPI_DBPASSWD		: ${GLPI_DBPASSWD}"
+	if [[ ${INSTALL_TYPE} == "p" ]] && [[ ${MAIN_GLPI} != "y" ]]; then
+		echo "GLPI_DBROOTPASSWD		: ${GLPI_DBROOTPASSWD}"
+	fi
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
 		echo "GLPI_URL			: ${GLPI_URL}"
 		echo "MAIN_ENTITY		: ${MAIN_ENTITY}"
@@ -1088,6 +1097,38 @@ reset_pulse_db() {
 	colored_echo green "### INFO Resetting Pulse database... Done"
 }
 
+setup_glpi_triggers() {
+	colored_echo blue "### INFO Setup glpi triggers for msc database..."
+	if [[ ${MAIN_GLPI} == "y" ]]; then
+		# Set the triggers on local glpi server
+		mysql < /usr/share/doc/pulse2-common/contrib/msc/sql/synch-localglpi-to-msc.sql
+	else
+		# Allow remote user to connect to msc.target
+		local RANDOM_PASSWORD=`openssl rand -base64 12`
+		echo "GRANT ALL PRIVILEGES ON msc.target to 'glpi-msc'@'${GLPI_DBHOST}' identified by '${RANDOM_PASSWORD}';" |mysql -s
+		sed -i "s/^bind-address.*/bind-address             = 0.0.0.0/g" /etc/mysql/my.cnf
+		service mysql restart
+		# Set the triggers on remote glpi server
+		cp /usr/share/doc/pulse2-common/contrib/msc/sql/synch-remoteglpi-to-msc.sql.in /tmp/synch-remoteglpi-to-msc.sql
+		sed -i "s/@@GLPI_DBNAME@@/${GLPI_DBNAME}/" /tmp/synch-remoteglpi-to-msc.sql
+		sed -i "s/@@MYSQL_USER@@/glpi-msc/" /tmp/synch-remoteglpi-to-msc.sql
+		sed -i "s/@@MYSQL_PASSWORD@@/${RANDOM_PASSWORD}/" /tmp/synch-remoteglpi-to-msc.sql
+		sed -i "s/@@MYSQL_SERVER@@/${IP_ADDRESS}/" /tmp/synch-remoteglpi-to-msc.sql
+		sed -i "s/@@MYSQL_PORT@@/3306/" /tmp/synch-remoteglpi-to-msc.sql
+		mysql -h${GLPI_DBHOST} -uroot -p${GLPI_DBROOTPASSWD} -s -r < /tmp/synch-remoteglpi-to-msc.sql
+		if [ ! $? -eq 0 ]; then
+			colored_echo red "### ERROR... Could not setup the triggers on the remote mysql server"
+			colored_echo red "###"
+			colored_echo red "### Please run the following command to copy the sql script to ${GLPI_DBHOST}"
+			colored_echo red "### 		scp /tmp/synch-remoteglpi-to-msc.sql root@${GLPI_DBHOST}:/tmp/"
+			colored_echo red "### Then log on to the remote server and execute"
+			colored_echo red "### 		mysql < /tmp/synch-remoteglpi-to-msc.sql"
+			colored_echo red "###"
+		fi
+	fi
+	colored_echo green "### INFO Setup glpi triggers for msc database... Done"
+}
+
 restart_pulse_services() {
 	colored_echo blue "### INFO Restart Pulse services..."
 	for SERV in pulse2-dlp-server pulse2-inventory-server pulse2-launchers pulse2-package-server pulse2-scheduler mmc-agent
@@ -1326,6 +1367,7 @@ if [[ ${INSTALL_TYPE} == "p" ]]; then
 		reset_glpi_db
 	fi
 	reset_pulse_db
+	setup_glpi_triggers
 	restart_pulse_services
 else
 	# Pulse multi-site installation
