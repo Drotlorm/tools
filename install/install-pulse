@@ -1242,9 +1242,6 @@ configure_package_server_multisite() {
 configure_launcher_multisite() {
 	colored_echo green "### INFO Configuring Launchers for multisite..."
 
-	# Copy launchers configuration from main Pulse
-	scp root@${PULSEMAIN_IP}:/etc/mmc/pulse2/launchers/launchers.ini.local /etc/mmc/pulse2/launchers/
-
 	# Configure the scheduler. Done on main Pulse server
 	local PULSEMAIN_NETWORK_ADDRESS=`echo ${PULSEMAIN_IP} | cut -d"." -f1-3`".0"
 	local SSH_COMMAND='grep -Gq "^host = 0.0.0.0" /etc/mmc/pulse2/scheduler/scheduler.ini.local'
@@ -1268,10 +1265,10 @@ configure_launcher_multisite() {
 	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
 	# Configure multi-site launchers
-	# Configure the link to the scheduler on main Pulse
-	echo -e "[scheduler_01]\nhost = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/launchers/launchers.ini.local
+	# Copy launchers configuration from main Pulse
+	scp root@${PULSEMAIN_IP}:/etc/mmc/pulse2/launchers/launchers.ini.local /etc/mmc/pulse2/launchers/
 	# Configure the launcher
-	echo -e "[launcher_${LAUNCHER_ID}]\nbind = ${IP_REMOTE_SERVER}" >> /etc/mmc/pulse2/launchers/launchers.ini.local
+	sed -i "s/bind = .*$/bind = ${IP_REMOTE_SERVER}/" /etc/mmc/pulse2/launchers/launchers.ini.local
 
 	# Restart launcher service
 	service pulse2-launchers restart
