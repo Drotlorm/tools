@@ -430,12 +430,12 @@ configure_repos() {
 	colored_echo blue "### INFO Configuring all necessary repos..."
 
 	case ${DEBIAN_VERSION} in
-		"7")
+		"7*")
 			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
 			echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
 			wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
 			;;
-		"8")
+		"8*")
 			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
 			;;
 		*)
@@ -556,6 +556,7 @@ install_ldap_server() {
 
 	# Install ldap-server
 	apt-get -y install ldap-server
+	dpkg-reconfigure -fnoninteractive slapd
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... LDAP server install... failed"
 		exit 1
@@ -573,6 +574,7 @@ install_mysql_server() {
 
 	# Install mysql-server
 	apt-get -y install mysql-server
+	dpkg-reconfigure -fnoninteractive mysql-server-5.5
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... MySQL server install... failed"
 		exit 1
@@ -594,6 +596,7 @@ install_backuppc() {
 
 	# Install backuppc
 	apt-get -y install backuppc libfile-rsyncp-perl
+	dpkg-reconfigure -fnoninteractive backuppc
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... backuppc install... failed"
 		exit 1
