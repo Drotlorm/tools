@@ -4,8 +4,9 @@ if [[ $1 == "-h" || $1 == "--help" || $# -eq 0 ]]; then
   echo "Name: `basename $0`"
   echo "Usage: Help to update your Pulse multisite installation and execute remote command"
   echo -e "\nSample : `basename $0` upgrade"
-  echo "Sample : `basename $0` execute command"
+  echo "Sample : `basename $0` execute <command>"
   echo "Sample : `basename $0` update-pxelinux"
+  echo "Sample : `basename $0` replicate-file <file>"
   echo -e "\n"
   exit 0
 fi
@@ -78,12 +79,22 @@ update-pxelinux () {
   done
 }
 
+replicate-file () {
+  for m in "${pserver[@]}"
+  do
+    colored_echo blue           "######################### Replicate file $1 on ${m} ################"
+    scp $1 root@${m}:$1
+  done
+}
+
 if [ $1 == "upgrade" ]; then
   upgrade
   elif [ $1 == "execute" ]; then
   execute "$2"
   elif [ $1 == "update-pxelinux" ]; then
   update-pxelinux
+  elif [ $1 == "replicate-file" ]; then
+  replicate-file "$2"
   else
   exit 0
 fi
