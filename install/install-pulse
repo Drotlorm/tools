@@ -464,7 +464,7 @@ configure_locales() {
 	echo "locales locales/default_environment_locale select en_US.UTF-8" | debconf-set-selections
 	echo "locales locales/locales_to_be_generated multiselect en_US.UTF-8 UTF-8, fr_FR.UTF-8 UTF-8" | debconf-set-selections
 	dpkg-reconfigure -f noninteractive locales
-	
+
 	colored_echo blue "### INFO Configuring locales... Done"
 }
 
@@ -753,7 +753,7 @@ install_pulse_dependencies() {
 install_pulse() {
 	colored_echo blue "### INFO Installing Pulse..."
 
-	apt-get -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-report mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-dlp-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-report python-mmc-services python-mmc-support python-mmc-update
+	apt-get -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-report mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-report python-mmc-services python-mmc-support python-mmc-update
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -1142,7 +1142,7 @@ setup_glpi_triggers() {
 
 restart_pulse_services() {
 	colored_echo blue "### INFO Restart Pulse services..."
-	for SERV in pulse2-dlp-server pulse2-inventory-server pulse2-launchers pulse2-package-server pulse2-scheduler mmc-agent
+	for SERV in pulse2-inventory-server pulse2-launchers pulse2-package-server pulse2-scheduler mmc-agent
 		do service $SERV restart
 	done
 }
