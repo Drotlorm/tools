@@ -884,15 +884,21 @@ configure_pxelinux() {
 		colored_echo red "### ERROR... Configuring pxelinux... failed"
 		exit 1
 	fi
-	ln /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/
-	ln /usr/lib/syslinux/modules/bios/ldlinux.c32 /var/lib/pulse2/imaging/bootloader/
-	ln /usr/lib/syslinux/modules/bios/lib* /var/lib/pulse2/imaging/bootloader/
-	ln /usr/lib/syslinux/modules/bios/hdt.c32  /var/lib/pulse2/imaging/bootloader/
-	ln /usr/lib/syslinux/modules/bios/reboot.c32  /var/lib/pulse2/imaging/bootloader/
-	ln /usr/lib/syslinux/modules/bios/poweroff.c32 /var/lib/pulse2/imaging/bootloader/
-	ln /usr/lib/syslinux/modules/bios/vesamenu.c32 /var/lib/pulse2/imaging/bootloader/
-	ln /usr/lib/syslinux/modules/bios/inventory.c32 /var/lib/pulse2/imaging/bootloader/
-	ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader/
+
+        ln -s /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/pxelinux.0
+        ln -s /usr/lib/syslinux/modules/bios/ldlinux.c32 /var/lib/pulse2/imaging/bootloader/ldlinux.c32
+        ln -s /usr/lib/syslinux/modules/bios/hdt.c32  /var/lib/pulse2/imaging/bootloader/hdt.c32
+        ln -s /usr/lib/syslinux/modules/bios/reboot.c32  /var/lib/pulse2/imaging/bootloader/reboot.c32
+        ln -s /usr/lib/syslinux/modules/bios/poweroff.c32 /var/lib/pulse2/imaging/bootloader/poweroff.c32
+        ln -s /usr/lib/syslinux/modules/bios/vesamenu.c32 /var/lib/pulse2/imaging/bootloader/vesamenu.c32
+        ln -s /usr/lib/syslinux/modules/bios/inventory.c32 /var/lib/pulse2/imaging/bootloader/inventory.c32
+        ln -s /usr/share/misc/pci.ids /var/lib/pulse2/imaging/bootloader/pci.ids
+        ln -s /usr/lib/syslinux/modules/bios/libcom32.c32 /var/lib/pulse2/imaging/bootloader/libcom32.c32
+        ln -s /usr/lib/syslinux/modules/bios/liblua.c32 /var/lib/pulse2/imaging/bootloader/liblua.c32
+        ln -s /usr/lib/syslinux/modules/bios/libutil.c32 /var/lib/pulse2/imaging/bootloader/libutil.c32
+        ln -s /usr/lib/syslinux/modules/bios/libgpl.c32 /var/lib/pulse2/imaging/bootloader/libgpl.c32
+        ln -s /usr/lib/syslinux/modules/bios/libmenu.c32 /var/lib/pulse2/imaging/bootloader/libmenu.c32
+
 
 	# Create the symlink for pxelinux to find the bootmenus
 	cd /var/lib/pulse2/imaging/bootloader/
