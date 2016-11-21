@@ -1105,7 +1105,11 @@ reset_pulse_db() {
 	fi
 
 	# Generate Pulse agents
-	/var/lib/pulse2/clients/win32/generate-agent-pack.sh
+	/var/lib/pulse2/clients/generate-agents
+	if [ ! $? -eq 0 ]; then
+		colored_echo red "### ERROR... pulse agents generat... failed"
+		exit 1
+	fi
 
 	colored_echo green "### INFO Resetting Pulse database... Done"
 }
