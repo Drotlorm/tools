@@ -1242,6 +1242,8 @@ configure_package_server_multisite() {
 		local SSH_COMMAND='sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local; service pulse2-package-server restart'
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	fi
+	sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local
+	service pulse2-package-server restart
 
 	colored_echo green "### INFO Configuring Package Server for multisite... Done"
 }
