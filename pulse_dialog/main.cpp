@@ -1,11 +1,11 @@
-//#include "mainwindow.h"
+
 #include <QApplication>
 #include <QMessageBox>
 #include <QTextStream>
 #include <QString>
 #include <QStringList>
 #include <QDebug>
-//#include <QIcon>
+
 
 int main(int argc, char *argv[])
 {
