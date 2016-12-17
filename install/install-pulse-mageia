@@ -607,15 +607,21 @@ install_backuppc() {
 	colored_echo green "### INFO Installing backuppc... Done"
 }
 
+initialise_glpi_db() {
+	if [ ! -e /usr/share/glpi/install/cliinstal.php ]; then
+                pushd /usr/share/glpi/install/
+                        wget https://raw.githubusercontent.com/glpi-project/glpi/0.90/bugfixes/tools/cliinstall.php
+                popd
+    fi
+
+        # Install for glpi 0.90 ( mageia 6 )
+        mysql -uroot < /usr/share/glpi/install/mysql/glpi-0.90-empty.sql
+        php /usr/share/glpi/install/cliinstal.php --db=glpi --user='root' --lang=fr_FR --force
+}
+
 install_glpi() {
 	colored_echo blue "### INFO Installing GLPI..."
 
-	# TODO: Use tools/cliinstall.php
-	if false; then
-	# Define a few settings for glpi
-	echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "glpi glpi/db/dbname string glpi" | debconf-set-selections
-        fi
 	# Install glpi
 	urpmi --auto glpi php-xmlrpc
 	# fusioninventory-for-glpi glpi-webservices
@@ -623,6 +629,8 @@ install_glpi() {
 		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
 	fi
+
+	initialise_glpi_db()
 
 	colored_echo green "### INFO Installing GLPI... Done"
 }
@@ -938,15 +946,7 @@ reset_glpi_db() {
 	echo "drop database glpi;" | mysql -uroot
 	echo "drop user 'glpi'@'localhost';" | mysql -uroot
 
-	if [ ! -e /usr/share/glpi/install/cliinstal.php ]; then
-                pushd /usr/share/glpi/install/
-                        wget https://raw.githubusercontent.com/glpi-project/glpi/0.90/bugfixes/tools/cliinstall.php
-                popd
-    fi
-
-        # Install for glpi 0.90 ( mageia 6 )
-        mysql -uroot < /usr/share/glpi/install/mysql/glpi-0.90-empty.sql
-        php /usr/share/glpi/install/cliinstal.php --db=glpi --user='root' --lang=fr_FR --force
+    initialise_glpi_db()
 
 	# Clean glpi users/profiles apart from glpi superadmin
 	local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
