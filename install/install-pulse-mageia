@@ -630,7 +630,7 @@ install_glpi() {
 		exit 1
 	fi
 
-	initialise_glpi_db()
+	initialise_glpi_db
 
 	colored_echo green "### INFO Installing GLPI... Done"
 }
@@ -946,7 +946,7 @@ reset_glpi_db() {
 	echo "drop database glpi;" | mysql -uroot
 	echo "drop user 'glpi'@'localhost';" | mysql -uroot
 
-    initialise_glpi_db()
+        initialise_glpi_db
 
 	# Clean glpi users/profiles apart from glpi superadmin
 	local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
