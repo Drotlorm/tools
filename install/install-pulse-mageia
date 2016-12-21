@@ -321,7 +321,7 @@ get_user_options() {
 check_mysql_connection() {
 	if [[ ${GLPI_DBHOST} == ${PULSEMAIN_IP} ]]; then
 		# Configure external listening for mysql
-		local SSH_COMMAND="sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/mysql/my.cnf"
+		local SSH_COMMAND="sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/my.cnf"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
 		# Create remote glpi user
