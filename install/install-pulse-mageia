@@ -803,16 +803,16 @@ configure_isc_dhcp_server() {
 	# Configure the DHCP server
 	cp /usr/share/doc/mmc/contrib/imaging-server/dhcpd.conf /etc/dhcp/
 	#sed -i "s/^INTERFACES=.*/INTERFACES=${INTERFACE}/" /etc/default/isc-dhcp-server
-	sed -i  "s/^.*\bpool\b.*$/    pool\ {/" /etc/dhcp/dhcpd.conf
-	sed -i "s/##PULSE2_NET##/${NETWORK_ADDRESS}/" /etc/dhcp/dhcpd.conf
-	sed -i "s/##PULSE2_NETMASK##/${NETMASK}/" /etc/dhcp/dhcpd.conf
-	sed -i "s/\"##PULSE2_BCAST##\"/${BCAST_ADDRESS}/" /etc/dhcp/dhcpd.conf
-	sed -i "s/##PULSE2_DOMAIN##/${DOMAIN}/" /etc/dhcp/dhcpd.conf
-	sed -i "s/\"##PULSE2_DNS##\"/${DNS_SERVER}/" /etc/dhcp/dhcpd.conf
-	sed -i "s/\"##PULSE2_GW##\"/${GATEWAY_ADDRESS}/" /etc/dhcp/dhcpd.conf
-	sed -i "s/##PULSE2_START##/${DHCP_RANGE_START}/" /etc/dhcp/dhcpd.conf
-	sed -i "s/##PULSE2_END##/${DHCP_RANGE_END}/" /etc/dhcp/dhcpd.conf
-	sed -i "s/##PULSE2_IP##/${IP_ADDRESS}/" /etc/dhcp/dhcpd.conf
+	sed -i  "s/^.*\bpool\b.*$/    pool\ {/" /etc/dhcpd.conf
+	sed -i "s/##PULSE2_NET##/${NETWORK_ADDRESS}/" /etc/dhcpd.conf
+	sed -i "s/##PULSE2_NETMASK##/${NETMASK}/" /etc/dhcpd.conf
+	sed -i "s/\"##PULSE2_BCAST##\"/${BCAST_ADDRESS}/" /etc/dhcpd.conf
+	sed -i "s/##PULSE2_DOMAIN##/${DOMAIN}/" /etc/dhcpd.conf
+	sed -i "s/\"##PULSE2_DNS##\"/${DNS_SERVER}/" /etc/dhcpd.conf
+	sed -i "s/\"##PULSE2_GW##\"/${GATEWAY_ADDRESS}/" /etc/dhcpd.conf
+	sed -i "s/##PULSE2_START##/${DHCP_RANGE_START}/" /etc/dhcpd.conf
+	sed -i "s/##PULSE2_END##/${DHCP_RANGE_END}/" /etc/dhcpd.conf
+	sed -i "s/##PULSE2_IP##/${IP_ADDRESS}/" /etc/dhcpd.conf
 	service dhcpd restart
 
 	colored_echo green "### INFO Configuring DHCP server... Done"
@@ -821,7 +821,7 @@ configure_isc_dhcp_server() {
 trick_clonezilla() {
 	colored_echo blue "### INFO Configuring dummy DHCP server for Clonezilla..."
 
-	touch /etc/dhcp/dhcpd.conf
+	touch /etc/dhcpd.conf
 	echo "INTERFACES=${INTERFACE}" > /etc/default/isc-dhcp-server
 
 	colored_echo green "### INFO Configuring dummy DHCP server for Clonezilla... Done"
