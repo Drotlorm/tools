@@ -545,7 +545,7 @@ install_mysql_server() {
 		exit 1
 	fi
 
-	mysql_started=`service mysqld status`
+	mysql_started=`systemctl is-active mysqld.service`
 	tfile=`mktemp`
 	if [ ! -f "$tfile" ]; then
 		return 1
@@ -558,7 +558,7 @@ FLUSH PRIVILEGES;
 EOF
        if grep -q 'PASSWORD("")' $tfile; then
                 return 1
-	elif [ "$mysql_started" = "0" ]; then
+	elif [ "$mysql_started" = "active" ]; then
 	# 0 => service started
 	# 3 => service stopped
 		mysql --no-defaults -u root -h localhost <$tfile >/dev/null
