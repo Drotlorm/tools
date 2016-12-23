@@ -615,8 +615,11 @@ initialise_glpi_db() {
     fi
 
         # Install for glpi 0.90 ( mageia 6 )
-        mysql -uroot < /usr/share/glpi/install/mysql/glpi-0.90-empty.sql
-        php /usr/share/glpi/install/cliinstal.php --db=glpi --user='root' --lang=fr_FR --force
+	echo "CREATE database glpi;" | mysql -uroot
+	echo "CREATE user 'glpi'@'localhost';" | mysql -uroot
+
+        mysql -uroot -D glpi < /usr/share/glpi/install/mysql/glpi-0.90-empty.sql
+        php /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --lang=fr_FR --force
 }
 
 install_glpi() {
