@@ -626,8 +626,7 @@ install_glpi() {
 	colored_echo blue "### INFO Installing GLPI..."
 
 	# Install glpi
-	urpmi --auto glpi php-xmlrpc
-	# fusioninventory-for-glpi glpi-webservices
+	urpmi --auto glpi php-xmlrpc glpi-plugin-webservices glpi-plugin-fusioninventory
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
