@@ -563,7 +563,8 @@ EOF
 	# 3 => service stopped
 		mysql --no-defaults -u root -h localhost <$tfile >/dev/null
 	else
-		/usr/sbin/mysqld --bootstrap --user=mysql --skip-grant-tables <$tfile
+		service mysqld start
+		mysql --no-defaults -u root -h localhost <$tfile >/dev/null
 	fi
 	rm -f $tfile
 
@@ -619,6 +620,7 @@ initialise_glpi_db() {
 	echo "CREATE user 'glpi'@'localhost';" | mysql -uroot
 
         mysql -uroot -D glpi < /usr/share/glpi/install/mysql/glpi-0.90-empty.sql
+        sed -i 's!glpi-0.90.1-empty!glpi-0.90-empty!' /usr/share/glpi/install/cliinstall.php
         php /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --lang=fr_FR --force
 }
 
