@@ -586,12 +586,6 @@ install_backuppc() {
 	cp -rf /root/.ssh /var/lib/backuppc/
 	chown -R backuppc:backuppc /var/lib/backuppc/
 
-	if false; then
-	# Configure Apache for backuppc
-	if [ ! -e /etc/apache2/sites-available/backuppc.conf ]; then
-		ln -s /etc/backuppc/apache.conf /etc/apache2/sites-available/backuppc.conf
-	fi
-
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
 		# Allow MMC to connect to backuppc
 		sed "$ i\        Allow from 127.0.0.1" -i /etc/apache2/sites-available/backuppc.conf
