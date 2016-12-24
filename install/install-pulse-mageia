@@ -592,7 +592,7 @@ install_backuppc() {
 		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
 	fi
 	fi
-	service httpd restart
+	service httpd reload
 	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
 
 	colored_echo green "### INFO Installing backuppc... Done"
