@@ -752,7 +752,7 @@ configure_backuppc() {
 		sed "$ i\        Allow from ${PULSEMAIN_IP}" -i /etc/apache2/sites-available/backuppc.conf
 		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
 	fi
-	service httpd restart
+	service httpd reload
 
 	# Configure pulse2-uuid-resolver to acces mmc
 	sed "s/^host =.*/host = ${PULSEMAIN_IP}/" -i /etc/mmc/pulse2/uuid-resolver/uuid-resolver.ini
