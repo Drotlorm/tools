@@ -616,8 +616,7 @@ initialise_glpi_db() {
     fi
 
         # Install for glpi 0.90 ( mageia 6 )
-	echo "CREATE database glpi;" | mysql -uroot
-	echo "CREATE user 'glpi'@'localhost';" | mysql -uroot
+	echo "CREATE user 'glpi'@'localhost';" | mysql -uroot -p${ROOT_PASSWORD}
 
         sed -i 's!glpi-0.90.1-empty!glpi-0.90-empty!' /usr/share/glpi/install/cliinstall.php
         php /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
