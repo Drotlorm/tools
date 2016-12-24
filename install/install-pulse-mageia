@@ -582,11 +582,12 @@ install_backuppc() {
 	cp -rf /root/.ssh /var/lib/backuppc/
 	chown -R backuppc:backuppc /var/lib/backuppc/
 
-	if [[ ${INSTALL_TYPE} == "p" ]]; then
-		# Allow MMC to connect to backuppc
-		sed "$ i\        Allow from 127.0.0.1" -i /etc/apache2/sites-available/backuppc.conf
-		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
-	fi
+	# TODO: Adapt for mageia
+	#if [[ ${INSTALL_TYPE} == "p" ]]; then
+	#	# Allow MMC to connect to backuppc
+	#	sed "$ i\        Allow from 127.0.0.1" -i /etc/apache2/sites-available/backuppc.conf
+	#	sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
+	#fi
 	
 	service httpd reload
 	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
