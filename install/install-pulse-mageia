@@ -521,10 +521,7 @@ install_apache() {
 install_ldap_server() {
 	colored_echo blue "### INFO Installing LDAP server..."
 
-	# Define a few settings for ldap-server
-	echo "slapd slapd/password1 password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "slapd slapd/password2 password ${ROOT_PASSWORD}" | debconf-set-selections
-
+	# TODO: Configure LDAP ( password, etc ).
 	# Install ldap-server
 	urpmi --auto openldap-servers
 	if [ ! $? -eq 0 ]; then
