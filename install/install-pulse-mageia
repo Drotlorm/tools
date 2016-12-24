@@ -492,10 +492,6 @@ install_pulse2-setup_deps() {
 
 	# Install rng-tools used by pulse2-setup
 	urpmi --auto rng-tools
-	grep ^HRNGDEVICE /etc/default/rng-tools
-	if [ ! $? -eq 0 ]; then
-		echo "HRNGDEVICE=/dev/urandom" >> /etc/default/rng-tools
-	fi
 	service rngd restart
 
 	# Install python network libraries used by pulse2-setup
