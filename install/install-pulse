@@ -26,6 +26,7 @@ display_usage() {
 	echo -e "\t[--glpi-dbpasswd=<database user password>]"
 	echo -e "\t[--glpi-dbrootpasswd=<mysql root password>]"
 	echo -e "\t[--mail-password=<support mail account password>]"
+	exit 0
 }
 
 check_arguments() {
@@ -650,7 +651,7 @@ install_glpi() {
 	echo "glpi glpi/configuration note" | debconf-set-selections
 
 	# Install glpi
-	apt-get -y install glpi fusioninventory-for-glpi glpi-webservices php5-xmlrpc
+	apt-get -y install glpi fusioninventory-for-glpi glpi-webservices php5-xmlrpc php5-ldap php5-imap
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
