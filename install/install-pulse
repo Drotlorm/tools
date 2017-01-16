@@ -996,7 +996,7 @@ reset_glpi_db() {
 
 	# Enable LDAP auth for GLPI
 	local BASE_DN=`slapcat | grep -m 1 dn |awk '{print $2}'`
-	echo "insert into glpi_authldaps values (1,'LocalLDAP','127.0.0.1','${BASE_DN}','',389,'','uid',0,'','(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','','mobile','',0,0,0,'',NULL,'preferredlanguage','','','2012-11-02 17:03:27','',1,1,'','','','','','','','','');" | mysql -uroot glpi
+	echo "insert into glpi_authldaps values (1,'LocalLDAP','127.0.0.1','${BASE_DN}','',389,'','uid',0,'','(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','','mobile','',0,0,0,'',NULL,'preferredlanguage','','','2012-11-02 17:03:27','',1,1,'','','','','','','','','','','');" | mysql -uroot glpi
 
 	# Enable GLPI FusionInventory plugin
 	local SuperAdmin=`mysql -N -s -e 'SELECT id FROM glpi_profiles WHERE name="Super-Admin"' glpi;`
@@ -1039,8 +1039,8 @@ reset_glpi_db() {
 	echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.');" | mysql glpi
 	# Two new rules for computers linking
 	echo "UPDATE glpi_rules SET ranking = ranking+2 WHERE ranking > 2 AND sub_type = 'PluginFusioninventoryInventoryRuleImport'" | mysql glpi
-	echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',3,'Computer mac + no serial + no uuid','','AND',1,'','NULL',0,'NULL',0);" | mysql glpi
-	echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',4,'Computer uuid + mac','','AND',1,'','NULL',0,'NULL',0);" | mysql glpi
+	echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',3,'Computer mac + no serial + no uuid','','AND',1,'','NULL',0,'NULL',0,'');" | mysql glpi
+	echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',4,'Computer uuid + mac','','AND',1,'','NULL',0,'NULL',0,'');" | mysql glpi
 	local maxid=`echo "SELECT MAX(id) FROM glpi_rules" | mysql -s glpi`
 	local maxidmin=`expr ${maxid} - 1`
 	echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','serial',30,'1')" | mysql glpi
@@ -1056,7 +1056,7 @@ reset_glpi_db() {
 	echo "INSERT INTO glpi_ruleactions VALUES('','${maxidmin}','assign','_fusion',1)" | mysql glpi
 	echo "INSERT INTO glpi_ruleactions VALUES('','${maxid}','assign','_fusion',1)" | mysql glpi
 	# One rule for setting the default entity
-	echo "INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MAIN_ENTITY}','','AND',1,'','',0,'',0);" | mysql glpi
+	echo "INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MAIN_ENTITY}','','AND',1,'','',0,'',0,'');" | mysql glpi
 	echo "INSERT INTO glpi_rulecriterias VALUES ('', (SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'tag',0,'*');" | mysql glpi
 	echo "INSERT INTO glpi_ruleactions VALUES ('',(SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id','1');" | mysql glpi
 
@@ -1190,7 +1190,7 @@ configure_glpi_multisite() {
 
 	# Create fusioninventory rule to affect all computer from/to multi-site entity. Done on main pulse server
 	local SSH_COMMAND_UPDATE_RANKING="echo \"UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity';\" | mysql glpi"
-  local SSH_COMMAND_GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0);\" | mysql glpi"
+  local SSH_COMMAND_GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0,'');\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT id FROM glpi_entities WHERE name='${MULTISITE_ENTITY}'));\" | mysql glpi"
 	ssh ${GLPI_DBHOST} ${SSH_COMMAND_UPDATE_RANKING}
