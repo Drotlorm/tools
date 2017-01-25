@@ -1131,6 +1131,7 @@ setup_glpi_triggers() {
 		sed -i "s/@@MYSQL_PASSWORD@@/${RANDOM_PASSWORD}/" /tmp/synch-remoteglpi-to-msc.sql
 		sed -i "s/@@MYSQL_SERVER@@/${IP_ADDRESS}/" /tmp/synch-remoteglpi-to-msc.sql
 		sed -i "s/@@MYSQL_PORT@@/3306/" /tmp/synch-remoteglpi-to-msc.sql
+		sed -i "s/^glpi_base_url.*/glpi_base_url = http:\/\/localhost\/glpi\/apirest.php\//" /etc/mmc/plugins/glpi.ini.local
 		mysql -h${GLPI_DBHOST} -uroot -p${GLPI_DBROOTPASSWD} -s -r < /tmp/synch-remoteglpi-to-msc.sql
 		if [ ! $? -eq 0 ]; then
 			colored_echo red "### ERROR... Could not setup the triggers on the remote mysql server"
