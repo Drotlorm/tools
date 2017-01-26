@@ -1,0 +1,80 @@
+#!/bin/bash
+
+#############################################
+echo "Installation Pulse shorewall mono-site"
+#############################################
+aptitude update >/dev/null
+which shorewall > /dev/null
+if [ $? -eq 0 ]; then echo "Shorewall is already installed, check it first"; exit 0;fi
+aptitude install shorewall -y  > /dev/null
+cp /usr/share/doc/shorewall/examples/one-interface/{shorewall.conf.gz,interfaces,zones,policy,rules} /etc/shorewall/
+
+########################
+echo "Shorewall startup"
+########################
+sed 's/^startup=0$/startup=1/' -i /etc/default/shorewall
+
+######################
+echo "Shorewall setup"
+######################
+pushd /etc/shorewall/ > /dev/null
+gunzip -f shorewall.conf.gz
+sed 's/^STARTUP_ENABLED=No$/STARTUP_ENABLED=Yes/' -i shorewall.conf
+sed 's/^IP_FORWARDING=No$/IP_FORWARDING=Yes/' -i shorewall.conf
+sed 's/^MULTICAST=No$/MULTICAST=Yes/' -i shorewall.conf
+
+##############################
+echo "Shorewall configuration"
+##############################
+
+#####################################
+echo "Shorewall policy configuration"
+#####################################
+sed 's/^$FW.*net.*ACCEPT$/$FW             net             DROP/' -i policy
+sed 's/^net.*all.*DROP.*info$//' -i policy
+sed 's/^all.*all.*REJECT$/all             all             DROP/' -i policy
+
+####################################
+echo "Shorewall rules configuration"
+####################################
+sed '23,$d' -i rules
+cat <<EOT >> rules
+############## rules
+# Permit all ICMP traffic FROM Pulse to client network
+ACCEPT          \$FW             net     icmp    8
+
+# SSH SERVER
+ACCEPT          \$FW             net     tcp     22
+
+# IMAGING SERVER
+# TFTP
+ACCEPT          net             \$FW     udp     69
+# NFS
+ACCEPT          net             \$FW     tcp     111,2049
+ACCEPT          net             \$FW     udp     111,2049
+
+# Get information during imaging from PSERVER
+ACCEPT          net             \$FW     tcp     9990
+
+# SERVER WEB
+# HTTP(S)
+ACCEPT          net             \$FW     tcp     80,443
+
+# INVENTORY SERVER
+ACCEPT          net             \$FW     tcp     9999
+
+# UDP-SENDER
+ACCEPT          \$FW             net     udp     2232,2234
+
+# WARRIOR TO PULSE
+ACCEPT          net             \$FW     tcp     8100:8200
+
+# MULTICAST
+ACCEPT          \$FW             all:224.0.0.0/4
+ACCEPT          all             \$FW:224.0.0.0/4
+ACCEPT          \$FW             all:232.168.56.2
+EOT
+service shorewall start
+tail -n1 /var/log/syslog
+popd
+
