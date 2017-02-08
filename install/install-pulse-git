@@ -39,7 +39,7 @@ check_arguments() {
 				shift
 				;;
 			--pulse-repo-url=*)
-				PULSE_REPO_URL="${i#*=} ./"
+				PULSE_REPO_URL="${i#*=}"
 				shift
 				;;
 			--root-password=*)
