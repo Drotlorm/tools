@@ -438,6 +438,8 @@ configure_repos() {
 			;;
 		"8"*)
 			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
+			echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
+			wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
 			;;
 		*)
 			;;
