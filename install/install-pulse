@@ -430,6 +430,8 @@ check_network_config() {
 configure_repos() {
 	colored_echo blue "### INFO Configuring all necessary repos..."
 
+	apt-get -y install apt-transport-https
+	
 	case ${DEBIAN_VERSION} in
 		"7"*)
 			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
@@ -475,7 +477,7 @@ install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	apt-get -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp apt-transport-https
+	apt-get -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
