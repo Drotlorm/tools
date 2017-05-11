@@ -431,7 +431,7 @@ configure_repos() {
 	colored_echo blue "### INFO Configuring all necessary repos..."
 
 	apt-get -y install apt-transport-https
-	
+
 	case ${DEBIAN_VERSION} in
 		"7"*)
 			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
@@ -655,7 +655,7 @@ install_glpi() {
 	echo "glpi glpi/configuration note" | debconf-set-selections
 
 	# Install glpi
-	apt-get -y install glpi fusioninventory-for-glpi glpi-webservices php5-xmlrpc php5-ldap php5-imap
+	apt-get -y install glpi fusioninventory-for-glpi php5-xmlrpc php5-ldap php5-imap
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
@@ -1073,17 +1073,6 @@ reset_glpi_db() {
 	echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api';" | mysql glpi
 	echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials';" | mysql glpi
 	echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token';" | mysql glpi
-
-	# Enable GLPI Plugin WebServices
-	echo "CREATE TABLE glpi_plugin_webservices_clients ( id INT NOT NULL AUTO_INCREMENT, entities_id INT NOT NULL DEFAULT '0', is_recursive TINYINT( 1 ) NOT NULL DEFAULT '0', name VARCHAR( 255 ) NOT NULL , pattern VARCHAR( 255 ) NOT NULL , ip_start BIGINT NULL , ip_end BIGINT NULL , ipv6  VARCHAR( 255 ) NULL, username VARCHAR( 255 ) NULL , password VARCHAR( 255 ) NULL , do_log TINYINT NOT NULL DEFAULT '0', debug TINYINT NOT NULL DEFAULT '0', is_active TINYINT NOT NULL DEFAULT '0', deflate TINYINT NOT NULL DEFAULT '0', comment TEXT NULL , PRIMARY KEY (id), KEY entities_id (entities_id) );"| mysql glpi
-	echo "INSERT INTO glpi_plugin_webservices_clients (id, entities_id, is_recursive, name, pattern, ip_start, ip_end , ipv6 , do_log, is_active, comment) VALUES (NULL, 0, 1, 'Local','.*', INET_ATON('127.0.0.1'), INET_ATON('127.0.0.1'), '::1',1, 1, 'Allow all from local');" | mysql glpi
-	local webservicesId=`echo "SELECT id FROM glpi_plugins WHERE directory=\"webservices\"" | mysql -s glpi`
-	echo "UPDATE glpi_plugins SET state='1' WHERE id='${webservicesId}';" | mysql glpi
-
-	# Allow only Pulse to use the GLPI Plugin Webservices
-	IFS=. read -r a b c d <<< "${IP_ADDRESS}"
-	IP_DECIMAL=`printf '%s\n' "$((a * 256 ** 3 + b * 256 ** 2 + c * 256 +d))"`
-	echo "UPDATE glpi_plugin_webservices_clients SET name='Pulse Webservices', ip_start='${IP_DECIMAL}', ip_end='${IP_DECIMAL}', comment='Allow only Pulse IP' WHERE id='1';" | mysql -s glpi
 
 	#Clean GLPI installer file
 	rm -rf /usr/share/glpi/install/install.php
