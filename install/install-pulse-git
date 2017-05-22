@@ -427,7 +427,11 @@ check_network_config() {
 
 configure_repos() {
 	colored_echo blue "### INFO Configuring all necessary repos..."
+
 	wget -qO - http://git.siveo.net/pubkey.txt | apt-key add -
+
+	apt-get -y install apt-transport-https
+
 	case ${DEBIAN_VERSION} in
 		"7"*)
 			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
@@ -435,7 +439,9 @@ configure_repos() {
 			wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
 			;;
 		"8"*)
-			echo "deb ${PULSE_REPO_URL}" > /etc/apt/sources.list.d/pulse.list
+			echo "deb ${PULSE_REPO_URL} jessie mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+			echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
+			wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
 			;;
 		*)
 			;;
@@ -471,7 +477,7 @@ install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	apt-get -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp apt-transport-https
+	apt-get -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -649,7 +655,7 @@ install_glpi() {
 	echo "glpi glpi/configuration note" | debconf-set-selections
 
 	# Install glpi
-	apt-get -y install glpi fusioninventory-for-glpi glpi-webservices php5-xmlrpc php5-ldap php5-imap
+	apt-get -y install glpi fusioninventory-for-glpi php5-xmlrpc php5-ldap php5-imap
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
@@ -880,32 +886,30 @@ configure_pxelinux() {
 
 	# Copy pxelinux and modules to bootloader
 	if [ ! -d "/var/lib/pulse2/imaging/bootloader/" ]; then
-	  mkdir /var/lib/pulse2/imaging/bootloader/
+	  mkdir /var/lib/pulse2/imaging/bootloader
+	  mkdir /var/lib/pulse2/imaging/bootloader-uefi32
+	  mkdir /var/lib/pulse2/imaging/bootloader-uefi64
 	fi
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Configuring pxelinux... failed"
 		exit 1
 	fi
-        ln /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/
-        ln /usr/lib/syslinux/modules/bios/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.c32,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff..
-c32} /var/lib/pulse2/imaging/bootloader/
-        ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader/
+  ln /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/
+  ln /usr/lib/syslinux/modules/bios/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.c32,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff.c32} /var/lib/pulse2/imaging/bootloader/
+  ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader/
 
-        ln /usr/lib/SYSLINUX.EFI/efi32/syslinux.efi /var/lib/pulse2/imaging/bootloader-uefi32/
-        ln /usr/lib/syslinux/modules/efi32/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.e32,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,powerofff
-.c32} /var/lib/pulse2/imaging/bootloader-uefi32/
-        ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader-uefi32/
+  ln /usr/lib/SYSLINUX.EFI/efi32/syslinux.efi /var/lib/pulse2/imaging/bootloader-uefi32/
+  ln /usr/lib/syslinux/modules/efi32/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.e32,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff.c32} /var/lib/pulse2/imaging/bootloader-uefi32/
+  ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader-uefi32/
 
-        ln /usr/lib/SYSLINUX.EFI/efi64/syslinux.efi /var/lib/pulse2/imaging/bootloader-uefi64/
-        ln /usr/lib/syslinux/modules/efi64/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.e64,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,powerofff
-.c32} /var/lib/pulse2/imaging/bootloader-uefi64/
-        ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader-uefi64/
+  ln /usr/lib/SYSLINUX.EFI/efi64/syslinux.efi /var/lib/pulse2/imaging/bootloader-uefi64/
+  ln /usr/lib/syslinux/modules/efi64/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.e64,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff.c32} /var/lib/pulse2/imaging/bootloader-uefi64/
+  ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader-uefi64/
 
-        # Create the symlink for pxelinux to find the bootmenus
-        cd /var/lib/pulse2/imaging/bootloader/; ln -s ../bootmenus pxelinux.cfg
-        cd /var/lib/pulse2/imaging/bootloader-uefi32/; ln -s ../bootmenus pxelinux.cfg
-        cd /var/lib/pulse2/imaging/bootloader-uefi64/; ln -s ../bootmenus pxelinux.cfg
-
+  # Create the symlink for pxelinux to find the bootmenus
+  cd /var/lib/pulse2/imaging/bootloader/; ln -s ../bootmenus pxelinux.cfg
+  cd /var/lib/pulse2/imaging/bootloader-uefi32/; ln -s ../bootmenus pxelinux.cfg
+  cd /var/lib/pulse2/imaging/bootloader-uefi64/; ln -s ../bootmenus pxelinux.cfg
 
 	# Create the utilities.menu
 	cp /usr/share/doc/pulse2-common/contrib/imaging/template/utilities.menu.in /var/lib/pulse2/imaging/tools/utilities.menu
@@ -1069,17 +1073,6 @@ reset_glpi_db() {
 	echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api';" | mysql glpi
 	echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials';" | mysql glpi
 	echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token';" | mysql glpi
-
-	# Enable GLPI Plugin WebServices
-	echo "CREATE TABLE glpi_plugin_webservices_clients ( id INT NOT NULL AUTO_INCREMENT, entities_id INT NOT NULL DEFAULT '0', is_recursive TINYINT( 1 ) NOT NULL DEFAULT '0', name VARCHAR( 255 ) NOT NULL , pattern VARCHAR( 255 ) NOT NULL , ip_start BIGINT NULL , ip_end BIGINT NULL , ipv6  VARCHAR( 255 ) NULL, username VARCHAR( 255 ) NULL , password VARCHAR( 255 ) NULL , do_log TINYINT NOT NULL DEFAULT '0', debug TINYINT NOT NULL DEFAULT '0', is_active TINYINT NOT NULL DEFAULT '0', deflate TINYINT NOT NULL DEFAULT '0', comment TEXT NULL , PRIMARY KEY (id), KEY entities_id (entities_id) );"| mysql glpi
-	echo "INSERT INTO glpi_plugin_webservices_clients (id, entities_id, is_recursive, name, pattern, ip_start, ip_end , ipv6 , do_log, is_active, comment) VALUES (NULL, 0, 1, 'Local','.*', INET_ATON('127.0.0.1'), INET_ATON('127.0.0.1'), '::1',1, 1, 'Allow all from local');" | mysql glpi
-	local webservicesId=`echo "SELECT id FROM glpi_plugins WHERE directory=\"webservices\"" | mysql -s glpi`
-	echo "UPDATE glpi_plugins SET state='1' WHERE id='${webservicesId}';" | mysql glpi
-
-	# Allow only Pulse to use the GLPI Plugin Webservices
-	IFS=. read -r a b c d <<< "${IP_ADDRESS}"
-	IP_DECIMAL=`printf '%s\n' "$((a * 256 ** 3 + b * 256 ** 2 + c * 256 +d))"`
-	echo "UPDATE glpi_plugin_webservices_clients SET name='Pulse Webservices', ip_start='${IP_DECIMAL}', ip_end='${IP_DECIMAL}', comment='Allow only Pulse IP' WHERE id='1';" | mysql -s glpi
 
 	#Clean GLPI installer file
 	rm -rf /usr/share/glpi/install/install.php
