@@ -377,7 +377,7 @@ check_network_config() {
 	fi
 
 	# If SERVER_FQDN is not defined, use the hostname
-	if [ -z ${SERVER_FQDN}]; then
+	if [ -z ${SERVER_FQDN} ]; then
 		SERVER_FQDN=`hostname`
 	fi
 
