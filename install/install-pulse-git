@@ -200,6 +200,10 @@ colored_echo() {
     tput sgr0;
 }
 
+sed_escape() {
+	echo "$1" |sed -e 's/[\/&]/\\&/g'
+}
+
 exit_code() {
     return=$?
     if [ $return -ne 0 ];then coloredEcho red "### DEBUG Exit code" $return; fi
@@ -1472,7 +1476,7 @@ configure_relay_server() {
 	sed -i "s/@@XMPP_SERVER@@/${IP_ADDRESS}/" /etc/pulse-xmpp-agent/relayconf.ini
 	sed -i "s/@@XMPP_PASSWORD@@/${MASTER_PASSWORD}/" /etc/pulse-xmpp-agent/relayconf.ini
 	sed -i "s/@@CHATROOM_PASSWORD@@/${MUC_ROOM_PASSWORD}/" /etc/pulse-xmpp-agent/relayconf.ini
-	sed -i "s/@@GUACAMOLE_BASEURL@@/${GUACAMOLE_BASEURL}/" /etc/pulse-xmpp-agent/relayconf.ini
+	sed -i "s/@@GUACAMOLE_BASEURL@@/$(sed_escape ${GUACAMOLE_BASEURL})/" /etc/pulse-xmpp-agent/relayconf.ini
 	sed -i "s/@@CHATROOM_SERVER@@/conference.${XMPP_DOMAIN}/" /etc/pulse-xmpp-agent/relayconf.ini
 	sed -i "s/@@CHAT_DOMAIN@@/${XMPP_DOMAIN}/" /etc/pulse-xmpp-agent/relayconf.ini
 	sed -i "s/log_level = .*$/log_level = DEBUG/" /etc/pulse-xmpp-agent/relayconf.ini # TO BE DELETED
