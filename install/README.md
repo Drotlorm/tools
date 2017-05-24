@@ -12,11 +12,14 @@
 
 Download install-pulse-git and run
 
-```# ./install-pulse-git ```
+```
+# wget  https://raw.githubusercontent.com/pulse-project/tools/master/install/install-pulse-git
+# source install-pulse-git 
+```
 
 ### Usage:
 
-./install-pulse-git [--batch-mode [arguments]] | [--interactive-mode] 
+source install-pulse-git [--batch-mode [arguments]] | [--interactive-mode] 
 
 ### Arguments:
 ```
