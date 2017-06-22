@@ -668,8 +668,8 @@ install_backuppc() {
 
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
 		# Allow MMC to connect to backuppc
-		sed "$ i\        Allow from 127.0.0.1" -i /etc/apache2/sites-available/backuppc.conf
-		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
+		sed "$ i\        Allow from 127.0.0.1" -i /etc/apache2/conf-available/backuppc.conf
+		sed "$ i\        Satisfy any" -i /etc/apache2/conf-available/backuppc.conf
 	fi
 
 	service apache2 restart
@@ -866,10 +866,10 @@ configure_backuppc() {
 	colored_echo blue "### INFO Configuring backuppc..."
 
 	# Allow MMC to connect to backuppc server
-	grep -Gq Satisfy /etc/apache2/sites-available/backuppc.conf
+	grep -Gq Satisfy /etc/apache2/conf-available/backuppc.conf
 	if [ $? -ne 0 ]; then
-		sed "$ i\        Allow from ${PULSEMAIN_IP}" -i /etc/apache2/sites-available/backuppc.conf
-		sed "$ i\        Satisfy any" -i /etc/apache2/sites-available/backuppc.conf
+		sed "$ i\        Allow from ${PULSEMAIN_IP}" -i /etc/apache2/conf-available/backuppc.conf
+		sed "$ i\        Satisfy any" -i /etc/apache2/conf-available/backuppc.conf
 	fi
 	service apache2 restart
 
