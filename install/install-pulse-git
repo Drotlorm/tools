@@ -661,10 +661,10 @@ install_backuppc() {
 	chown -R backuppc:backuppc /var/lib/backuppc/
 
 	# Configure Apache for backuppc
-	if [ ! -e /etc/apache2/sites-available/backuppc.conf ]; then
-		ln -s /etc/backuppc/apache.conf /etc/apache2/sites-available/backuppc.conf
+	if [ ! -e /etc/apache2/conf-available/backuppc.conf ]; then
+		ln -s /etc/backuppc/apache.conf /etc/apache2/conf-available/backuppc.conf
 	fi
-	a2ensite backuppc.conf
+	a2enconf backuppc.conf
 
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
 		# Allow MMC to connect to backuppc
@@ -1028,10 +1028,11 @@ configure_mmc() {
 	service slapd restart
 
 	# Configure Apache for MMC
-	if [ ! -e /etc/apache2/sites-available/mmc.conf ]; then
-		ln -s /etc/mmc/apache/mmc.conf /etc/apache2/sites-available/
+	if [ ! -e /etc/apache2/conf-available/mmc.conf ]; then
+		ln -s /etc/mmc/apache/mmc.conf /etc/apache2/conf-available/
 	fi
-	a2ensite mmc.conf
+	a2enconf mmc.conf
+	a2enconf pulse.conf
 	service apache2 restart
 
 	# Configure base.ini
@@ -1148,17 +1149,17 @@ configure_guacamole() {
 	esac
 
 	# Setup Apache
-	echo "<Location /guacamole/>" > /etc/apache2/sites-available/guacamole.conf
-  echo "    SetEnvIf Referer \"^${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/sites-available/guacamole.conf
-  echo "    Order Deny,Allow" >> /etc/apache2/sites-available/guacamole.conf
-  echo "    Deny from all" >> /etc/apache2/sites-available/guacamole.conf
-  echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/sites-available/guacamole.conf
-  echo "    ProxyPass http://localhost:8081/guacamole/ max=20 flushpackets=on" >> /etc/apache2/sites-available/guacamole.conf
-  echo "    ProxyPassReverse http://localhost:8081/guacamole/" >> /etc/apache2/sites-available/guacamole.conf
-  echo "</Location>" >> /etc/apache2/sites-available/guacamole.conf
-  echo "SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog" >> /etc/apache2/sites-available/guacamole.conf
-  echo "CustomLog  /var/log/apache2/guac.log common env=!dontlog" >> /etc/apache2/sites-available/guacamole.conf
-  a2ensite guacamole.conf
+	echo "<Location /guacamole/>" > /etc/apache2/conf-available/guacamole.conf
+  echo "    SetEnvIf Referer \"^${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    ProxyPass http://localhost:8081/guacamole/ max=20 flushpackets=on" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    ProxyPassReverse http://localhost:8081/guacamole/" >> /etc/apache2/conf-available/guacamole.conf
+  echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
+  echo "SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog" >> /etc/apache2/conf-available/guacamole.conf
+  echo "CustomLog  /var/log/apache2/guac.log common env=!dontlog" >> /etc/apache2/conf-available/guacamole.conf
+  a2enconf guacamole.conf
   a2enmod proxy
   a2enmod proxy_http
   service apache2 restart
