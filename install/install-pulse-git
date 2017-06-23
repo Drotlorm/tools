@@ -390,6 +390,7 @@ check_network_config() {
 			SERVER_FQDN=`hostname`
 		else
 			SERVER_FQDN=${IP_ADDRESS}
+		fi
 	fi
 
 	if [[ ${MAIN_GLPI} == "y" ]]; then
