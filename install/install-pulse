@@ -460,6 +460,8 @@ configure_apt_settings() {
 	echo 'APT::Get::AllowUnauthenticated "true";' >> /etc/apt/apt.conf.d/99local-config
 	echo 'Acquire::PDiffs "false";' >> /etc/apt/apt.conf.d/99local-config
 
+	echo "popularity-contest  popularity-contest/participate      boolean false" | debconf-set-selections
+
 	colored_echo blue "### INFO Defining a few settings for apt... Done"
 }
 
