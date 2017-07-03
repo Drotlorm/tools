@@ -760,7 +760,7 @@ install_nfs_kernel_server() {
 install_pxelinux() {
 	colored_echo blue "### INFO Installing pxelinux..."
 
-	apt-get -y install pxelinux syslinux-common
+	apt-get -y install pxelinux syslinux-common syslinux-efi
 
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERRORROR... pxelinux install... failed"
