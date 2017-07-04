@@ -1156,7 +1156,7 @@ configure_guacamole() {
 
 	# Setup Apache
 	echo "<Location /guacamole/>" > /etc/apache2/conf-available/guacamole.conf
-  echo "    SetEnvIf Referer \"^${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
   echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
   echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
   echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
