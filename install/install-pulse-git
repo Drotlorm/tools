@@ -389,7 +389,8 @@ check_network_config() {
 		if [ $? -eq 0 ]; then
 			SERVER_FQDN=`hostname`
 		else
-			SERVER_FQDN=${IP_ADDRESS}
+			SERVER_FQDN=`hostname`
+			HOSTNAME_NOT_IN_DNS=1
 		fi
 	fi
 
@@ -441,6 +442,12 @@ check_network_config() {
 		colored_echo blue "====================================================================="
 	fi
 	colored_echo green "### Checking network settings... Done"
+	if [ ${HOSTNAME_NOT_IN_DNS} -eq 1 ]; then
+		colored_echo red "*********************************************************************"
+		colored_echo red "** ${SERVER_FQDN} is not found in the DNS. Please configure your   **"
+		colored_echo red "** DNS or your hosts file on your workstations accordingly         **"
+		colored_echo red "*********************************************************************"
+	fi
 	if [[ ${BATCH_MODE} != "y" ]]; then
 		local CORRECT=$(ask "Are the above settings correct?" y n)
 		if [[ ${CORRECT} == "n" ]]; then
