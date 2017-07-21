@@ -685,6 +685,11 @@ install_backuppc() {
 		sed "$ i\        Satisfy any" -i /etc/apache2/conf-available/backuppc.conf
 	fi
 
+	# Delete localhost backup
+	rm -f /etc/backuppc/localhost.pl
+	sed -i '/^localhost/d' /etc/backuppc/hosts
+	rm -rf /var/lib/backuppc/pc/localhost/
+
 	service apache2 restart
 	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
 
