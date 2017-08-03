@@ -10,7 +10,7 @@ ORGANIZATIONALUNIT="."
 MAIL_ADDRESS="support@siveo.net"
 
 display_usage() {
-	echo -e "\nUsage:\n$0 [--batch-mode [arguments]] | [--interactive-mode] \n"
+	echo -e "\nUsage:\n$0 [--batch-mode [arguments]] | [--interactive-mode] | [--reset-mode [arguments]] \n"
 	echo -e "arguments:"
 	echo -e "\t[--pulse-repo-url=<pulse repo url>]"
 	echo -e "\t[--root-password=<root password>]"
@@ -43,6 +43,10 @@ check_arguments() {
 				;;
 			--interactive-mode*)
 				BATCH_MODE="n"
+				shift
+				;;
+			--reset-mode*)
+				BATCH_MODE="r"
 				shift
 				;;
 			--pulse-repo-url=*)
@@ -1126,7 +1130,7 @@ configure_guacamole() {
 
 	# Authentication via MySQL
   # Create the database
-  echo "DROP DATABASE guacamole;" | mysql -uroot
+  echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot
   echo "CREATE DATABASE guacamole;" | mysql -uroot
   echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '${ROOT_PASSWORD}';" | mysql -uroot
   echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot
@@ -1357,6 +1361,7 @@ reset_pulse_db() {
 	fi
 
 	# Setup database for xmppmaster
+	echo "DROP DATABASE IF EXISTS xmppmaster" | mysql
 	mysql < /usr/share/doc/pulse2/contrib/xmppmaster/sql/schema-001.sql
 	local DB_PASSWORD=`cat /etc/mmc/plugins/msc.ini.local |grep dbpass |awk '{print $3}'`
 	echo "GRANT ALL PRIVILEGES ON xmppmaster.* TO 'mmc'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';" |mysql
@@ -1417,9 +1422,6 @@ reset_pulse_db() {
 		colored_echo red "### ERROR... imaging server associat... failed"
 		exit 1
 	fi
-
-	# Generate Pulse agents
-	/var/lib/pulse2/clients/win32/generate-agent-pack.sh
 
 	colored_echo green "### INFO Resetting Pulse database... Done"
 }
@@ -1801,12 +1803,32 @@ else
 	check_arguments "$@"
 fi
 
-if [[ ${BATCH_MODE} == "n" ]]; then
+
+if [[ ${BATCH_MODE} == "r" ]]; then
+	echo "Entering reset mode..."
+	# upgrade packages
+	apt-get update
+	apt-get -y upgrade
+	# Reset pulse
+	if [[ ${CREATE_ENTITY} == "y" ]]; then
+		# Initialise glpi database
+		reset_glpi_db
+	fi
+	reset_pulse_db
+	generate_pki
+	generate_agent pulse
+	setup_glpi_triggers
+	configure_glpi_rest
+	configure_relay_server pulse
+	restart_pulse_services
+	exit 0
+elif [[ ${BATCH_MODE} == "n" ]]; then
 	echo "Entering interactive mode..."
 	get_user_options
 fi
 check_network_config
 prepare_debian
+
 
 if [[ ${INSTALL_TYPE} == "p" ]]; then
 	# Pulse main installation
