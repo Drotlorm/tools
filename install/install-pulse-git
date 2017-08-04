@@ -603,11 +603,11 @@ prepare_debian() {
 			TOMCAT_VERSION='8'
 			;;
 	  "9"*)
-			PHP_VERSION='7'
+			PHP_VERSION='7.0'
 			TOMCAT_VERSION='8'
 			;;
 	  *)
-			PHP_VERSION='7'
+			PHP_VERSION='7.0'
 			TOMCAT_VERSION='8'
 	    ;;
 	esac
