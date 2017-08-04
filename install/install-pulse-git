@@ -591,6 +591,26 @@ prepare_debian() {
 	configure_apt_settings
 	install_system_tools
 	configure_keepalive
+
+	# Define a few options
+	case ${DEBIAN_VERSION} in
+	  "7"*)
+			PHP_VERSION='5'
+			TOMCAT_VERSION='6'
+			;;
+	  "8"*)
+			PHP_VERSION='5'
+			TOMCAT_VERSION='8'
+			;;
+	  "9"*)
+			PHP_VERSION='7'
+			TOMCAT_VERSION='8'
+			;;
+	  *)
+			PHP_VERSION='7'
+			TOMCAT_VERSION='8'
+	    ;;
+	esac
 }
 
 install_pulse2-setup_deps() {
@@ -614,11 +634,11 @@ install_apache() {
 	colored_echo blue "### INFO Installing Apache2..."
 
 	# Install apache2 and php used by Pulse
-	apt-get -y install apache2 php5
+	apt-get -y install apache2 php${PHP_VERSION}
 	# Configure php to allow upload of files of 200M max
-	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php5/apache2/php.ini
-	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php5/apache2/php.ini
-	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php5/apache2/php.ini
+	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php${PHP_VERSION}/apache2/php.ini
+	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php${PHP_VERSION}/apache2/php.ini
+	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php${PHP_VERSION}/apache2/php.ini
 	service apache2 restart
 
 	colored_echo green "### INFO Installing Apache2... Done"
@@ -719,7 +739,7 @@ install_glpi() {
 	echo "glpi glpi/configuration note" | debconf-set-selections
 
 	# Install glpi
-	apt-get -y install glpi fusioninventory-for-glpi php5-xmlrpc php5-ldap php5-imap
+	apt-get -y install glpi fusioninventory-for-glpi php${PHP_VERSION}-xmlrpc php${PHP_VERSION}-ldap php${PHP_VERSION}-imap
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
@@ -1155,23 +1175,9 @@ configure_guacamole() {
   echo "mysql-password: ${ROOT_PASSWORD}" >> /etc/guacamole/guacamole.properties
 
 	# Setup Tomcat
-	case ${DEBIAN_VERSION} in
-	  "7"*)
-			sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat6/server.xml
-			sed -i '/Connector port="8081"/ s/$/ address="127.0.0.1"/' /etc/tomcat6/server.xml
-			service tomcat6 restart
-			;;
-	  "8"*)
-			sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat8/server.xml
-			sed -i '/Connector port="8081"/ s/$/ address="127.0.0.1"/' /etc/tomcat8/server.xml
-			service tomcat8 restart
-			;;
-	  *)
-			sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat8/server.xml
-			sed -i '/Connector port="8081"/ s/$/ address="127.0.0.1"/' /etc/tomcat8/server.xml
-			service tomcat8 restart
-	    ;;
-	esac
+	sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat${TOMCAT_VERSION}/server.xml
+	sed -i '/Connector port="8081"/ s/$/ address="127.0.0.1"/' /etc/tomcat${TOMCAT_VERSION}/server.xml
+	service tomcat${TOMCAT_VERSION} restart
 
 	# Setup Apache
 	echo "<Location /guacamole/>" > /etc/apache2/conf-available/guacamole.conf
