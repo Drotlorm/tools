@@ -481,6 +481,9 @@ configure_repos() {
 			wget -O- http://neuro.debian.net/lists/jessie.de-md.libre | tee /etc/apt/sources.list.d/neurodebian.sources.list
 			apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
 			;;
+		"9"*)
+			echo "deb ${PULSE_REPO_URL} stretch mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+			;;
 		*)
 			;;
 	esac
