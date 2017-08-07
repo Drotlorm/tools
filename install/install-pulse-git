@@ -597,22 +597,22 @@ prepare_debian() {
 	  "7"*)
 			PHP_VERSION='5'
 			TOMCAT_VERSION='6'
-			PHP_INI="/etc/php${PHP_VERISON}/apache2/php.ini"
+			PHP_INI="/etc/php${PHP_VERSION}/apache2/php.ini"
 			;;
 	  "8"*)
 			PHP_VERSION='5'
 			TOMCAT_VERSION='8'
-			PHP_INI="/etc/php${PHP_VERISON}/apache2/php.ini"
+			PHP_INI="/etc/php${PHP_VERSION}/apache2/php.ini"
 			;;
 	  "9"*)
 			PHP_VERSION='7.0'
 			TOMCAT_VERSION='8'
-			PHP_INI="/etc/php/${PHP_VERISON}/apache2/php.ini"
+			PHP_INI="/etc/php/${PHP_VERSION}/apache2/php.ini"
 			;;
 	  *)
 			PHP_VERSION='7.0'
 			TOMCAT_VERSION='8'
-			PHP_INI="/etc/php/${PHP_VERISON}/apache2/php.ini"
+			PHP_INI="/etc/php/${PHP_VERSION}/apache2/php.ini"
 	    ;;
 	esac
 }
