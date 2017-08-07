@@ -520,7 +520,7 @@ install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	apt-get -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp chkconfig pwgen
+	apt-get -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp pwgen
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -1422,7 +1422,7 @@ reset_pulse_db() {
 	echo "guacamole_baseurl = ${GUACAMOLE_BASEURL}" >> /etc/mmc/plugins/xmppmaster.ini.local
 
 	# Enable agent log service
-	chkconfig pulse-xmpp-agent-log on
+	systemctl enable pulse-xmpp-agent-log.service
 
 	# Restart all services
 	for SERV in mmc-agent pulse2-inventory-server pulse2-package-server pulse2-register-pxe pulse-xmpp-agent-log; do service ${SERV} restart; done
@@ -1543,7 +1543,7 @@ configure_relay_server() {
 	fi
 
 	# Enable and start the service
-	chkconfig pulse-xmpp-agent-relay on
+	systemctl enable pulse-xmpp-agent-relay.service
 	service pulse-xmpp-agent-relay start
 
 	colored_echo green "### INFO Configuring relay server... Done"
