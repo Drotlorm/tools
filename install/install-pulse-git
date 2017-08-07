@@ -597,18 +597,22 @@ prepare_debian() {
 	  "7"*)
 			PHP_VERSION='5'
 			TOMCAT_VERSION='6'
+			PHP_INI="/etc/php${PHP_VERISON}/apache2/php.ini"
 			;;
 	  "8"*)
 			PHP_VERSION='5'
 			TOMCAT_VERSION='8'
+			PHP_INI="/etc/php${PHP_VERISON}/apache2/php.ini"
 			;;
 	  "9"*)
 			PHP_VERSION='7.0'
 			TOMCAT_VERSION='8'
+			PHP_INI="/etc/php/${PHP_VERISON}/apache2/php.ini"
 			;;
 	  *)
 			PHP_VERSION='7.0'
 			TOMCAT_VERSION='8'
+			PHP_INI="/etc/php/${PHP_VERISON}/apache2/php.ini"
 	    ;;
 	esac
 }
@@ -636,9 +640,9 @@ install_apache() {
 	# Install apache2 and php used by Pulse
 	apt-get -y install apache2 php${PHP_VERSION}
 	# Configure php to allow upload of files of 200M max
-	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' /etc/php${PHP_VERSION}/apache2/php.ini
-	sed -i 's/^post_max_size.*$/post_max_size = 200M/' /etc/php${PHP_VERSION}/apache2/php.ini
-	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' /etc/php${PHP_VERSION}/apache2/php.ini
+	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' ${PHP_INI}
+	sed -i 's/^post_max_size.*$/post_max_size = 200M/' ${PHP_INI}
+	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' ${PHP_INI}
 	service apache2 restart
 
 	colored_echo green "### INFO Installing Apache2... Done"
