@@ -895,9 +895,6 @@ install_pulse() {
 		exit 1
 	fi
 
-	# Enable services
-	sed 's/no/yes/' -i /etc/default/pulse2-inventory-server /etc/default/pulse2-launchers /etc/default/pulse2-package-server /etc/default/pulse2-scheduler /etc/default/mmc-agent
-
 	colored_echo green "### INFO Installing Pulse... Done"
 }
 
@@ -1390,12 +1387,6 @@ reset_pulse_db() {
 	echo "rsync_path = /usr/bin/rsync" >> /etc/mmc/pulse2/launchers/launchers.ini.local
 	echo "resume = True" >> /etc/mmc/pulse2/launchers/launchers.ini.local
 
-	# Disable scheduler and launcher
-	sed -i 's/ENABLE=yes/ENABLE=no/' /etc/default/pulse2-launchers
-	sed -i 's/ENABLE=yes/ENABLE=no/' /etc/default/pulse2-scheduler
-	service pulse2-scheduler stop
-	service pulse2-launchers stop
-
 	# Configure XMPP master
 	echo "[main]" > /etc/mmc/plugins/xmppmaster.ini.local
 	echo "disable = 0" >> /etc/mmc/plugins/xmppmaster.ini.local
@@ -1577,10 +1568,6 @@ install_multisite() {
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
 	fi
-
-	# Enable services
-	sed 's/no/yes/' -i /etc/default/pulse2-package-server
-	sed 's/no/yes/' -i /etc/default/pulse2-launchers
 
 	colored_echo green "### INFO Installing Pulse multisite... Done"
 }
