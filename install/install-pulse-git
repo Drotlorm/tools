@@ -633,7 +633,6 @@ install_pulse2-setup_deps() {
 	if [ ! $? -eq 0 ]; then
 		echo "HRNGDEVICE=/dev/urandom" >> /etc/default/rng-tools
 	fi
-	service rng-tools restart
 
 	# Install python network libraries used by pulse2-setup
 	apt-get -y install python-netifaces python-netaddr
@@ -1371,6 +1370,9 @@ reset_pulse_db() {
 	MUC_ROOM_PASSWORD=`pwgen --secure 12 1`
 	# Generate Guacamole Baseurl
 	GUACAMOLE_BASEURL="http://${SERVER_FQDN}/guacamole/client.xhtml?username=root&password=${GUACAMOLE_ROOT_PASSWORD}&id=c%2F"
+
+	# Run rng-tools before running pulse2-setup
+	service rng-tools restart
 
 	# Run pulse2-setup
 	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=${GLPI_URL} --glpi-dbhost=${GLPI_DBHOST} --glpi-dbname=${GLPI_DBNAME} --glpi-dbuser=${GLPI_DBUSER} --glpi-dbpasswd=${GLPI_DBPASSWD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
