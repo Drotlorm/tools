@@ -368,6 +368,13 @@ check_mysql_connection() {
 	fi
 }
 
+cdr2mask ()
+{
+   # Number of args to shift, 255..255, first non-255 byte, zeroes
+   set -- $(( 5 - ($1 / 8) )) 255 255 255 255 $(( (255 << (8 - ($1 % 8))) & 255 )) 0 0 0
+   [ $1 -gt 1 ] && shift $1 || shift
+   echo ${1-0}.${2-0}.${3-0}.${4-0}
+}
 
 check_network_config() {
 	colored_echo blue "### INFO Checking network settings..."
@@ -383,7 +390,7 @@ check_network_config() {
 	DEBIAN_VERSION=`cat /etc/*-release|grep VERSION_ID |cut -d '"' -f2`
 	IP_ADDRESS=`ip addr show ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2 | cut -d "/" -f 1`
 	NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
-	NETMASK=`ip addr show ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $4}' | cut -d ":" -f 2`
+	NETMASK=`cdr2mask $(ip addr show ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d "/" -f 2)`
 	BCAST_ADDRESS=`ip addr show ${INTERFACE} | grep 'inet .* brd ' | head -1 | sed -e 's/^.* brd \([0-9\.]*\) .*$/\1/'`
 	IP_REMOTE_SERVER=`ip addr show ${INTERFACE_TO_PULSE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
 
