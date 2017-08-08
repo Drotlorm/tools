@@ -1135,6 +1135,9 @@ configure_xmpp_server() {
   # Remove passphrase from the key and generate the pem
   openssl rsa -in pulse.key -passin pass:${ROOT_PASSWORD} -out pulse.pem
   cat pulse.crt >> pulse.pem
+	# Set permissions on pulse.pem
+	chmod 640 pulse.pem
+	chown root:ejabberd pulse.pem
   # Do some cleanup
   rm -f pulse.crt pulse.key pulse.csr
   # Go back to where we were initially
