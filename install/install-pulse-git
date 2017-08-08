@@ -749,7 +749,7 @@ install_glpi() {
 	echo "glpi glpi/configuration note" | debconf-set-selections
 
 	# Install glpi
-	apt-get -y install glpi fusioninventory-for-glpi php${PHP_VERSION}-xmlrpc php${PHP_VERSION}-ldap php${PHP_VERSION}-imap
+	apt-get -y install glpi fusioninventory-for-glpi
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
@@ -1278,8 +1278,10 @@ reset_glpi_db() {
 	# Reinstall GLPI database
 	echo "drop database glpi;" | mysql -uroot
 	echo "drop user 'glpi'@'localhost';" | mysql -uroot
-	echo "glpi  glpi/dbconfig-reinstall boolean true" | debconf-set-selections
-	echo "glpi  glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "glpi glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "glpi glpi/dbconfig-reinstall boolean true" | debconf-set-selections
 	dpkg-reconfigure -fnoninteractive glpi
 
 	# Clean glpi users/profiles apart from glpi superadmin
