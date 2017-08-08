@@ -864,7 +864,15 @@ install_guacamole_server() {
 	echo "guacamole-tomcat guacamole-tomcat/restart-server boolean true" | debconf-set-selections
 
 	# Install guacamole
-	apt-get -y install guacamole-tomcat libguac-client-rdp0 libguac-client-ssh0 libguac-client-vnc0 guacamole-auth-mysql mysql-connector-java
+	apt-get -y install guacamole-tomcat libguac-client-rdp0 libguac-client-ssh0 libguac-client-vnc0
+	case ${DEBIAN_VERSION} in
+		"8"*)
+			apt-get -y install guacamole-auth-mysql mysql-connector-java
+			;;
+		*)
+			apt-get -y install guacamole-auth-jdbc
+			;;
+	esac
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ER... Guacamole server inst... failed"
 		exit 1
@@ -1169,12 +1177,22 @@ configure_guacamole() {
   echo "CREATE DATABASE guacamole;" | mysql -uroot
   echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '${ROOT_PASSWORD}';" | mysql -uroot
   echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot
-  mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql
-  mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql
+	case ${DEBIAN_VERSION} in
+		"8"*)
+			mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql
+			mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql
+			;;
+		*)
+			mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql
+			mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql
+			;;
+	esac
   echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('${GUACAMOLE_ROOT_PASSWORD}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -uroot guacamole
   # Configure guacamole
 	cp /etc/guacamole/guacamole.properties.bak /etc/guacamole/guacamole.properties
-  sed -i "s/^auth-provider:.*$/auth-provider: net.sourceforge.guacamole.net.auth.mysql.MySQLAuthenticationProvider/" /etc/guacamole/guacamole.properties
+	if [[ ${DEBIAN_VERSION} == "8" ]]; then
+  		sed -i "s/^auth-provider:.*$/auth-provider: net.sourceforge.guacamole.net.auth.mysql.MySQLAuthenticationProvider/" /etc/guacamole/guacamole.properties
+	fi
   sed -i '/^basic-user-mapping.*$/d' /etc/guacamole/guacamole.properties
   sed -i '/^mysql-.*$/d' /etc/guacamole/guacamole.properties
   sed -i '/^lib-directory:.*$/d' /etc/guacamole/guacamole.properties
