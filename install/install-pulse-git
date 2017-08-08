@@ -865,6 +865,10 @@ install_guacamole_server() {
 
 	# Install guacamole
 	apt-get -y install guacamole-tomcat libguac-client-rdp0 libguac-client-ssh0 libguac-client-vnc0
+	if [ ! $? -eq 0 ]; then
+		colored_echo red "### ER... Guacamole server inst... failed"
+		exit 1
+	fi
 	case ${DEBIAN_VERSION} in
 		"8"*)
 			apt-get -y install guacamole-auth-mysql mysql-connector-java
@@ -876,6 +880,11 @@ install_guacamole_server() {
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ER... Guacamole server inst... failed"
 		exit 1
+	fi
+	if [ "$(grep -c "GUACAMOLE_HOME" /etc/default/tomcat${TOMCAT_VERSION})" -eq 0 ]; then
+		echo "" >> /etc/default/tomcat${TOMCAT_VERSION}
+		echo "# Guacamole env variable" >> /etc/default/tomcat${TOMCAT_VERSION}
+		echo "GUACAMOLE_HOME=/etc/guacamole" >> /etc/default/tomcat${TOMCAT_VERSION}
 	fi
 
 	colored_echo green "### INFO Installing Guacamole server... Done"
@@ -1174,6 +1183,7 @@ configure_guacamole() {
 	# Authentication via MySQL
   # Create the database
   echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot
+	echo "DROP USER 'guacamole'@'localhost';" | mysql -uroot
   echo "CREATE DATABASE guacamole;" | mysql -uroot
   echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '${ROOT_PASSWORD}';" | mysql -uroot
   echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot
