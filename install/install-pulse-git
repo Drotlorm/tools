@@ -1294,6 +1294,9 @@ reset_glpi_db() {
 	echo "glpi glpi/dbconfig-reinstall boolean true" | debconf-set-selections
 	dpkg-reconfigure -fnoninteractive glpi
 
+	# Upgrade database if needed
+	php /usr/share/glpi/tools/cliupdate.php
+
 	# Clean glpi users/profiles apart from glpi superadmin
 	local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
 	echo "${GLPI_SUPERADMIN_ID}" | grep -q '^[0-9]\+$'
