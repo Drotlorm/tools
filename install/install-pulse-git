@@ -1183,7 +1183,7 @@ configure_guacamole() {
 	# Authentication via MySQL
   # Create the database
   echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot
-	echo "DROP USER 'guacamole'@'localhost';" | mysql -uroot
+	echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -uroot
   echo "CREATE DATABASE guacamole;" | mysql -uroot
   echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '${ROOT_PASSWORD}';" | mysql -uroot
   echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot
