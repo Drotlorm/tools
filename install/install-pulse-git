@@ -1016,7 +1016,7 @@ configure_samba() {
 	cp /usr/share/doc/pulse2-common/contrib/samba/smb.conf /etc/samba/
 	echo -ne "${ROOT_PASSWORD}\n${ROOT_PASSWORD}\n" | smbpasswd -a -s root
 	echo -ne "${DRIVERS_PASSWORD}\n${DRIVERS_PASSWORD}\n" | smbpasswd -a -s drivers
-	service samba restart
+	service smbd restart
 
 	colored_echo green "### INFO Configuring Samba server... Done"
 }
@@ -1405,7 +1405,7 @@ reset_pulse_db() {
 	MASTER_PASSWORD=`pwgen --secure 12 1`
 	MUC_ROOM_PASSWORD=`pwgen --secure 12 1`
 	# Generate Guacamole Baseurl
-	GUACAMOLE_BASEURL="http://${SERVER_FQDN}/guacamole/client.xhtml?username=root&password=${GUACAMOLE_ROOT_PASSWORD}&id=c%2F"
+	GUACAMOLE_BASEURL="http://${SERVER_FQDN}/guacamole/#/client/@@CUX_ID@@?username=root&password=${GUACAMOLE_ROOT_PASSWORD}"
 
 	# Run rng-tools before running pulse2-setup
 	service rng-tools restart
