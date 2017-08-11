@@ -1128,7 +1128,7 @@ configure_xmpp_server() {
 
 	# Configure a few details
 	cp /etc/ejabberd/ejabberd.yml.bak /etc/ejabberd/ejabberd.yml
-	sed -i 's/^[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
+	sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
 	sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
 	sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
 	sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
