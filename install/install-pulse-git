@@ -1501,6 +1501,8 @@ generate_agent() {
 		--xmpp-mucserver="conference.${XMPP_DOMAIN}" \
 		--xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
 		--chat-domain=${XMPP_DOMAIN}
+	# Generate the package for upgrading the agent via pulse
+	/var/lib/pulse2/clients/generate-agent-package
 
 	colored_echo green "### INFO Generating XMPP agent... Done"
 }
