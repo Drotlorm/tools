@@ -1128,13 +1128,13 @@ configure_xmpp_server() {
 
 	# Configure a few details
 	cp /etc/ejabberd/ejabberd.yml.bak /etc/ejabberd/ejabberd.yml
-	sed -i 's/^.*registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
-	sed -i '/^ *muc_create:/{n;s/local: allow/admin: allow/}' /etc/ejabberd/ejabberd.yml
-	sed -i '/^ *muc:/{n;s/all: allow/local: allow/}' /etc/ejabberd/ejabberd.yml
-	sed -i '/^ *trusted_network:/{n;s/loopback: allow/all: allow/}' /etc/ejabberd/ejabberd.yml
-  sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
-  sed -i '/^[[:space:]]*welcome_message:/,//{s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
-  sed -i '/^[[:space:]]*welcome_message:/,//{/body:/{n;N;d}}' /etc/ejabberd/ejabberd.yml
+	sed -i 's/^[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
+	sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
+	sed -i '/^[[:space:]]*mod_muc:/{n;n;n;n;n;n;n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
+	sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
+	sed -i 's/^[[:space:]]*max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
+	sed -i '/^[[:space:]]*welcome_message:/,//{s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
+	sed -i '/^[[:space:]]*welcome_message:/,//{/body:/{n;N;d}}' /etc/ejabberd/ejabberd.yml
 
 	# Add the necessary modules
 	sed -i '/^modules:.*$/a\ \ mod_sic: \{\}' /etc/ejabberd/ejabberd.yml
@@ -1423,8 +1423,8 @@ reset_pulse_db() {
 	local DB_PASSWORD=`cat /etc/mmc/plugins/msc.ini.local |grep dbpass |awk '{print $3}'`
 	echo "GRANT ALL PRIVILEGES ON xmppmaster.* TO 'mmc'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';" |mysql
 	ejabberdctl register master ${XMPP_DOMAIN} ${MASTER_PASSWORD}
-	sed -i "/^ *- \"root\": \"${XMPP_DOMAIN}\"/{p;s/root/master/;}" /etc/ejabberd/ejabberd.yml
-	sed -i "/^ *access_admin: muc_admin$/a\ \ \ \ history_size: 0\n    max_users: 100000\n    default_room_options:\n      password: \"${MUC_ROOM_PASSWORD}\"\n      password_protected: true\n      persistent: true" /etc/ejabberd/ejabberd.yml
+	sed -i "/^[[:space:]]*- \"root\"@\"${XMPP_DOMAIN}\"/{p;s/root/master/;}" /etc/ejabberd/ejabberd.yml
+	sed -i "/^[[:space:]]*mod_muc:$/a\ \ \ \ history_size: 0\n    max_users: 100000\n    default_room_options:\n      password: \"${MUC_ROOM_PASSWORD}\"\n      password_protected: true\n      persistent: true" /etc/ejabberd/ejabberd.yml
 	service ejabberd restart
 
 	# Configure Launcher
