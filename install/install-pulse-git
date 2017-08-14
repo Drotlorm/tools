@@ -649,9 +649,6 @@ install_apache() {
 	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' ${PHP_INI}
 	sed -i 's/^post_max_size.*$/post_max_size = 200M/' ${PHP_INI}
 	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' ${PHP_INI}
-	# Configure apache to use /tmp
-	sed -i 's/PrivateTmp=true/PrivateTmp=false/' /lib/systemd/system/apache2.service
-	systemctl daemon-reload
 	service apache2 restart
 
 	colored_echo green "### INFO Installing Apache2... Done"
@@ -1264,21 +1261,21 @@ generate_pki() {
 	gunzip /usr/share/doc/pulse2-common/install/pki/create-pki.sh.gz
 	sed -i "s/^PASSPHRASE=.*$/PASSPHRASE=${PKI_PASSWORD}/" /usr/share/doc/pulse2-common/install/pki/create-pki.sh
 	sed -i "s/^CRL_SERVER_ADDRESS=.*$/CRL_SERVER_ADDRESS=${IP_ADDRESS}/" /usr/share/doc/pulse2-common/install/pki/create-pki.sh
-	sed -i "s/^PULSE_SERVICES=.*$/PULSE_SERVICES=\"127.0.0.1 ${SERVER_FQDN}\"/" /usr/share/doc/pulse2-common/install/pki/create-pki.sh
+	sed -i "s/^PULSE_SERVICES=.*$/PULSE_SERVICES=\"cert ${SERVER_FQDN}\"/" /usr/share/doc/pulse2-common/install/pki/create-pki.sh
 	chmod +x /usr/share/doc/pulse2-common/install/pki/create-pki.sh
 
 	# Run the pki generator
 	/usr/share/doc/pulse2-common/install/pki/create-pki.sh
 
 	# Configure services
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/agent/keys/localcert.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/agent/keys/cacert.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/cacert.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/privkey.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/launchers/keys/cacert.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/launchers/keys/privkey.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/cacert.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/privkey.pem
+	cp /var/lib/pulse2/pki/cert.pem /etc/mmc/agent/keys/localcert.pem
+	cp /var/lib/pulse2/pki/cert.pem /etc/mmc/agent/keys/cacert.pem
+	cp /var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/inventory-server/keys/cacert.pem
+	cp /var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/inventory-server/keys/privkey.pem
+	cp /var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/launchers/keys/cacert.pem
+	cp /var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/launchers/keys/privkey.pem
+	cp /var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/scheduler/keys/cacert.pem
+	cp /var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/scheduler/keys/privkey.pem
 	cp /var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
 	cp /var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
 
