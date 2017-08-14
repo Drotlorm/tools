@@ -649,6 +649,9 @@ install_apache() {
 	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' ${PHP_INI}
 	sed -i 's/^post_max_size.*$/post_max_size = 200M/' ${PHP_INI}
 	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' ${PHP_INI}
+	# Configure apache to use /tmp
+	sed -i 's/PrivateTmp=true/PrivateTmp=false/' /lib/systemd/system/apache2.service
+	systemctl daemon-reload
 	service apache2 restart
 
 	colored_echo green "### INFO Installing Apache2... Done"
