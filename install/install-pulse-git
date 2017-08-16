@@ -1264,14 +1264,16 @@ generate_pki() {
 	local PKI_PASSWORD=${ROOT_PASSWORD}
 
 	# Extract the script and define a few parameters
-	gunzip /usr/share/doc/pulse2-common/install/pki/create-pki.sh.gz
-	sed -i "s/^PASSPHRASE=.*$/PASSPHRASE=${PKI_PASSWORD}/" /usr/share/doc/pulse2-common/install/pki/create-pki.sh
-	sed -i "s/^CRL_SERVER_ADDRESS=.*$/CRL_SERVER_ADDRESS=${IP_ADDRESS}/" /usr/share/doc/pulse2-common/install/pki/create-pki.sh
-	sed -i "s/^PULSE_SERVICES=.*$/PULSE_SERVICES=\"127.0.0.1 ${SERVER_FQDN}\"/" /usr/share/doc/pulse2-common/install/pki/create-pki.sh
-	chmod +x /usr/share/doc/pulse2-common/install/pki/create-pki.sh
+	cp /usr/share/doc/pulse2-common/install/pki/create-pki.sh.gz /tmp
+	gunzip /tmp/create-pki.sh.gz
+	sed -i "s/^PASSPHRASE=.*$/PASSPHRASE=${PKI_PASSWORD}/" /tmp/create-pki.sh
+	sed -i "s/^CRL_SERVER_ADDRESS=.*$/CRL_SERVER_ADDRESS=${IP_ADDRESS}/" /tmp/create-pki.sh
+	sed -i "s/^PULSE_SERVICES=.*$/PULSE_SERVICES=\"127.0.0.1 ${SERVER_FQDN}\"/" /tmp/create-pki.sh
+	chmod +x /tmp/create-pki.sh
 
-	# Run the pki generator
-	/usr/share/doc/pulse2-common/install/pki/create-pki.sh
+	# Run the pki generator and delete it
+	/tmp/create-pki.sh
+	rm -f /tmp/create-pki.sh
 
 	# Add the certificate chain to ca-certificates
 	cp /var/lib/pulse2/pki/ca-chain.cert.pem /usr/local/share/ca-certificates/pulse-ca-chain.crt
