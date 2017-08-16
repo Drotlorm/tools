@@ -1124,15 +1124,14 @@ configure_xmpp_server() {
 
 	local XMPP_DOMAIN=$1
 
-	# Backup config file for replaying script
-	if [ ! -f /etc/ejabberd/ejabberd.yml.bak ]; then
-		cp /etc/ejabberd/ejabberd.yml /etc/ejabberd/ejabberd.yml.bak
-	fi
-
 	# Reset ejabberd
 	service ejabberd stop
-	cp /etc/ejabberd/ejabberd.yml.bak /etc/ejabberd/ejabberd.yml
 	rm -rf /var/lib/ejabberd/*
+	echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
+	echo "ejabberd ejabberd/user string root" | debconf-set-selections
+	echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
+	echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
+	dpkg-reconfigure -fnoninteractive ejabberd
 
 	# Configure a few details
 	sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
@@ -1436,6 +1435,9 @@ reset_pulse_db() {
 	mysql < /usr/share/doc/pulse2/contrib/xmppmaster/sql/schema-001.sql
 	local DB_PASSWORD=`cat /etc/mmc/plugins/msc.ini.local |grep dbpass |awk '{print $3}'`
 	echo "GRANT ALL PRIVILEGES ON xmppmaster.* TO 'mmc'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';" |mysql
+
+	# Reconfigure ejabberd
+	configure_xmpp_server ${XMPP_DOMAIN}
 	ejabberdctl register master ${XMPP_DOMAIN} ${MASTER_PASSWORD}
 	sed -i "/^[[:space:]]*- \"root@${XMPP_DOMAIN}\"/{p;s/root/master/;}" /etc/ejabberd/ejabberd.yml
 	sed -i "/^[[:space:]]*mod_muc:[[:space:]]*$/a\ \ \ \ history_size: 0\n    max_users: 100000\n    default_room_options:\n      password: \"${MUC_ROOM_PASSWORD}\"\n      password_protected: true\n      persistent: true" /etc/ejabberd/ejabberd.yml
