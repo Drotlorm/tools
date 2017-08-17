@@ -1916,8 +1916,8 @@ if [[ ${INSTALL_TYPE} == "p" ]]; then
 		# Initialise glpi database
 		reset_glpi_db
 	fi
-	reset_pulse_db
 	generate_pki
+	reset_pulse_db
 	generate_agent pulse
 	setup_glpi_triggers
 	configure_glpi_rest
