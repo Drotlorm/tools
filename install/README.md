@@ -7,7 +7,7 @@
 * Debian Jessie or Stretch
 
 ## Glpi compatibility
-* Up to GLPI 0.9.6
+* Up to GLPI 9.1.6
 
 ## Quick installation from devel branch
 
