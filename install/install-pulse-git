@@ -396,9 +396,10 @@ check_network_config() {
 
 	# If SERVER_FQDN is not defined, use the hostname if we can find it in the dns
 	if [ -z ${SERVER_FQDN} ]; then
-		dig `hostname` +nosearch +short | tail -n1 | grep -q -E '([0-9]{1,3}\.){3}[0-9]{1,3}'
+		dig `hostname -f` +nosearch +short | tail -n1 | grep -q -E '([0-9]{1,3}\.){3}[0-9]{1,3}'
 		if [ $? -eq 0 ]; then
-			SERVER_FQDN=`hostname`
+			SERVER_FQDN=`hostname -f`
+			HOSTNAME_NOT_IN_DNS=0
 		else
 			SERVER_FQDN=`hostname`
 			HOSTNAME_NOT_IN_DNS=1
