@@ -532,6 +532,8 @@ install_system_tools() {
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
+	sed -i '34,36 s/^"//' /etc/vim/vimrc
+	echo 'set mouse-=a' > /root/.vimrc
 
 	# Configure mail monitoring
 	 if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
