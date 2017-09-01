@@ -477,7 +477,7 @@ configure_repos() {
 
 	wget -qO - http://git.siveo.net/pubkey.txt | apt-key add -
 
-	apt-get -y install apt-transport-https
+	apt -y install apt-transport-https
 
 	case ${DEBIAN_VERSION} in
 		"8"*)
@@ -496,7 +496,7 @@ configure_repos() {
 			;;
 	esac
 
-	apt-get update
+	apt update
 
 	colored_echo blue "### INFO Configuring all necessary repos... Done"
 }
@@ -528,7 +528,7 @@ install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	apt-get -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp pwgen net-tools
+	apt -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp pwgen net-tools
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -537,7 +537,7 @@ install_system_tools() {
 
 	# Configure mail monitoring
 	 if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
-		apt-get -y install ssmtp xfs-defrag
+		apt -y install ssmtp xfs-defrag
 
 		echo "mailhub=${SMTP}" > /etc/ssmtp/ssmtp.conf
 		echo "root=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
@@ -554,7 +554,7 @@ install_system_tools() {
 	fi
 
 	if [[ ${DEBIAN_VERSION} == "8" ]]; then
-		apt-get -y install python-pip
+		apt -y install python-pip
 		pip install ssl-opt-out
 	fi
 
@@ -631,14 +631,14 @@ install_pulse2-setup_deps() {
 	colored_echo blue "### INFO Installing tools needed by pulse2setup..."
 
 	# Install rng-tools used by pulse2-setup
-	apt-get -y install rng-tools
+	apt -y install rng-tools
 	grep ^HRNGDEVICE /etc/default/rng-tools
 	if [ ! $? -eq 0 ]; then
 		echo "HRNGDEVICE=/dev/urandom" >> /etc/default/rng-tools
 	fi
 
 	# Install python network libraries used by pulse2-setup
-	apt-get -y install python-netifaces python-netaddr
+	apt -y install python-netifaces python-netaddr
 
 	colored_echo green "### INFO Installing tools needed by pulse2setup... Done"
 }
@@ -647,7 +647,7 @@ install_apache() {
 	colored_echo blue "### INFO Installing Apache2..."
 
 	# Install apache2 and php used by Pulse
-	apt-get -y install apache2 php${PHP_VERSION}
+	apt -y install apache2 php${PHP_VERSION}
 	# Configure php to allow upload of files of 200M max
 	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' ${PHP_INI}
 	sed -i 's/^post_max_size.*$/post_max_size = 200M/' ${PHP_INI}
@@ -668,7 +668,7 @@ install_ldap_server() {
 	echo "slapd slapd/password2 password ${ROOT_PASSWORD}" | debconf-set-selections
 
 	# Install ldap-server
-	apt-get -y install ldap-server
+	apt -y install ldap-server
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... LDAP server install... failed"
 		exit 1
@@ -685,7 +685,7 @@ install_mysql_server() {
 	echo "mysql-server-5.5 mysql-server/root_password_again password ${ROOT_PASSWORD}" | debconf-set-selections
 
 	# Install mysql-server
-	apt-get -y install mysql-server
+	apt -y install mysql-server
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... MySQL server install... failed"
 		exit 1
@@ -706,7 +706,7 @@ install_backuppc() {
 	echo "backuppc  backuppc/reconfigure-webserver  multiselect" | debconf-set-selections
 
 	# Install backuppc
-	apt-get -y install backuppc libfile-rsyncp-perl
+	apt -y install backuppc libfile-rsyncp-perl
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... backuppc install... failed"
 		exit 1
@@ -755,7 +755,7 @@ install_glpi() {
 	echo "glpi glpi/configuration note" | debconf-set-selections
 
 	# Install glpi
-	apt-get -y install glpi fusioninventory-for-glpi
+	apt -y install glpi fusioninventory-for-glpi
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... GLPI install... failed"
 		exit 1
@@ -767,7 +767,7 @@ install_glpi() {
 install_tftp_server() {
 	colored_echo blue "### INFO Installing TFTP server..."
 
-	apt-get -y install tftpd-hpa pulse2-register-pxe pulse2-utilities
+	apt -y install tftpd-hpa pulse2-register-pxe pulse2-utilities
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... TFTP server install... failed"
 		exit 1
@@ -779,7 +779,7 @@ install_tftp_server() {
 install_isc_dhcp_server() {
 	colored_echo blue "### INFO Installing DHCP server..."
 
-	apt-get -y install isc-dhcp-server
+	apt -y install isc-dhcp-server
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... isc-dhcp-server install... failed"
 		exit 1
@@ -791,7 +791,7 @@ install_isc_dhcp_server() {
 install_samba() {
 	colored_echo blue "### INFO Installing Samba server..."
 
-	apt-get -y install samba
+	apt -y install samba
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... samba install... failed"
 		exit 1
@@ -803,7 +803,7 @@ install_samba() {
 install_nfs_kernel_server() {
 	colored_echo blue "### INFO Installing NFS server..."
 
-	apt-get -y install nfs-kernel-server
+	apt -y install nfs-kernel-server
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... nfs-kernel-server install... failed"
 		exit 1
@@ -815,7 +815,7 @@ install_nfs_kernel_server() {
 install_pxelinux() {
 	colored_echo blue "### INFO Installing pxelinux..."
 
-	apt-get -y install pxelinux syslinux-common syslinux-efi
+	apt -y install pxelinux syslinux-common syslinux-efi
 
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERRORROR... pxelinux install... failed"
@@ -828,7 +828,7 @@ install_pxelinux() {
 install_clonezilla() {
 	colored_echo blue "### INFO Installing clonezilla..."
 
-	apt-get -y install clonezilla pulse2-davos-client udpcast
+	apt -y install clonezilla pulse2-davos-client udpcast
 
 	# Hold clonezilla
 	echo "clonezilla hold"| dpkg --set-selections
@@ -853,8 +853,8 @@ install_xmpp_server() {
 	echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
 
 	# Install ejabberd
-  apt-get update
-	apt-get -y install ejabberd
+  apt update
+	apt -y install ejabberd
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ER... Jabber server inst... failed"
 		exit 1
@@ -870,17 +870,17 @@ install_guacamole_server() {
 	echo "guacamole-tomcat guacamole-tomcat/restart-server boolean true" | debconf-set-selections
 
 	# Install guacamole
-	apt-get -y install guacamole-tomcat libguac-client-rdp0 libguac-client-ssh0 libguac-client-vnc0
+	apt -y install guacamole-tomcat libguac-client-rdp0 libguac-client-ssh0 libguac-client-vnc0
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ER... Guacamole server inst... failed"
 		exit 1
 	fi
 	case ${DEBIAN_VERSION} in
 		"8"*)
-			apt-get -y install guacamole-auth-mysql mysql-connector-java
+			apt -y install guacamole-auth-mysql mysql-connector-java
 			;;
 		*)
-			apt-get -y install guacamole-auth-jdbc
+			apt -y install guacamole-auth-jdbc
 			;;
 	esac
 	if [ ! $? -eq 0 ]; then
@@ -918,7 +918,7 @@ install_pulse_dependencies() {
 install_pulse() {
 	colored_echo blue "### INFO Installing Pulse..."
 
-	apt-get -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-update python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers
+	apt -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-update python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -1631,7 +1631,7 @@ install_multisite_dependencies() {
 
 install_multisite() {
 	colored_echo blue "### INFO Installing Pulse multisite..."
-	apt-get -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse2-launchers pulse-xmpp-agent pulseagent-plugins-relay
+	apt -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse2-launchers pulse-xmpp-agent pulseagent-plugins-relay
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -1877,8 +1877,8 @@ fi
 if [[ ${BATCH_MODE} == "r" ]]; then
 	echo "Entering reset mode..."
 	# upgrade packages
-	apt-get update
-	apt-get -y upgrade
+	apt update
+	apt -y upgrade
 	# Reset pulse
 	if [[ ${CREATE_ENTITY} == "y" ]]; then
 		# Initialise glpi database
