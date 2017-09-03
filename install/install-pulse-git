@@ -1486,7 +1486,9 @@ reset_pulse_db() {
 	systemctl enable pulse-xmpp-agent-log.service
 
 	# Restart all services
-	for SERV in mmc-agent pulse2-inventory-server pulse2-package-server pulse2-register-pxe pulse-xmpp-agent-log; do service ${SERV} restart; done
+	pushd /usr/lib/systemd/system/
+	for service in $(ls /usr/lib/systemd/system/mmc-agent.service; ls /usr/lib/systemd/system/pulse*-*); do service $service restart; done
+	popd
 
 	# Associate imaging server with root entity and generate default menu
 	echo "UPDATE ImagingServer SET associated=1 WHERE id=1;"| mysql imaging
