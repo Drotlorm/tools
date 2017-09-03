@@ -353,7 +353,7 @@ check_mysql_connection() {
 		local SSH_COMMAND="echo \"GRANT ALL PRIVILEGES ON ${GLPI_DBNAME}.* to '${GLPI_DBUSER}'@'${IP_REMOTE_SERVER}' identified by '${ROOT_PASSWORD}';\" |mysql -s"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-		local SSH_COMMAND="service mysql restart"
+		local SSH_COMMAND="systemctl restart mysqld.service"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	else
 		echo "select 0;" | mysql -h${GLPI_DBHOST} -u${GLPI_DBUSER} -p${GLPI_DBPASSWD} ${GLPI_DBNAME} &> /dev/null
@@ -596,7 +596,7 @@ prepare_debian() {
 	cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 	sed -i 's/^PermitRootLogin .*$/PermitRootLogin yes/' /etc/ssh/sshd_config
 	sed -i 's/^PasswordAuthentication .*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
-	service ssh restart
+	systemctl restart sshd.service
 	configure_repos
 	configure_apt_settings
 	install_system_tools
@@ -655,7 +655,7 @@ install_apache() {
 	# Configure apache to use /tmp
 	sed -i 's/PrivateTmp=true/PrivateTmp=false/' /lib/systemd/system/apache2.service
 	systemctl daemon-reload
-	service apache2 restart
+	systemctl restart rng-tools.service
 
 	colored_echo green "### INFO Installing Apache2... Done"
 }
@@ -733,7 +733,7 @@ install_backuppc() {
 	sed -i '/^localhost/d' /etc/backuppc/hosts
 	rm -rf /var/lib/backuppc/pc/localhost/
 
-	service apache2 restart
+	systemctl restart apache2.service
 	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
 
 	colored_echo green "### INFO Installing backuppc... Done"
@@ -932,7 +932,7 @@ configure_tftp_server() {
 
 	sed -i 's!^TFTP_DIRECTORY=.*$!TFTP_DIRECTORY="/var/lib/pulse2/imaging"!' /etc/default/tftpd-hpa
 	sed -i 's!^TFTP_OPTIONS=.*$!TFTP_OPTIONS="--secure --create"!' /etc/default/tftpd-hpa
-	service tftpd-hpa restart
+	systemctl restart tftpd-hpa.service
 
 	colored_echo green "### INFO Configuring TFTP server... Done"
 }
@@ -946,7 +946,7 @@ configure_backuppc() {
 		sed "$ i\        Allow from ${PULSEMAIN_IP}" -i /etc/apache2/conf-available/backuppc.conf
 		sed "$ i\        Satisfy any" -i /etc/apache2/conf-available/backuppc.conf
 	fi
-	service apache2 restart
+	systemctl restart apache2.service
 
 	# Configure pulse2-uuid-resolver to acces mmc
 	sed "s/^host =.*/host = ${PULSEMAIN_IP}/" -i /etc/mmc/pulse2/uuid-resolver/uuid-resolver.ini
@@ -1001,7 +1001,7 @@ configure_isc_dhcp_server() {
 	sed -i "s/##PULSE2_START##/${DHCP_RANGE_START}/" /etc/dhcp/dhcpd.conf
 	sed -i "s/##PULSE2_END##/${DHCP_RANGE_END}/" /etc/dhcp/dhcpd.conf
 	sed -i "s/##PULSE2_IP##/${IP_ADDRESS}/" /etc/dhcp/dhcpd.conf
-	service isc-dhcp-server restart
+	systemctl restart isc-dhcp-server.service
 
 	colored_echo green "### INFO Configuring DHCP server... Done"
 }
@@ -1022,7 +1022,7 @@ configure_samba() {
 	cp /usr/share/doc/pulse2-common/contrib/samba/smb.conf /etc/samba/
 	echo -ne "${ROOT_PASSWORD}\n${ROOT_PASSWORD}\n" | smbpasswd -a -s root
 	echo -ne "${DRIVERS_PASSWORD}\n${DRIVERS_PASSWORD}\n" | smbpasswd -a -s drivers
-	service smbd restart
+	systemctl restart smbd.service
 
 	colored_echo green "### INFO Configuring Samba server... Done"
 }
@@ -1032,7 +1032,7 @@ configure_nfs_kernel_server() {
 
 	# Create needed exports
 	cp /usr/share/doc/mmc/contrib/imaging-server/exports /etc/
-	service nfs-kernel-server restart
+	systemctl restart nfs-kernel-server.service
 
 	colored_echo green "### INFO Configuring NFS server... Done"
 }
@@ -1101,8 +1101,8 @@ configure_mmc() {
 		echo "local4.* /var/log/ldap.log" >> /etc/syslog.conf
 	fi
 	touch /var/log/ldap.log
-	service rsyslog restart
-	service slapd restart
+	systemctl restart rsyslog.service
+	systemctl restart slapd.service
 
 	# Configure Apache for MMC
 	if [ ! -e /etc/apache2/conf-available/mmc.conf ]; then
@@ -1110,7 +1110,7 @@ configure_mmc() {
 	fi
 	a2enconf mmc.conf
 	a2enconf pulse.conf
-	service apache2 restart
+	systemctl restart apache2.service
 
 	# Configure base.ini
 	local BASE_DN=`slapcat | grep -m 1 dn |awk '{print $2}'`
@@ -1118,7 +1118,7 @@ configure_mmc() {
 	sed "s/^password = .*$/password = ${ROOT_PASSWORD}/" -i /etc/mmc/plugins/base.ini
 	sed 's/^disabled_panels.*/disabled_panels = shortcuts appstream/' -i /etc/mmc/plugins/dashboard.ini
 	sed 's/^disable = 0/disable = 1/' -i /etc/mmc/plugins/support.ini /etc/mmc/plugins/update.ini
-	service mmc-agent restart
+	systemctl restart mmc-agent.service
 	colored_echo green "### INFO Configuring mmc... Done"
 }
 
@@ -1245,7 +1245,7 @@ configure_guacamole() {
   a2enconf guacamole.conf
   a2enmod proxy
   a2enmod proxy_http
-  service apache2 restart
+  systemctl restart apache2.service
 
   colored_echo green "### INFO Setting up Guacamole... Done"
 }
@@ -1426,7 +1426,7 @@ reset_pulse_db() {
 	GUACAMOLE_BASEURL="http://${SERVER_FQDN}/guacamole/#/client/@@CUX_ID@@?username=root&password=${GUACAMOLE_ROOT_PASSWORD}"
 
 	# Run rng-tools before running pulse2-setup
-	service rng-tools restart
+	systemctl restart rng-tools.service
 
 	# Run pulse2-setup
 	pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=${GLPI_URL} --glpi-dbhost=${GLPI_DBHOST} --glpi-dbname=${GLPI_DBNAME} --glpi-dbuser=${GLPI_DBUSER} --glpi-dbpasswd=${GLPI_DBPASSWD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
@@ -1486,9 +1486,7 @@ reset_pulse_db() {
 	systemctl enable pulse-xmpp-agent-log.service
 
 	# Restart all services
-	pushd /usr/lib/systemd/system/
-	for service in $(ls /usr/lib/systemd/system/mmc-agent.service; ls /usr/lib/systemd/system/pulse*-*); do service $service restart; done
-	popd
+	restart_pulse_services
 
 	# Associate imaging server with root entity and generate default menu
 	echo "UPDATE ImagingServer SET associated=1 WHERE id=1;"| mysql imaging
@@ -1537,7 +1535,7 @@ setup_glpi_triggers() {
 		local RANDOM_PASSWORD=`openssl rand -base64 12`
 		echo "GRANT ALL PRIVILEGES ON msc.target to 'glpi-msc'@'${GLPI_DBHOST}' identified by '${RANDOM_PASSWORD}';" |mysql -s
 		sed -i "s/^bind-address.*/bind-address             = 0.0.0.0/g" /etc/mysql/my.cnf
-		service mysql restart
+		systemctl restart mysqld.service
 		# Set the triggers on remote glpi server
 		cp /usr/share/doc/pulse2-common/contrib/msc/sql/synch-remoteglpi-to-msc.sql.in /tmp/synch-remoteglpi-to-msc.sql
 		sed -i "s/@@GLPI_DBNAME@@/${GLPI_DBNAME}/" /tmp/synch-remoteglpi-to-msc.sql
@@ -1616,9 +1614,10 @@ configure_relay_server() {
 
 restart_pulse_services() {
 	colored_echo blue "### INFO Restart Pulse services..."
-	for SERV in mmc-agent pulse2-inventory-server pulse2-package-server pulse2-register-pxe pulse-xmpp-agent-log pulse-xmpp-agent-relay
-		do service $SERV restart
-	done
+	pushd /usr/lib/systemd/system/
+	for service in $(ls mmc-agent.service pulse*); do systemctl restart $service; done
+	popd
+	
 }
 
 install_multisite_dependencies() {
@@ -1694,7 +1693,7 @@ configure_package_server_multisite() {
 	echo "glpi_mode = True" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 
 	# Enable the Pulse MMC to listen from everywhere. Done on main Pulse server
-	local SSH_COMMAND="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && service mmc-agent restart"
+	local SSH_COMMAND="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && systemctl restart mmc-agent.service"
 	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
 	# Insert multisite imaging server in Pulse imaging server database. Done on main Pulse server.
@@ -1717,11 +1716,11 @@ configure_package_server_multisite() {
 	local SSH_COMMAND='grep -Gq "^mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local'
 	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	if [ $? -ne 0 ]; then
-		local SSH_COMMAND='sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local; service pulse2-package-server restart'
+		local SSH_COMMAND='sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local; systemctl restart pulse2-package-server.service'
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	fi
 	sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local
-	service pulse2-package-server restart
+	systemctl restart pulse2-package-server.service
 
 	colored_echo green "### INFO Configuring Package Server for multisite... Done"
 }
@@ -1737,9 +1736,9 @@ configure_launcher_multisite() {
 	if [ $? -ne 0 ]; then
 		local SSH_COMMAND="echo -e \"[scheduler]\nhost = 0.0.0.0\nusername = username\npassword = password\nenablessl = True\npreferred_network = ${PULSEMAIN_NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-		local SSH_COMMAND="echo -e \"[scheduler_01]\nhost = ${PULSEMAIN_IP}\n[launcher_01]\nbind = ${PULSEMAIN_IP}\" >> /etc/mmc/pulse2/launchers/launchers.ini.local && service pulse2-launchers restart"
+		local SSH_COMMAND="echo -e \"[scheduler_01]\nhost = ${PULSEMAIN_IP}\n[launcher_01]\nbind = ${PULSEMAIN_IP}\" >> /etc/mmc/pulse2/launchers/launchers.ini.local && systemctl restart pulse2-launchers.service"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-		local SSH_COMMAND="echo -e \"[launcher_01]\nhost=${PULSEMAIN_IP}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${PULSEMAIN_NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && service pulse2-scheduler restart"
+		local SSH_COMMAND="echo -e \"[launcher_01]\nhost=${PULSEMAIN_IP}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${PULSEMAIN_NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && systemctl restart pulse2-scheduler.service"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 	fi
 	local SSH_COMMAND="sed '0,/^preferred_network = .*/ s/^preferred_network = .*$/& ${NETWORK_ADDRESS}\/${NETMASK}/' -i /etc/mmc/pulse2/scheduler/scheduler.ini.local"
@@ -1748,7 +1747,7 @@ configure_launcher_multisite() {
 	# Find out the highest Launcher Id as defined in scheduler. Done on main pulse server
 	local MAX_LAUNCHER_ID=$(ssh ${PULSEMAIN_IP} "grep launcher_.. /etc/mmc/pulse2/scheduler/scheduler.ini.local | cut -d _ -f2 | cut -c1-2 | sort -r | head -1")
 	local LAUNCHER_ID=`printf "%02d" $((${MAX_LAUNCHER_ID} + 1))`
-	local SSH_COMMAND="echo -e \"[launcher_${LAUNCHER_ID}]\nhost=${IP_REMOTE_SERVER}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && service pulse2-scheduler restart"
+	local SSH_COMMAND="echo -e \"[launcher_${LAUNCHER_ID}]\nhost=${IP_REMOTE_SERVER}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && systemctl restart pulse2-scheduler.service"
 	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
 	# Configure multi-site launchers
@@ -1758,7 +1757,7 @@ configure_launcher_multisite() {
 	sed -i "s/bind = .*$/bind = ${IP_REMOTE_SERVER}/" /etc/mmc/pulse2/launchers/launchers.ini.local
 
 	# Restart launcher service
-	service pulse2-launchers restart
+	systemctl restart pulse2-launchers.service
 
 	colored_echo green "### INFO Configuring Launchers for multisite... Done"
 }
@@ -1793,7 +1792,7 @@ create_package_server_cert() {
 	scp ${PULSEMAIN_IP}:/var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
 
 	# Restart the service
-	service pulse2-package-server restart
+	systemctl restart pulse2-package-server.service
 
 	colored_echo green "### INFO Generating Package Server certificate... Done"
 }
@@ -1829,7 +1828,7 @@ configure_multisite() {
 	configure_relay_server ${MULTISITE_ENTITY}
 
 	colored_echo blue "### INFO Restart pulse2-package-server..."
-	service pulse2-package-server restart
+	systemctl restart pulse2-package-server.service
 }
 
 sync_package_server() {
