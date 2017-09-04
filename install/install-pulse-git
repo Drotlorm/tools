@@ -8,6 +8,7 @@ LOCALITY="Fontainebleau"
 ORGANIZATION="Siveo"
 ORGANIZATIONALUNIT="."
 MAIL_ADDRESS="support@siveo.net"
+export DEBIAN_FRONTEND=noninteractive
 
 display_usage() {
 	echo -e "\nUsage:\n$0 [--batch-mode [arguments]] | [--interactive-mode] | [--reset-mode [arguments]] \n"
@@ -31,6 +32,7 @@ display_usage() {
 	echo -e "\t[--glpi-dbpasswd=<database user password>]"
 	echo -e "\t[--glpi-dbrootpasswd=<mysql root password>]"
 	echo -e "\t[--mail-password=<support mail account password>]"
+	echo -e "\t[--branch=<devel branche to use>]"
 	exit 0
 }
 
@@ -53,6 +55,10 @@ check_arguments() {
 				PULSE_REPO_URL="${i#*=}"
 				shift
 				;;
+                        --branch=*)
+                                GIT_BRANCH="${i#*=}"
+                                shift
+                                ;;
 			--root-password=*)
 				ROOT_PASSWORD="${i#*=}"
 				shift
@@ -284,7 +290,8 @@ get_glpi_server_details() {
 }
 
 get_user_options() {
-	PULSE_REPO_URL="$(get_user_input "Enter the URL of Pulse repository:") ./"
+	PULSE_REPO_URL="$(get_user_input "Enter the URL of Pulse repository:")"
+	GIT_BRANCH="$(get_user_input "Enter the Pulse branch name:")"
 	ROOT_PASSWORD=$(get_user_input "Enter the password of root:")
 	ORGANISATION=$(get_user_input "Enter the organization name:")
 	SERVER_FQDN=$(get_user_input "Enter the server fqdn:")
@@ -301,12 +308,12 @@ get_user_options() {
 	INSTALL_TYPE=$(ask "Is the main Pulse server installation (p) or a multi-site installation (m)?" p m)
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
 		MAIN_GLPI=$(ask "GLPI will be installed ?" y n)
-		MAIN_DHCP=$(ask "DHCP will be enabled ?" y n)
-		MAIN_PXE=$(ask "PXE will be enabled ?" y n)
 		if [[ ${MAIN_GLPI} == "n" ]]; then
 			get_glpi_server_details
+			check_mysql_connection
 		fi
-		check_mysql_connection
+		MAIN_DHCP=$(ask "DHCP will be enabled ?" y n)
+		MAIN_PXE=$(ask "PXE will be enabled ?" y n)
 		CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
 		if [[ ${CREATE_ENTITY} == "y" ]]; then
         	MAIN_ENTITY=$(get_user_input "Main entity name for GLPI:")
@@ -422,6 +429,7 @@ check_network_config() {
 	fi
 	colored_echo blue "====================================================================="
 	echo "PULSE_REPO_URL		: ${PULSE_REPO_URL}"
+	echo "GIT_BRANCH		: ${GIT_BRANCH}"
 	echo "ROOT_PASSWORD		: ${ROOT_PASSWORD}"
 	echo "ORGANISATION		: ${ORGANISATION}"
 	echo "SERVER_FQDN		: ${SERVER_FQDN}"
@@ -490,7 +498,11 @@ configure_repos() {
 			apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
 			;;
 		"9"*)
-			echo "deb ${PULSE_REPO_URL} stretch mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+			if [ ! -z ${GIT_BRANCH} ] && [ ${GIT_BRANCH} != "master" ]; then
+				echo "deb ${PULSE_REPO_URL} ${GIT_BRANCH} mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+			else
+				echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+			fi
 			;;
 		*)
 			;;
@@ -1614,10 +1626,11 @@ configure_relay_server() {
 
 restart_pulse_services() {
 	colored_echo blue "### INFO Restart Pulse services..."
-	pushd /usr/lib/systemd/system/
-	for service in $(ls mmc-agent.service pulse*); do systemctl restart $service; done
+	pushd /usr/lib/systemd/system
+	for SERV in mmc-agent.service pulse2-register-pxe.service pulse-xmpp-agent-relay.service pulse2-inventory-server.service pulse-xmpp-agent-log.service pulse2-package-server.service
+		do systemctl restart $SERV
+	done
 	popd
-	
 }
 
 install_multisite_dependencies() {
