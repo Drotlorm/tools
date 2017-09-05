@@ -520,7 +520,6 @@ configure_apt_settings() {
 	echo 'APT::Install-Suggests "0";' >> /etc/apt/apt.conf.d/99local-config
 	echo 'APT::Get::AllowUnauthenticated "true";' >> /etc/apt/apt.conf.d/99local-config
 	echo 'Acquire::PDiffs "false";' >> /etc/apt/apt.conf.d/99local-config
-
 	echo "popularity-contest  popularity-contest/participate      boolean false" | debconf-set-selections
 
 	colored_echo blue "### INFO Defining a few settings for apt... Done"
@@ -1108,10 +1107,10 @@ configure_mmc() {
 
 	# Configure LDAP for MMC
 	mmc-add-schema /usr/share/doc/mmc/contrib/base/mmc.schema /etc/ldap/schema/
-	grep "local4.* /var/log/ldap.log" /etc/syslog.conf
-	if [ ! $? -eq 0 ]; then
-		echo "local4.* /var/log/ldap.log" >> /etc/syslog.conf
-	fi
+        if [ ! -f /etc/rsyslog.d/10-slapd.conf ]; then
+                echo '$template slapdtmpl,"[%$DAY%-%$MONTH%-%$YEAR% %timegenerated:12:19:date-rfc3339%] %app-name% %syslogseverity-text% %msg%\n"' > /etc/rsyslog.d/10-slapd.conf
+                echo 'local4.*    /var/log/ldap.log;slapdtmpl' >> /etc/rsyslog.d/10-slapd.conf
+        fi
 	touch /var/log/ldap.log
 	systemctl restart rsyslog.service
 	systemctl restart slapd.service
