@@ -13,10 +13,10 @@
 
 
 
-Download install-pulse-git and run
+Download install-pulse and run
 
 ```
-# wget  https://raw.githubusercontent.com/pulse-project/tools/master/install/install-pulse-git
+# wget  https://raw.githubusercontent.com/pulse-project/tools/master/install/install-pulse
 # source install-pulse-git 
 ```
 
