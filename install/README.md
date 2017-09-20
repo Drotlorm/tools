@@ -4,7 +4,7 @@
 
 ![Pulse Logo](https://avatars3.githubusercontent.com/u/15610175)
 ## Requirements
-* Debian Jessie or Stretch
+* Debian Stretch
 
 ## Glpi compatibility
 * Up to GLPI 9.1.6
