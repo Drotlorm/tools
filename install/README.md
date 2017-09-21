@@ -17,12 +17,12 @@ Download install-pulse and run
 
 ```
 # wget  https://raw.githubusercontent.com/pulse-project/tools/master/install/install-pulse
-# source install-pulse-git 
+# source install-pulse 
 ```
 
 ### Usage:
 
-source install-pulse-git [--batch-mode [arguments]] | [--interactive-mode] 
+source install-pulse [--batch-mode [arguments]] | [--interactive-mode] 
 
 ### Arguments:
 ```
@@ -67,16 +67,16 @@ source install-pulse-git [--batch-mode [arguments]] | [--interactive-mode]
 	[--branch=<devel branche to use>]
 ```
 ### Exemple : Pulse monosite 
-```source install-pulse-git --batch-mode --pulse-repo-url="https://git.siveo.net" --root-password=siveo --org-name=Siveo --interface-to-clients=eth1 --enable-pulse-main=dpg --create-entity --entity=HQ --dhcp-dns-server="8.8.8.8" --dhcp-gateway-address="192.168.56.2"```
+```source install-pulse --batch-mode --pulse-repo-url="https://git.siveo.net" --root-password=siveo --org-name=Siveo --interface-to-clients=eth1 --enable-pulse-main=dpg --create-entity --entity=HQ --dhcp-dns-server="8.8.8.8" --dhcp-gateway-address="192.168.56.2"```
 
 ### Exemple : Pulse monosite with special dev branch
-```source install-pulse-git --batch-mode --pulse-repo-url="https://git.siveo.net" --root-password=siveo --org-name=Siveo --interface-to-clients=eth1 --enable-pulse-main=dpg --create-entity --entity=HQ --dhcp-dns-server="8.8.8.8" --dhcp-gateway-address="192.168.56.2" --branch="special_branch"```
+```source install-pulse --batch-mode --pulse-repo-url="https://git.siveo.net" --root-password=siveo --org-name=Siveo --interface-to-clients=eth1 --enable-pulse-main=dpg --create-entity --entity=HQ --dhcp-dns-server="8.8.8.8" --dhcp-gateway-address="192.168.56.2" --branch="special_branch"```
 
 ### Exemple : Pulse monosite with external GLPI
-```source install-pulse-git --batch-mode --pulse-repo-url="https://git.siveo.net" --root-password=siveo --org-name=Siveo --interface-to-clients=eth0 --enable-pulse-main=gdp --entity=HQ --dhcp-dns-server="8.8.8.8" --dhcp-gateway-address="192.168.56.1" --glpi-url="http://192.168.56.100/glpi" --glpi-dbhost="192.168.56.100" --glpi-dbuser=glpi --glpi-dbpasswd=siveo --glpi-dbname=glpi```
+```source install-pulse --batch-mode --pulse-repo-url="https://git.siveo.net" --root-password=siveo --org-name=Siveo --interface-to-clients=eth0 --enable-pulse-main=gdp --entity=HQ --dhcp-dns-server="8.8.8.8" --dhcp-gateway-address="192.168.56.1" --glpi-url="http://192.168.56.100/glpi" --glpi-dbhost="192.168.56.100" --glpi-dbuser=glpi --glpi-dbpasswd=siveo --glpi-dbname=glpi```
 
 ### Exemple : Pulse multisite with external GLPI link the main Pulse
-```source install-pulse-git --batch-mode --pulse-repo-url="https://git.siveo.net" --root-password=siveo --org-name=Siveo --interface-to-clients=eth1 --enable-multisite=dpb --entity="annecy auber" --dhcp-dns-server="8.8.8.8" --dhcp-gateway-address="192.168.56.1" --interface-to-main-pulse=eth0 --main-pulse-ip="192.168.56.2" --glpi-dbhost="192.168.56.100" --glpi-dbuser=glpi --glpi-dbpasswd=siveo --glpi-dbname=glpi```
+```source install-pulse --batch-mode --pulse-repo-url="https://git.siveo.net" --root-password=siveo --org-name=Siveo --interface-to-clients=eth1 --enable-multisite=dpb --entity="annecy auber" --dhcp-dns-server="8.8.8.8" --dhcp-gateway-address="192.168.56.1" --interface-to-main-pulse=eth0 --main-pulse-ip="192.168.56.2" --glpi-dbhost="192.168.56.100" --glpi-dbuser=glpi --glpi-dbpasswd=siveo --glpi-dbname=glpi```
 
 ## IRC Chat
 
