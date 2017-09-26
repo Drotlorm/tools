@@ -353,7 +353,7 @@ get_user_options() {
 check_mysql_connection() {
 	if [[ ${GLPI_DBHOST} == ${PULSEMAIN_IP} ]]; then
 		# Configure external listening for mysql
-		local SSH_COMMAND="sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/mysql/my.cnf"
+		local SSH_COMMAND="sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/mysql/mariadb.conf.d/50-server.cnf"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
 		# Create remote glpi user
@@ -399,7 +399,7 @@ check_network_config() {
 	NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
 	NETMASK=`cdr2mask $(ip addr show ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d "/" -f 2)`
 	BCAST_ADDRESS=`ip addr show ${INTERFACE} | grep 'inet .* brd ' | head -1 | sed -e 's/^.* brd \([0-9\.]*\) .*$/\1/'`
-	IP_REMOTE_SERVER=`ip addr show ${INTERFACE_TO_PULSE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
+	IP_REMOTE_SERVER=`ip addr show ${INTERFACE_TO_PULSE} | grep -w inet | awk '{print $2}' | cut -d "/" -f 1`
 
 	# If SERVER_FQDN is not defined, use the hostname if we can find it in the dns
 	if [ -z ${SERVER_FQDN} ]; then
@@ -1550,7 +1550,7 @@ setup_glpi_triggers() {
 		# Allow remote user to connect to msc.target
 		local RANDOM_PASSWORD=`openssl rand -base64 12`
 		echo "GRANT ALL PRIVILEGES ON msc.target to 'glpi-msc'@'${GLPI_DBHOST}' identified by '${RANDOM_PASSWORD}';" |mysql -s
-		sed -i "s/^bind-address.*/bind-address             = 0.0.0.0/g" /etc/mysql/my.cnf
+		sed -i "s/^bind-address.*/bind-address             = 0.0.0.0/g" /etc/mysql/mariadb.conf.d/50-server.cnf
 		systemctl restart mariadb.service
 		# Set the triggers on remote glpi server
 		cp /usr/share/doc/pulse2-common/contrib/msc/sql/synch-remoteglpi-to-msc.sql.in /tmp/synch-remoteglpi-to-msc.sql
