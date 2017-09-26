@@ -669,9 +669,11 @@ install_apache() {
 	sed -i 's/^post_max_size.*$/post_max_size = 200M/' ${PHP_INI}
 	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' ${PHP_INI}
 	# Configure apache to use /tmp
-	sed -i 's/PrivateTmp=true/PrivateTmp=false/' /lib/systemd/system/apache2.service
+	mkdir /etc/systemd/system/apache2.service.d
+	echo "[Service]" >  /etc/systemd/system/apache2.service.d/nopt.conf
+	echo "PrivateTmp=false" >> /etc/systemd/system/apache2.service.d/nopt.conf
 	systemctl daemon-reload
-	systemctl restart rng-tools.service
+	systemctl restart apache2.service
 
 	colored_echo green "### INFO Installing Apache2... Done"
 }
