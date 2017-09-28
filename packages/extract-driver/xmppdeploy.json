@@ -1,0 +1,35 @@
+{
+    "info": {
+        "description": "Extract device drivers to Pulse server share (please edit to configure)",
+        "name": "Extract drivers 1.0 (a6587888-ea8d-11e5-bd69-005056a812dc)",
+        "software": "Extract drivers",
+        "transferfile": "true",
+        "version": "1.0"
+    },
+    "win": {
+        "sequence": [
+            {
+                "action": "action_pwd_package",
+                "step": 0
+            },
+            {
+                "@resultcommand": "",
+                "action": "actionprocessscript",
+                "codereturn": "",
+                "command": "xmppdeploy.bat",
+                "error": 3,
+                "step": 1,
+                "success": 2,
+                "timeout": 900
+            },
+            {
+                "action": "actionsuccescompletedend",
+                "step": 2
+            },
+            {
+                "action": "actionerrorcompletedend",
+                "step": 3
+            }
+        ]
+    }
+}
