@@ -790,6 +790,7 @@ install_tftp_server() {
 		colored_echo red "### ERROR... TFTP server install... failed"
 		exit 1
 	fi
+	systemctl enable pulse2-register-pxe.service
 
 	colored_echo green "### INFO Installing TFTP server... Done"
 }
@@ -941,6 +942,7 @@ install_pulse() {
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
 	fi
+	systemctl enable mmc-agent.service
 
 	colored_echo green "### INFO Installing Pulse... Done"
 }
