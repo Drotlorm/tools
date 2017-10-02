@@ -553,7 +553,9 @@ install_system_tools() {
 
 	# Configure mail monitoring
 	 if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
-		apt -y install ssmtp xfs-defrag
+		dpkg -r exim4
+		dpkg --purge exim4
+		apt -y install ssmtp xfs-defrag mailutils
 
 		echo "mailhub=${SMTP}" > /etc/ssmtp/ssmtp.conf
 		echo "root=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
@@ -567,6 +569,7 @@ install_system_tools() {
 		sed 's/^CRON=0$/CRON=1/' -i /etc/xfs-defrag.conf
 		sed "s/.*MAILTO=.*/MAILTO=${MAIL_ADDRESS}/" -i /etc/xfs-defrag.conf
 		sed "s/mail -s/mail -a \"From: ${ORGANISATION} <${ORGANISATION}@siveo.net>\" -s /g" -i /usr/sbin/xfs-defrag
+		sed "s/\${MAIL_ADDRESS}/${MAILTO}/" -i /usr/sbin/xfs-defrag
 	fi
 
 	if [[ ${DEBIAN_VERSION} == "8" ]]; then
