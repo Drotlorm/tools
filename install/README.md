@@ -88,4 +88,4 @@ server : irc.freenode.net channel : #pulse-fr, #pulse-en
 
 ## Warning
 * git version software. Might or might not work as expected. 
-* Keep in mind that install-pulse-git is updated on a regular basis. Do download the latest version before use.
+* Keep in mind that install-pulse is updated on a regular basis. Do download the latest version before use.
