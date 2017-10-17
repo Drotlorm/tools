@@ -462,7 +462,7 @@ check_network_config() {
 		colored_echo blue "====================================================================="
 	fi
 	colored_echo green "### Checking network settings... Done"
-	if [ ${HOSTNAME_NOT_IN_DNS} -eq 1 ]; then
+	if [[ ${HOSTNAME_NOT_IN_DNS} -eq 1 ]]; then
 		colored_echo red "*********************************************************************"
 		colored_echo red "** ${SERVER_FQDN} is not found in the DNS. Please configure your   **"
 		colored_echo red "** DNS or your hosts file on your workstations accordingly         **"
