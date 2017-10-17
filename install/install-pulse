@@ -414,7 +414,7 @@ check_network_config() {
 	fi
 
 	if [[ ${MAIN_GLPI} == "y" ]]; then
-		GLPI_URL="http://${IP_ADDRESS}/glpi"
+		GLPI_URL="http://${SERVER_FQDN}/glpi"
 		GLPI_DBHOST="localhost"
 		GLPI_DBNAME="glpi"
 		GLPI_DBUSER="glpi"
