@@ -1543,7 +1543,8 @@ generate_agent() {
 		--xmpp-passwd=${MASTER_PASSWORD} \
 		--xmpp-mucserver="conference.${XMPP_DOMAIN}" \
 		--xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
-		--chat-domain=${XMPP_DOMAIN}
+		--chat-domain=${XMPP_DOMAIN} \
+		--base-url="http://${SERVER_FQDN}/downloads"
 	# Generate the package for upgrading the agent via pulse
 	/var/lib/pulse2/clients/generate-agent-package
 
