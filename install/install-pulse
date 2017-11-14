@@ -589,8 +589,6 @@ configure_mysql_access() {
 	touch /root/.my.cnf
 	chmod 600 /root/.my.cnf
 	echo -e "[mysql]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf
-	echo -e "\nquery_cache_type = 1" >> /root/.my.cnf
-	echo -e "\nquery_cache_size = 256M" >> /root/.my.cnf
 	echo -e "\n[mysqladmin]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf
 	echo -e "\n[mysqlcheck]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf
 	echo -e "\n[mysqldump]\nuser=root\npassword=${ROOT_PASSWORD}" >> /root/.my.cnf
