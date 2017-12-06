@@ -30,6 +30,8 @@
                 "script": "REM CHANGE THE FOLLOWING PARAMETERS ACCORDING TO YOUR SETTINGS\n\nset SERVER_ADDRESS=pulse01\nset PASSWORD=s3cr3t\n\nREM =============================================================\n\nREM Mount network share for copying the drivers\nnet use * \\\\%SERVER_ADDRESS%\\drivers /user:\\drivers %PASSWORD%\n\nREM Create the folder structure\nfor /f \"tokens=2\" %%i in ('net use ^| findstr \"drivers\" ^| findstr \"OK\"') do set DRIVE_LETTER=%%i\nfor /f \"tokens=2,3\" %%i in ('wmic os get Caption /value ^| find \"=\"') do set WINDOWS_FOLDER=%%i %%j\n\nfor /f \"tokens=2 delims==\" %%i in ('wmic computersystem get manufacturer /value ^| find \"=\"') do set \"MANUF=%%i\"\nset MANUF=%MANUF: =_%\n\nfor /f \"tokens=2 delims==\" %%i in ('wmic computersystem get model /value ^| find \"=\"') do set \"MODEL=%%i\"\nset MODEL=%MODEL: =_%\n\nmkdir \"%DRIVE_LETTER%\\%WINDOWS_FOLDER%\\%MANUF%\\%MODEL%\"\n\nREM Extract the drivers\nddc.exe b /target:\"%DRIVE_LETTER%\\%WINDOWS_FOLDER%\\%MANUF%\\%MODEL%\"\n\necho \" Manufacter : \" %MANUF%\necho \" Model : \" %MODEL%\ntree \"%DRIVE_LETTER%\\%WINDOWS_FOLDER%\\%MANUF%\\%MODEL%\"\n\nREM Finally unmount the network share\nnet use /DELETE %DRIVE_LETTER%\n",
                 "step": 0,
                 "@resultcommand": "@resultcommand",
+                "success": 1,
+                "error": 2,
                 "typescript": "Batch"
             },
             {
