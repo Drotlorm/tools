@@ -1,6 +1,15 @@
 {
-	"commands":{
-		"postCommandSuccess":{
+	"sub_packages": [],
+	"description": "Extract device drivers to Pulse server share (please edit to configure)",
+	"entity_id": "0",
+	"id": "dfe232a2-d973-11e7-b7ea-0800278dc04d",
+	"name": "Extract drivers",
+	"targetos": "win",
+	"reboot": 0,
+	"version": "1.0",
+	"metagenerator": "standard",
+	"commands": {
+		"postCommandSuccess": {
 			"command": "",
 			"name": ""
 		},
@@ -8,28 +17,19 @@
 			"command": "",
 			"name": ""
 		},
-		"postCommandFailure":{
-		"command": "",
-		"name": ""
+		"postCommandFailure": {
+			"command": "",
+			"name": ""
 		},
-
-
-
 		"command": {
 			"command": "REM CHANGE THE FOLLOWING PARAMETERS ACCORDING TO YOUR SETTINGS\n\nset SERVER_ADDRESS=pulse01\nset PASSWORD=s3cr3t\n\nREM =============================================================\n\nREM Mount network share for copying the drivers\nnet use * \\\\%SERVER_ADDRESS%\\drivers /user:\\drivers %PASSWORD%\n\nREM Create the folder structure\nfor /f \"tokens=2\" %%i in ('net use ^| findstr \"drivers\" ^| findstr \"OK\"') do set DRIVE_LETTER=%%i\nfor /f \"tokens=2,3\" %%i in ('wmic os get Caption /value ^| find \"=\"') do set WINDOWS_FOLDER=%%i %%j\n\nfor /f \"tokens=2 delims==\" %%i in ('wmic computersystem get manufacturer /value ^| find \"=\"') do set \"MANUF=%%i\"\nset MANUF=%MANUF: =_%\n\nfor /f \"tokens=2 delims==\" %%i in ('wmic computersystem get model /value ^| find \"=\"') do set \"MODEL=%%i\"\nset MODEL=%MODEL: =_%\n\nmkdir \"%DRIVE_LETTER%\\%WINDOWS_FOLDER%\\%MANUF%\\%MODEL%\"\n\nREM Extract the drivers\nddc.exe b /target:\"%DRIVE_LETTER%\\%WINDOWS_FOLDER%\\%MANUF%\\%MODEL%\"\n\necho \" Manufacter : \" %MANUF%\necho \" Model : \" %MODEL%\ntree \"%DRIVE_LETTER%\\%WINDOWS_FOLDER%\\%MANUF%\\%MODEL%\"\n\nREM Finally unmount the network share\nnet use /DELETE %DRIVE_LETTER%\n",
 			"name": ""
 		},
-
 		"preCommand": {
 			"command": "",
 			"name": ""
 		}
 	},
-	"description": "Extract device drivers to Pulse server share (please edit to configure)",
-	"entity_id": "0",
-	"sub_packages": [],
-	"reboot": 0,
-	"version": "1.0",
 	"inventory": {
 		"associateinventory": "0",
 		"licenses": "",
@@ -39,7 +39,5 @@
 			"boolcnd": "",
 			"Qsoftware": ""
 		}
-	},
-	"id": "a6587888-ea8d-11e5-bd69-005056a812dc",
-	"name": "Extract drivers"
+	}
 }

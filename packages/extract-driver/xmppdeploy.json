@@ -1,34 +1,46 @@
 {
     "info": {
+        "Dependency": [],
         "description": "Extract device drivers to Pulse server share (please edit to configure)",
-        "name": "Extract drivers 1.0 (a6587888-ea8d-11e5-bd69-005056a812dc)",
+        "metagenerator": "standard",
+        "methodetransfert": "pullcurl",
+        "name": "Extract drivers 1.0",
         "software": "Extract drivers",
-        "transferfile": "true",
+        "transferfile": true,
         "version": "1.0"
+    },
+    "metaparameter": {
+        "os": [
+            "win"
+        ],
+        "win": {
+            "label": {
+                "END_ERROR": 2,
+                "END_SUCCESS": 1,
+                "EXECUTE_SCRIPT": 0
+            }
+        }
     },
     "win": {
         "sequence": [
             {
-                "action": "action_pwd_package",
-                "step": 0
-            },
-            {
-                "@resultcommand": "",
-                "action": "actionprocessscript",
+                "action": "actionprocessscriptfile",
+                "actionlabel": "EXECUTE_SCRIPT",
                 "codereturn": "",
-                "command": "xmppdeploy.bat",
-                "error": 3,
-                "step": 1,
-                "success": 2,
-                "timeout": 900
+                "script": "REM CHANGE THE FOLLOWING PARAMETERS ACCORDING TO YOUR SETTINGS\n\nset SERVER_ADDRESS=pulse01\nset PASSWORD=s3cr3t\n\nREM =============================================================\n\nREM Mount network share for copying the drivers\nnet use * \\\\%SERVER_ADDRESS%\\drivers /user:\\drivers %PASSWORD%\n\nREM Create the folder structure\nfor /f \"tokens=2\" %%i in ('net use ^| findstr \"drivers\" ^| findstr \"OK\"') do set DRIVE_LETTER=%%i\nfor /f \"tokens=2,3\" %%i in ('wmic os get Caption /value ^| find \"=\"') do set WINDOWS_FOLDER=%%i %%j\n\nfor /f \"tokens=2 delims==\" %%i in ('wmic computersystem get manufacturer /value ^| find \"=\"') do set \"MANUF=%%i\"\nset MANUF=%MANUF: =_%\n\nfor /f \"tokens=2 delims==\" %%i in ('wmic computersystem get model /value ^| find \"=\"') do set \"MODEL=%%i\"\nset MODEL=%MODEL: =_%\n\nmkdir \"%DRIVE_LETTER%\\%WINDOWS_FOLDER%\\%MANUF%\\%MODEL%\"\n\nREM Extract the drivers\nddc.exe b /target:\"%DRIVE_LETTER%\\%WINDOWS_FOLDER%\\%MANUF%\\%MODEL%\"\n\necho \" Manufacter : \" %MANUF%\necho \" Model : \" %MODEL%\ntree \"%DRIVE_LETTER%\\%WINDOWS_FOLDER%\\%MANUF%\\%MODEL%\"\n\nREM Finally unmount the network share\nnet use /DELETE %DRIVE_LETTER%\n",
+                "step": 0,
+                "@resultcommand": "@resultcommand",
+                "typescript": "Batch"
             },
             {
                 "action": "actionsuccescompletedend",
-                "step": 2
+                "actionlabel": "END_SUCCESS",
+                "step": 1
             },
             {
                 "action": "actionerrorcompletedend",
-                "step": 3
+                "actionlabel": "END_ERROR",
+                "step": 2
             }
         ]
     }
