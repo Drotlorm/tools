@@ -1,0 +1,49 @@
+{
+    "info": {
+        "description": "@@PACKAGE_DESC@@",
+        "name": "@@PACKAGE_NAME@@ @@PACKAGE_VERSION@@",
+        "software": "@@PACKAGE_NAME@@",
+        "transferfile": true,
+        "methodetransfert": "pullcurl",
+        "Dependency": [],
+        "version": "@@PACKAGE_VERSION@@",
+        "metagenerator": "standard"
+    },
+    "win": {
+        "sequence": [
+            {
+                "typescript": "Batch",
+                "script": "@@SCRIPT@@",
+                "step": 0,
+                "codereturn": "",
+                "action": "actionprocessscriptfile",
+                "actionlabel": "EXECUTE_SCRIPT",
+                "success": 1,
+                "error": 2,
+                "@resultcommand": "@resultcommand"
+            },
+            {
+                "action": "actionsuccescompletedend",
+                "actionlabel": "END_SUCCESS",
+                "step": 1
+            },
+            {
+                "action": "actionerrorcompletedend",
+                "actionlabel": "END_ERROR",
+                "step": 2
+            }
+        ]
+    },
+    "metaparameter": {
+        "win": {
+            "label": {
+                "END_ERROR": 2,
+                "END_SUCCESS": 1,
+                "EXECUTE_SCRIPT": 0
+            }
+        },
+        "os": [
+            "win"
+        ]
+    }
+}
