@@ -1935,6 +1935,7 @@ if [[ ${INSTALL_TYPE} == "p" ]]; then
 	if [[ ${MAIN_DHCP} == "y" ]]; then
 		install_isc_dhcp_server
 		configure_isc_dhcp_server
+		trick_clonezilla #To be removed later when clonezilla is fixed for Debian Stretch
 	else
 		trick_clonezilla
 	fi
@@ -1968,6 +1969,7 @@ else
 	if [[ ${REMOTE_DHCP} == "y" ]]; then
 		install_isc_dhcp_server
 		configure_isc_dhcp_server
+		trick_clonezilla #To be removed later when clonezilla is fixed for Debian Stretch
 	else
 		trick_clonezilla
 	fi
