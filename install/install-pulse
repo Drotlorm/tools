@@ -942,7 +942,7 @@ install_pulse_dependencies() {
 install_pulse() {
 	colored_echo blue "### INFO Installing Pulse..."
 
-	apt -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-update python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers
+	apt -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -1142,7 +1142,7 @@ configure_mmc() {
 	sed "s/^baseDN = .*$/baseDN = ${BASE_DN}/" -i /etc/mmc/plugins/base.ini
 	sed "s/^password = .*$/password = ${ROOT_PASSWORD}/" -i /etc/mmc/plugins/base.ini
 	sed 's/^disabled_panels.*/disabled_panels = shortcuts appstream/' -i /etc/mmc/plugins/dashboard.ini
-	sed 's/^disable = 0/disable = 1/' -i /etc/mmc/plugins/support.ini /etc/mmc/plugins/update.ini
+	sed 's/^disable = 0/disable = 1/' -i /etc/mmc/plugins/support.ini
 	systemctl restart mmc-agent.service
 	colored_echo green "### INFO Configuring mmc... Done"
 }
