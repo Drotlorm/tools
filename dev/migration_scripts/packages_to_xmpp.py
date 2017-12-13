@@ -44,7 +44,10 @@ def transform_package(folder_name):
         ignored_files = ['xmppdeploy.json', 'xmppdeploy.bat', 'xmppdeploy.sh', 'MD5SUMS']
         for files in os.listdir(os.path.join(old_packages_folder, folder_name)):
             if files not in ignored_files:
-                shutil.copy2(os.path.join(old_packages_folder, folder_name, files), os.path.join(packages_folder, folder_name))
+                if os.path.isfile(os.path.join(old_packages_folder, folder_name, files)):
+                    shutil.copy2(os.path.join(old_packages_folder, folder_name, files), os.path.join(packages_folder, folder_name))
+                else:
+                    shutil.copytree(os.path.join(old_packages_folder, folder_name, files), os.path.join(packages_folder, folder_name, files))
 
         # Extract template
         template_file = open(xmppdeploy_template, 'r')
