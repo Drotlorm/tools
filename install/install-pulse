@@ -461,8 +461,11 @@ check_network_config() {
 		echo "GLPI_DBROOTPASSWD		: ${GLPI_DBROOTPASSWD}"
 	fi
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
-		echo "GLPI_URL			: ${GLPI_URL}"
+		echo "GLPI_URL		: ${GLPI_URL}"
 		echo "MAIN_ENTITY		: ${MAIN_ENTITY}"
+	fi
+	if [[ ${PUBLIC_IP} ]]; then
+		echo "PUBLIC_IP		: ${PUBLIC_IP}"
 	fi
 	if [[ ${INSTALL_TYPE} == "m" ]]; then
 		colored_echo blue "============================MULTISTE================================="
