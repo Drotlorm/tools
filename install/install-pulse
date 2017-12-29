@@ -25,6 +25,7 @@ display_usage() {
 	echo -e "\t[--dhcp-gateway-address=<gateway address for DHCP clients>]"
 	echo -e "\t[--interface-to-main-pulse=<interface>]"
 	echo -e "\t[--main-pulse-ip=<IP address>]"
+	echo -e "\t[--public-ip=<Public IP if the relay server needs to reply to nomad clients>]"
 	echo -e "\t[--glpi-url=<GLPI URL>]"
 	echo -e "\t[--glpi-dbhost=<IP address>]"
 	echo -e "\t[--glpi-dbname=<database name>]"
@@ -55,10 +56,10 @@ check_arguments() {
 				PULSE_REPO_URL="${i#*=}"
 				shift
 				;;
-                        --branch=*)
-                                GIT_BRANCH="${i#*=}"
-                                shift
-                                ;;
+      --branch=*)
+              GIT_BRANCH="${i#*=}"
+              shift
+              ;;
 			--root-password=*)
 				ROOT_PASSWORD="${i#*=}"
 				shift
@@ -129,6 +130,10 @@ check_arguments() {
 				;;
 			--main-pulse-ip=*)
 				PULSEMAIN_IP="${i#*=}"
+				shift
+				;;
+			--public-ip=*)
+				PUBLIC_IP="${i#*=}"
 				shift
 				;;
 			--glpi-url=*)
@@ -341,6 +346,10 @@ get_user_options() {
 	if [[ ${MAIN_DHCP} == "y" || ${REMOTE_DHCP} == "y" ]]; then
 		DNS_SERVER=$(get_user_input "Enter the DNS server address for the DHCP clients:")
 		GATEWAY_ADDRESS=$(get_user_input "Enter the gateway address for the DHCP clients:")
+	fi
+	PUBLIC_ARS=$(ask "Does this Relay Server serve nomad clients ?" y n)
+	if [[ ${PUBLIC_ARS} == "y" ]]; then
+		PUBLIC_IP=$(get_user_input "Enter the public IP address of the server:")
 	fi
 
 	CONFIGURE_MONITORING=$(ask "Do you wish to configure monitoring ?" y n)
@@ -1600,9 +1609,12 @@ configure_relay_server() {
 	sed -i "s/@@GUACAMOLE_BASEURL@@/$(sed_escape ${GUACAMOLE_BASEURL})/" /etc/pulse-xmpp-agent/relayconf.ini
 	sed -i "s/@@CHATROOM_SERVER@@/conference.${XMPP_DOMAIN}/" /etc/pulse-xmpp-agent/relayconf.ini
 	sed -i "s/@@CHAT_DOMAIN@@/${XMPP_DOMAIN}/" /etc/pulse-xmpp-agent/relayconf.ini
-	sed -i "s/log_level = .*$/log_level = DEBUG/" /etc/pulse-xmpp-agent/relayconf.ini # TO BE DELETED
 	echo "[jid_01]" >> /etc/pulse-xmpp-agent/relayconf.ini
 	echo "jidname = RS${XMPP_DOMAIN}@${XMPP_DOMAIN}/pulse01a" >> /etc/pulse-xmpp-agent/relayconf.ini
+	if [[ ${PUBLIC_IP} ]]; then
+		sed -i "s/^.*request_type = .*$/request_type = public/" /etc/pulse-xmpp-agent/relayconf.ini
+		sed -i "s/^.*public_ip = .*$/public_ip = ${PUBLIC_IP}/" /etc/pulse-xmpp-agent/relayconf.ini
+	fi
 	sed -i "/^pluginlist.*/ s/$/ guacamoleconf/" /etc/pulse-xmpp-agent/relayconf.ini
 	cp /var/lib/pulse2/clients/config/guacamoleconf.ini.in /etc/pulse-xmpp-agent/guacamoleconf.ini
 	sed -i "s/@@PLUGIN_GUACAMOLE_DBHOST@@/localhost/" /etc/pulse-xmpp-agent/guacamoleconf.ini
