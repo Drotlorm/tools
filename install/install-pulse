@@ -404,7 +404,7 @@ check_network_config() {
 	fi
 
 	DEBIAN_VERSION=`cat /etc/*-release|grep VERSION_ID |cut -d '"' -f2`
-	IP_ADDRESS=`ip addr show ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2 | cut -d "/" -f 1`
+	IP_ADDRESS=`ifconfig ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
 	NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
 	NETMASK=`cdr2mask $(ip addr show ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d "/" -f 2)`
 	BCAST_ADDRESS=`ip addr show ${INTERFACE} | grep 'inet .* brd ' | head -1 | sed -e 's/^.* brd \([0-9\.]*\) .*$/\1/'`
