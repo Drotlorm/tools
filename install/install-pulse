@@ -1647,7 +1647,7 @@ configure_relay_server() {
 	fi
 
 	# Update default RS if on main pulse and public IP is defined
-	if [[ ${XMPP_DOMAIN} == "pulse" AND ${PUBLIC_IP} ]]; then
+	if [[ ${XMPP_DOMAIN} == "pulse" && ${PUBLIC_IP} ]]; then
 		sed -i "s/^serverip =.*$/serverip = ${PUBLIC_IP}/" /etc/mmc/plugins/xmppmaster.ini.local
 		service mmc-agent restart
 	fi
