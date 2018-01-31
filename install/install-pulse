@@ -1324,8 +1324,6 @@ generate_pki() {
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/agent/keys/cacert.pem
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/cacert.pem
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/privkey.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/launchers/keys/cacert.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/launchers/keys/privkey.pem
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/cacert.pem
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/privkey.pem
 	cp /var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
@@ -1484,11 +1482,6 @@ reset_pulse_db() {
 	sed -i "/^[[:space:]]*- \"root@${XMPP_DOMAIN}\"/{p;s/root/master/;}" /etc/ejabberd/ejabberd.yml
 	sed -i "/^[[:space:]]*mod_muc:[[:space:]]*$/a\ \ \ \ history_size: 0\n    max_users: 100000\n    default_room_options:\n      password: \"${MUC_ROOM_PASSWORD}\"\n      password_protected: true\n      persistent: true" /etc/ejabberd/ejabberd.yml
 	service ejabberd restart
-
-	# Configure Launcher
-	echo "[rsync]" >> /etc/mmc/pulse2/launchers/launchers.ini.local
-	echo "rsync_path = /usr/bin/rsync" >> /etc/mmc/pulse2/launchers/launchers.ini.local
-	echo "resume = True" >> /etc/mmc/pulse2/launchers/launchers.ini.local
 
 	# Configure XMPP master
 	echo "[main]" > /etc/mmc/plugins/xmppmaster.ini.local
@@ -1680,7 +1673,7 @@ install_multisite_dependencies() {
 
 install_multisite() {
 	colored_echo blue "### INFO Installing Pulse multisite..."
-	apt -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse2-launchers pulse-xmpp-agent pulseagent-plugins-relay
+	apt -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -1773,43 +1766,6 @@ configure_package_server_multisite() {
 	colored_echo green "### INFO Configuring Package Server for multisite... Done"
 }
 
-configure_launcher_multisite() {
-	colored_echo green "### INFO Configuring Launchers for multisite..."
-
-	# Configure the scheduler. Done on main Pulse server
-	local PULSEMAIN_NETWORK_ADDRESS=`echo ${PULSEMAIN_IP} | cut -d"." -f1-3`".0"
-	local SSH_COMMAND='grep -Gq "^host = 0.0.0.0" /etc/mmc/pulse2/scheduler/scheduler.ini.local'
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-	# If the scheduler has never been configured as a multi-site scheduler, we will configure it
-	if [ $? -ne 0 ]; then
-		local SSH_COMMAND="echo -e \"[scheduler]\nhost = 0.0.0.0\nusername = username\npassword = password\nenablessl = True\npreferred_network = ${PULSEMAIN_NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local"
-		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-		local SSH_COMMAND="echo -e \"[scheduler_01]\nhost = ${PULSEMAIN_IP}\n[launcher_01]\nbind = ${PULSEMAIN_IP}\" >> /etc/mmc/pulse2/launchers/launchers.ini.local && systemctl restart pulse2-launchers.service"
-		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-		local SSH_COMMAND="echo -e \"[launcher_01]\nhost=${PULSEMAIN_IP}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${PULSEMAIN_NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && systemctl restart pulse2-scheduler.service"
-		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-	fi
-	local SSH_COMMAND="sed '0,/^preferred_network = .*/ s/^preferred_network = .*$/& ${NETWORK_ADDRESS}\/${NETMASK}/' -i /etc/mmc/pulse2/scheduler/scheduler.ini.local"
-	ssh ${PULSEMAIN_IP} "${SSH_COMMAND}"
-
-	# Find out the highest Launcher Id as defined in scheduler. Done on main pulse server
-	local MAX_LAUNCHER_ID=$(ssh ${PULSEMAIN_IP} "grep launcher_.. /etc/mmc/pulse2/scheduler/scheduler.ini.local | cut -d _ -f2 | cut -c1-2 | sort -r | head -1")
-	local LAUNCHER_ID=`printf "%02d" $((${MAX_LAUNCHER_ID} + 1))`
-	local SSH_COMMAND="echo -e \"[launcher_${LAUNCHER_ID}]\nhost=${IP_REMOTE_SERVER}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && systemctl restart pulse2-scheduler.service"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-
-	# Configure multi-site launchers
-	# Copy launchers configuration from main Pulse
-	scp root@${PULSEMAIN_IP}:/etc/mmc/pulse2/launchers/launchers.ini.local /etc/mmc/pulse2/launchers/
-	# Configure the launcher
-	sed -i "s/bind = .*$/bind = ${IP_REMOTE_SERVER}/" /etc/mmc/pulse2/launchers/launchers.ini.local
-
-	# Restart launcher service
-	systemctl restart pulse2-launchers.service
-
-	colored_echo green "### INFO Configuring Launchers for multisite... Done"
-}
-
 create_package_server_cert() {
 	colored_echo blue "### INFO Generating Package Server certificate..."
 
@@ -1845,19 +1801,6 @@ create_package_server_cert() {
 	colored_echo green "### INFO Generating Package Server certificate... Done"
 }
 
-install_launcher_cert() {
-	colored_echo blue "### INFO Installing launcher certificate..."
-
-	# Get the keys for launcher from PKI
-	scp ${PULSEMAIN_IP}:/var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/launchers/keys/cacert.pem
-	scp ${PULSEMAIN_IP}:/var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/launchers/keys/privkey.pem
-
-	# Restart the service
-	service pulse2-launchers restart
-
-	colored_echo green "### INFO Installing launcher certificate... Done"
-}
-
 configure_multisite() {
 	# Grant ssh without password from Pulse multisite to Pulse
 	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
@@ -1871,8 +1814,6 @@ configure_multisite() {
 
 	configure_package_server_multisite
 	create_package_server_cert
-	configure_launcher_multisite
-	install_launcher_cert
 	configure_relay_server ${MULTISITE_ENTITY}
 
 	colored_echo blue "### INFO Restart pulse2-package-server..."
@@ -1880,7 +1821,7 @@ configure_multisite() {
 }
 
 sync_package_server() {
-	# Enable package synchronisation between Pulse package server and multisite(s) packager server
+	# Enable package synchronisation between Pulse package server and multisite(s) package server
 
 	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
 	ssh -t ${PULSEMAIN_IP} "ssh-keyscan ${IP_REMOTE_SERVER} >> /root/.ssh/known_hosts"
