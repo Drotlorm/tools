@@ -1277,7 +1277,7 @@ configure_guacamole() {
   echo "    ProxyPass http://localhost:8081/guacamole/ max=20 flushpackets=on" >> /etc/apache2/conf-available/guacamole.conf
   echo "    ProxyPassReverse http://localhost:8081/guacamole/" >> /etc/apache2/conf-available/guacamole.conf
   echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
-  echo "<Location /guacamole/websocket-tunnel>" > /etc/apache2/conf-available/guacamole.conf
+  echo "<Location /guacamole/websocket-tunnel>" >> /etc/apache2/conf-available/guacamole.conf
   echo "    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
   echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
   echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
