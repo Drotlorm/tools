@@ -1,0 +1,35 @@
+#!/bin/bash
+
+pushd $(dirname "$0")
+
+if [[ "$#" -ne 2 ]]; then
+    echo "Usage: $0 <hostname> <mac address>"
+    exit 1
+fi
+if [ ! -f inventory.in ]; then
+    echo "inventory.in not found."
+    exit 1
+fi
+
+UUID=$(uuid)
+HOSTNAME=$1
+if [[ "$2" =~ ^([a-fA-F0-9]{2}:){5}[a-fA-F0-9]{2}$ ]]; then
+	MAC_ADDRESS=$2
+else
+	echo "The mac address is not valid"
+	exit 1
+fi
+
+echo "Creating inventory file..."
+cp inventory.in /tmp/${UUID}
+sed -i "s/@@UUID@@/${UUID}/" /tmp/${UUID}
+echo "Hostname: ${HOSTNAME}"
+sed -i "s/@@HOSTNAME@@/${HOSTNAME}/" /tmp/${UUID}
+echo "Mac address: ${MAC_ADDRESS}"
+sed -i "s/@@MAC_ADDRESS@@/${MAC_ADDRESS}/" /tmp/${UUID}
+echo "Registering machine..."
+gzip -c /tmp/${UUID} > /var/lib/pulse2/imaging/inventories/${UUID}
+rm /tmp/${UUID}
+echo "Inventory injected"
+
+popd
