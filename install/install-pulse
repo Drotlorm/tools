@@ -1154,7 +1154,6 @@ configure_mmc() {
 	sed "s/^baseDN = .*$/baseDN = ${BASE_DN}/" -i /etc/mmc/plugins/base.ini
 	sed "s/^password = .*$/password = ${ROOT_PASSWORD}/" -i /etc/mmc/plugins/base.ini
 	sed 's/^disabled_panels.*/disabled_panels = shortcuts appstream/' -i /etc/mmc/plugins/dashboard.ini
-	sed 's/^disable = 0/disable = 1/' -i /etc/mmc/plugins/support.ini
 	systemctl restart mmc-agent.service
 	colored_echo green "### INFO Configuring mmc... Done"
 }
