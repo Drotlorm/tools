@@ -25,6 +25,7 @@ display_usage() {
 	echo -e "\t[--dhcp-gateway-address=<gateway address for DHCP clients>]"
 	echo -e "\t[--interface-to-main-pulse=<interface>]"
 	echo -e "\t[--main-pulse-ip=<IP address>]"
+	echo -e "\t[--public-ip=<Public IP if the relay server needs to reply to nomad clients>]"
 	echo -e "\t[--glpi-url=<GLPI URL>]"
 	echo -e "\t[--glpi-dbhost=<IP address>]"
 	echo -e "\t[--glpi-dbname=<database name>]"
@@ -55,10 +56,10 @@ check_arguments() {
 				PULSE_REPO_URL="${i#*=}"
 				shift
 				;;
-                        --branch=*)
-                                GIT_BRANCH="${i#*=}"
-                                shift
-                                ;;
+      --branch=*)
+              GIT_BRANCH="${i#*=}"
+              shift
+              ;;
 			--root-password=*)
 				ROOT_PASSWORD="${i#*=}"
 				shift
@@ -131,6 +132,10 @@ check_arguments() {
 				PULSEMAIN_IP="${i#*=}"
 				shift
 				;;
+			--public-ip=*)
+				PUBLIC_IP="${i#*=}"
+				shift
+				;;
 			--glpi-url=*)
 				GLPI_URL="${i#*=}"
 				shift
@@ -161,9 +166,9 @@ check_arguments() {
 				shift
 				;;
 			*)
-            	# unknown option
-	            display_usage
-    			;;
+        # unknown option
+	      display_usage
+    		;;
 		esac
 	done
 }
@@ -173,41 +178,41 @@ ask() {
 	local OPTION1=$2
 	local OPTION2=$3
 	local RESULT=N
-    while [ ${RESULT} == "N" ]; do
-        local PROMPT="$OPTION1/$OPTION2"
-        # Ask the question - use /dev/tty in case stdin is redirected from somewhere else
-        read -p "${TEXT} [${PROMPT}] " REPLY </dev/tty
-        # Check if the reply is valid
-        case "${REPLY}" in
-            ${OPTION1^^}|${OPTION1,,})
-            	RESULT=Y
-            	echo ${OPTION1,,}
-            	;;
-            ${OPTION2^^}|${OPTION2,,})
-            	RESULT=Y
-            	echo ${OPTION2,,}
-            	;;
-        esac
-    done
+  while [ ${RESULT} == "N" ]; do
+    local PROMPT="$OPTION1/$OPTION2"
+    # Ask the question - use /dev/tty in case stdin is redirected from somewhere else
+    read -p "${TEXT} [${PROMPT}] " REPLY </dev/tty
+    # Check if the reply is valid
+    case "${REPLY}" in
+      ${OPTION1^^}|${OPTION1,,})
+      	RESULT=Y
+      	echo ${OPTION1,,}
+      	;;
+      ${OPTION2^^}|${OPTION2,,})
+      	RESULT=Y
+      	echo ${OPTION2,,}
+      	;;
+    esac
+  done
 }
 
 colored_echo() {
-    local color=$1;
-    if ! [[ $color =~ '^[0-9]$' ]] ; then
-       case $(echo $color | tr '[:upper:]' '[:lower:]') in
-        black) color=0 ;;
-        red) color=1 ;;
-        green) color=2 ;;
-        yellow) color=3 ;;
-        blue) color=4 ;;
-        magenta) color=5 ;;
-        cyan) color=6 ;;
-        white|*) color=7 ;; # white or invalid color
-       esac
-    fi
-    tput setaf $color;
-    echo "${@:2}";
-    tput sgr0;
+  local color=$1;
+  if ! [[ $color =~ '^[0-9]$' ]] ; then
+    case $(echo $color | tr '[:upper:]' '[:lower:]') in
+      black) color=0 ;;
+      red) color=1 ;;
+      green) color=2 ;;
+      yellow) color=3 ;;
+      blue) color=4 ;;
+      magenta) color=5 ;;
+      cyan) color=6 ;;
+      white|*) color=7 ;; # white or invalid color
+    esac
+  fi
+  tput setaf $color;
+  echo "${@:2}";
+  tput sgr0;
 }
 
 sed_escape() {
@@ -215,8 +220,8 @@ sed_escape() {
 }
 
 exit_code() {
-    return=$?
-    if [ $return -ne 0 ];then coloredEcho red "### DEBUG Exit code" $return; fi
+  return=$?
+  if [ $return -ne 0 ];then coloredEcho red "### DEBUG Exit code" $return; fi
 }
 
 
@@ -316,10 +321,10 @@ get_user_options() {
 		MAIN_PXE=$(ask "PXE will be enabled ?" y n)
 		CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
 		if [[ ${CREATE_ENTITY} == "y" ]]; then
-        	MAIN_ENTITY=$(get_user_input "Main entity name for GLPI:")
-        else
-        	MAIN_ENTITY=$(select_main_glpi_entity)
-        fi
+      MAIN_ENTITY=$(get_user_input "Main entity name for GLPI:")
+    else
+      MAIN_ENTITY=$(select_main_glpi_entity)
+    fi
 	else
 		INTERFACE_TO_PULSE=$(choose_network_interface "Choose the interface connected to Pulse server")
 		PULSEMAIN_IP=$(get_user_input "Enter main Pulse Server's IP address:")
@@ -333,14 +338,18 @@ get_user_options() {
 		check_mysql_connection
 		CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
 		if [[ ${CREATE_ENTITY} == "y" ]]; then
-        	MULTISITE_ENTITY=$(get_multisite_entity)
-        else
-        	MULTISITE_ENTITY=$(select_multisite_glpi_entity)
-        fi
+      MULTISITE_ENTITY=$(get_multisite_entity)
+    else
+    	MULTISITE_ENTITY=$(select_multisite_glpi_entity)
+    fi
 	fi
 	if [[ ${MAIN_DHCP} == "y" || ${REMOTE_DHCP} == "y" ]]; then
 		DNS_SERVER=$(get_user_input "Enter the DNS server address for the DHCP clients:")
 		GATEWAY_ADDRESS=$(get_user_input "Enter the gateway address for the DHCP clients:")
+	fi
+	PUBLIC_ARS=$(ask "Does this Relay Server serve nomad clients ?" y n)
+	if [[ ${PUBLIC_ARS} == "y" ]]; then
+		PUBLIC_IP=$(get_user_input "Enter the public IP address of the server:")
 	fi
 
 	CONFIGURE_MONITORING=$(ask "Do you wish to configure monitoring ?" y n)
@@ -394,8 +403,9 @@ check_network_config() {
 		exit 1
 	fi
 
-	DEBIAN_VERSION=`cat /etc/*-release|grep VERSION_ID |cut -d '"' -f2`
-	IP_ADDRESS=`ip addr show ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2 | cut -d "/" -f 1`
+	LINUX_DISTRO=`cat /etc/os-release|grep ^ID= |cut -d '"' -f2`
+	DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID= |cut -d '"' -f2`
+	IP_ADDRESS=`ifconfig ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
 	NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
 	NETMASK=`cdr2mask $(ip addr show ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d "/" -f 2)`
 	BCAST_ADDRESS=`ip addr show ${INTERFACE} | grep 'inet .* brd ' | head -1 | sed -e 's/^.* brd \([0-9\.]*\) .*$/\1/'`
@@ -433,14 +443,15 @@ check_network_config() {
 	echo "ROOT_PASSWORD		: ${ROOT_PASSWORD}"
 	echo "ORGANISATION		: ${ORGANISATION}"
 	echo "SERVER_FQDN		: ${SERVER_FQDN}"
-	echo "DEBIAN_VERSION		: ${DEBIAN_VERSION}"
+	echo "LINUX_DISTRO		: ${LINUX_DISTRO}"
+	echo "DISTRO_VERSION	: ${DISTRO_VERSION}"
 	echo "INTERFACE		: ${INTERFACE}"
 	echo "IP_ADDRESS		: ${IP_ADDRESS}"
 	echo "NETWORK_ADDRESS		: ${NETWORK_ADDRESS}"
 	echo "NETMASK			: ${NETMASK}"
 	echo "BCAST_ADDRESS		: ${BCAST_ADDRESS}"
+	echo "DOMAIN			: ${DOMAIN}"
 	if [[ ${MAIN_DHCP} == "y" || ${REMOTE_DHCP} == "y" ]]; then
-		echo "DOMAIN			: ${DOMAIN}"
 		echo "GATEWAY_ADDRESS		: ${GATEWAY_ADDRESS}"
 		echo "DNS_SERVER		: ${DNS_SERVER}"
 	fi
@@ -452,8 +463,11 @@ check_network_config() {
 		echo "GLPI_DBROOTPASSWD		: ${GLPI_DBROOTPASSWD}"
 	fi
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
-		echo "GLPI_URL			: ${GLPI_URL}"
+		echo "GLPI_URL		: ${GLPI_URL}"
 		echo "MAIN_ENTITY		: ${MAIN_ENTITY}"
+	fi
+	if [[ ${PUBLIC_IP} ]]; then
+		echo "PUBLIC_IP		: ${PUBLIC_IP}"
 	fi
 	if [[ ${INSTALL_TYPE} == "m" ]]; then
 		colored_echo blue "============================MULTISTE================================="
@@ -485,39 +499,76 @@ check_network_config() {
 configure_repos() {
 	colored_echo blue "### INFO Configuring all necessary repos..."
 
-	wget -qO - ${PULSE_REPO_URL}/pubkey.txt | apt-key add -
+	case ${LINUX_DISTRO} in
 
-	apt -y install apt-transport-https
+		"debian")
+			wget -qO - ${PULSE_REPO_URL}/pubkey.txt | apt-key add -
+			apt -y install apt-transport-https
+			case ${DISTRO_VERSION} in
+				"8"*)
+					echo "deb ${PULSE_REPO_URL} jessie mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+					# DRBL
+					echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
+					wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
+					# Guacamole
+					wget -O- http://neuro.debian.net/lists/jessie.de-md.libre | tee /etc/apt/sources.list.d/neurodebian.sources.list
+					apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
+					;;
+				"9"*)
+          if [ ${PULSE_REPO_URL} == "https://git.siveo.net" ]; then
+						if [ ! -z ${GIT_BRANCH} ] && [ ${GIT_BRANCH} != "master" ]; then
+              echo "deb ${PULSE_REPO_URL} ${GIT_BRANCH} mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+            else
+              echo "deb ${PULSE_REPO_URL} xmppmaster mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+            fi
+          else
+	          echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+          fi
 
-	case ${DEBIAN_VERSION} in
-		"8"*)
-			echo "deb ${PULSE_REPO_URL} jessie mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-			# DRBL
-			echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
-			wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
-			# Guacamole
-			wget -O- http://neuro.debian.net/lists/jessie.de-md.libre | tee /etc/apt/sources.list.d/neurodebian.sources.list
-			apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
+					;;
+				*)
+					;;
+			esac
+			apt update
 			;;
-		"9"*)
-                        if [ ${PULSE_REPO_URL} == "https://git.siveo.net" ]; then
-                                if [ ! -z ${GIT_BRANCH} ] && [ ${GIT_BRANCH} != "master" ]; then
-                                        echo "deb ${PULSE_REPO_URL} ${GIT_BRANCH} mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-                                else
-                                        echo "deb ${PULSE_REPO_URL} xmppmaster mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-                                fi
-                        else
-                                echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-                        fi
 
+		"mageia")
+			case ${DISTRO_VERSION} in
+				*)
+					# TBD
+					;;
+			esac
+			urpmi.update -a
 			;;
+
+		"rhel")
+			curl -O ${PULSE_REPO_URL}/siveo_key.asc && rpm --import siveo_key.asc
+			echo -e "[mmc-core]\nname=MMC Core\nbaseurl=${PULSE_REPO_URL}/rpm/mmc-core\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/mmc-core.repo
+			echo -e "[pulse]\nname=Pulse\nbaseurl=${PULSE_REPO_URL}/rpm/pulse\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/pulse.repo
+			echo -e "[3rdparty]\nname=3rd Party\nbaseurl=${PULSE_REPO_URL}/rpm/3rdparty\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/3rdparty.repo
+			sed -i "s/enabled=1/enabled=0/" /etc/yum.repos.d/dvd.repo
+			;;
+
 		*)
 			;;
 	esac
 
-	apt update
-
 	colored_echo blue "### INFO Configuring all necessary repos... Done"
+}
+
+install_package() {
+	case ${LINUX_DISTRO} in
+		"debian")
+			apt -y install "$@"
+		"mageia")
+			urpmi --auto "$@"
+			;;
+		"rhel")
+			yum install "$@"
+			;;
+		*)
+			;;
+	esac
 }
 
 configure_apt_settings() {
@@ -535,18 +586,68 @@ configure_apt_settings() {
 configure_locales() {
 	colored_echo green "### INFO Configuring locales..."
 
-	echo "locales locales/default_environment_locale select en_US.UTF-8" | debconf-set-selections
-	echo "locales locales/locales_to_be_generated multiselect en_US.UTF-8 UTF-8, fr_FR.UTF-8 UTF-8" | debconf-set-selections
-	dpkg-reconfigure -f noninteractive locales
+	case ${LINUX_DISTRO} in
+		"debian")
+			echo "locales locales/default_environment_locale select en_US.UTF-8" | debconf-set-selections
+			echo "locales locales/locales_to_be_generated multiselect en_US.UTF-8 UTF-8, fr_FR.UTF-8 UTF-8" | debconf-set-selections
+			dpkg-reconfigure -f noninteractive locales
+			;;
+		"mageia")
+			# TBD
+			;;
+		"rhel")
+			# TBD
+			;;
+		*)
+			;;
+	esac
 
 	colored_echo blue "### INFO Configuring locales... Done"
+}
+
+configure_mail_monitoring() {
+	colored_echo green "### INFO Configuring mail monitoring..."
+
+	# Uninstall exim and install necessary packages
+	case ${LINUX_DISTRO} in
+		"debian")
+			dpkg -r exim4
+			dpkg --purge exim4
+			apt -y install ssmtp xfs-defrag mailutils
+			;;
+		"mageia")
+			# TBD
+			;;
+		"rhel")
+			# TBD
+			;;
+		*)
+			;;
+	esac
+
+	# Configure ssmtp
+	echo "mailhub=${SMTP}" > /etc/ssmtp/ssmtp.conf
+	echo "root=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
+	echo "AuthUser=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
+	echo "AuthPass=${MAIL_PASSWORD}" >> /etc/ssmtp/ssmtp.conf
+	echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf
+	echo "UseTLS=YES" >> /etc/ssmtp/ssmtp.conf
+	echo "root:`hostname -f`@siveo.net" > /etc/ssmtp/revaliases
+
+	# Configure XFS-Defrag
+	sed 's/^CRON=0$/CRON=1/' -i /etc/xfs-defrag.conf
+	sed "s/.*MAILTO=.*/MAILTO=${MAIL_ADDRESS}/" -i /etc/xfs-defrag.conf
+	sed "s/mail -s/mail -a \"From: ${ORGANISATION} <${ORGANISATION}@siveo.net>\" -s /g" -i /usr/sbin/xfs-defrag
+	sed "s/\${MAIL_ADDRESS}/${MAILTO}/" -i /usr/sbin/xfs-defrag
+
+	colored_echo blue "### INFO Configuring mail monitoring... Done"
 }
 
 install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	apt -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp pwgen net-tools
+	install_package multitail vim rsync sshpass mysql-client vim-common expect createrepo reprepro ntp pwgen net-tools
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -554,28 +655,16 @@ install_system_tools() {
 	echo 'set mouse-=a' > /root/.vimrc
 
 	# Configure mail monitoring
-	 if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
-		dpkg -r exim4
-		dpkg --purge exim4
-		apt -y install ssmtp xfs-defrag mailutils
-
-		echo "mailhub=${SMTP}" > /etc/ssmtp/ssmtp.conf
-		echo "root=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
-		echo "AuthUser=${MAIL_ADDRESS}" >> /etc/ssmtp/ssmtp.conf
-		echo "AuthPass=${MAIL_PASSWORD}" >> /etc/ssmtp/ssmtp.conf
-		echo "FromLineOverride=YES" >> /etc/ssmtp/ssmtp.conf
-		echo "UseTLS=YES" >> /etc/ssmtp/ssmtp.conf
-		echo "root:`hostname -f`@siveo.net" > /etc/ssmtp/revaliases
-
-		# Configure XFS-Defrag
-		sed 's/^CRON=0$/CRON=1/' -i /etc/xfs-defrag.conf
-		sed "s/.*MAILTO=.*/MAILTO=${MAIL_ADDRESS}/" -i /etc/xfs-defrag.conf
-		sed "s/mail -s/mail -a \"From: ${ORGANISATION} <${ORGANISATION}@siveo.net>\" -s /g" -i /usr/sbin/xfs-defrag
-		sed "s/\${MAIL_ADDRESS}/${MAILTO}/" -i /usr/sbin/xfs-defrag
+	if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
+		configure_mail_monitoring
 	fi
 
-	if [[ ${DEBIAN_VERSION} == "8" ]]; then
+	if [[ ${LINUX_DISTRO} == "debian"]] && [[ ${DISTRO_VERSION} == "8" ]]; then
 		apt -y install python-pip
+		pip install ssl-opt-out
+	fi
+	if [[ ${LINUX_DISTRO} == "mageia"]] && [[ ${DISTRO_VERSION} == "6" ]]; then
+		urpmi --auto python-pip
 		pip install ssl-opt-out
 	fi
 
@@ -611,52 +700,90 @@ configure_keepalive() {
   colored_echo green "### INFO Configuring TCP keepalive... Done"
 }
 
-prepare_debian() {
-	# Configure debian OS for Pulse
+define_version_settings() {
+	case ${LINUX_DISTRO} in
+		"debian")
+			case ${DISTRO_VERSION} in
+				"7"*)
+					PHP_VERSION='5'
+					TOMCAT_VERSION='6'
+					PHP_INI="/etc/php${PHP_VERSION}/apache2/php.ini"
+					;;
+				"8"*)
+					PHP_VERSION='5'
+					TOMCAT_VERSION='8'
+					PHP_INI="/etc/php${PHP_VERSION}/apache2/php.ini"
+					;;
+				"9"*)
+					PHP_VERSION='7.0'
+					TOMCAT_VERSION='8'
+					PHP_INI="/etc/php/${PHP_VERSION}/apache2/php.ini"
+					;;
+				*)
+					PHP_VERSION='7.0'
+					TOMCAT_VERSION='8'
+					PHP_INI="/etc/php/${PHP_VERSION}/apache2/php.ini"
+					;;
+			esac
+			APACHE_DAEMON="apache2"
+			;;
+		"mageia")
+			TOMCAT_VERSION='6'
+			PHP_INI="/etc/php.ini"
+			APACHE_DAEMON="apache"
+			;;
+		"rhel")
+			TOMCAT_VERSION='6'
+			PHP_INI="/etc/php.ini"
+			APACHE_DAEMON="httpd"
+			;;
+		*)
+			;;
+	esac
+}
+
+prepare_os() {
+	# Configure OS for Pulse
 	ssh-keygen -b 2048 -t rsa -f /root/.ssh/id_rsa -q -N ""
 	cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 	sed -i 's/^PermitRootLogin .*$/PermitRootLogin yes/' /etc/ssh/sshd_config
 	sed -i 's/^PasswordAuthentication .*$/PasswordAuthentication yes/' /etc/ssh/sshd_config
 	systemctl restart sshd.service
 	configure_repos
-	configure_apt_settings
+	case ${LINUX_DISTRO} in
+		"debian")
+			configure_apt_settings
+			;;
+		*)
+			;;
+	esac
+	configure_locales
 	install_system_tools
 	configure_keepalive
-
-	# Define a few options
-	case ${DEBIAN_VERSION} in
-	  "7"*)
-			PHP_VERSION='5'
-			TOMCAT_VERSION='6'
-			PHP_INI="/etc/php${PHP_VERSION}/apache2/php.ini"
-			;;
-	  "8"*)
-			PHP_VERSION='5'
-			TOMCAT_VERSION='8'
-			PHP_INI="/etc/php${PHP_VERSION}/apache2/php.ini"
-			;;
-	  "9"*)
-			PHP_VERSION='7.0'
-			TOMCAT_VERSION='8'
-			PHP_INI="/etc/php/${PHP_VERSION}/apache2/php.ini"
-			;;
-	  *)
-			PHP_VERSION='7.0'
-			TOMCAT_VERSION='8'
-			PHP_INI="/etc/php/${PHP_VERSION}/apache2/php.ini"
-	    ;;
-	esac
+	define_version_settings
 }
 
 install_pulse2-setup_deps() {
 	colored_echo blue "### INFO Installing tools needed by pulse2setup..."
 
 	# Install rng-tools used by pulse2-setup
-	apt -y install rng-tools
-	grep ^HRNGDEVICE /etc/default/rng-tools
-	if [ ! $? -eq 0 ]; then
-		echo "HRNGDEVICE=/dev/urandom" >> /etc/default/rng-tools
-	fi
+	install_package rng-tools
+	case ${LINUX_DISTRO} in
+		"debian")
+			grep ^HRNGDEVICE /etc/default/rng-tools
+			if [ ! $? -eq 0 ]; then
+				echo "HRNGDEVICE=/dev/urandom" >> /etc/default/rng-tools
+			fi
+			;;
+		"mageia")
+			service rngd restart
+			;;
+		"rhel")
+			service rngd restart
+			;;
+		*)
+			;;
+	esac
 
 	# Install python network libraries used by pulse2-setup
 	apt -y install python-netifaces python-netaddr
@@ -668,17 +795,30 @@ install_apache() {
 	colored_echo blue "### INFO Installing Apache2..."
 
 	# Install apache2 and php used by Pulse
-	apt -y install apache2 php${PHP_VERSION}
+	case ${LINUX_DISTRO} in
+		"debian")
+			apt -y install apache2 php${PHP_VERSION}
+			;;
+		"mageia")
+			urpmi --auto apache php-cgi
+			;;
+		"rhel")
+			yum install httpd php
+			;;
+		*)
+			;;
+	esac
+
 	# Configure php to allow upload of files of 200M max
 	sed -i 's/^upload_max_filesize.*$/upload_max_filesize = 200M/' ${PHP_INI}
 	sed -i 's/^post_max_size.*$/post_max_size = 200M/' ${PHP_INI}
 	sed -i 's/^memory_limit.*$/memory_limit = 1024M/' ${PHP_INI}
+
 	# Configure apache to use /tmp
-	mkdir /etc/systemd/system/apache2.service.d
-	echo "[Service]" >  /etc/systemd/system/apache2.service.d/nopt.conf
-	echo "PrivateTmp=false" >> /etc/systemd/system/apache2.service.d/nopt.conf
+	mkdir /etc/systemd/system/${APACHE_DAEMON}.service.d
+	echo -e "[Service]\nPrivateTmp=false" >  /etc/systemd/system/${APACHE_DAEMON}.service.d/nopt.conf
 	systemctl daemon-reload
-	systemctl restart apache2.service
+	systemctl restart ${APACHE_DAEMON}.service
 
 	colored_echo green "### INFO Installing Apache2... Done"
 }
@@ -686,16 +826,61 @@ install_apache() {
 install_ldap_server() {
 	colored_echo blue "### INFO Installing LDAP server..."
 
-	# Define a few settings for ldap-server
-	echo "slapd slapd/password1 password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "slapd slapd/password2 password ${ROOT_PASSWORD}" | debconf-set-selections
-
-	# Install ldap-server
-	apt -y install ldap-server
-	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ERROR... LDAP server install... failed"
-		exit 1
-	fi
+	case ${LINUX_DISTRO} in
+		"debian")
+			# Define a few settings for ldap-server
+			echo "slapd slapd/password1 password ${ROOT_PASSWORD}" | debconf-set-selections
+			echo "slapd slapd/password2 password ${ROOT_PASSWORD}" | debconf-set-selections
+			# Install ldap-server
+			apt -y install ldap-server
+			if [ ! $? -eq 0 ]; then
+				colored_echo red "### ERROR... LDAP server install... failed"
+				exit 1
+			fi
+			;;
+		"mageia")
+			# Install openldap-servers
+			urpmi --auto openldap-servers
+			if [ ! $? -eq 0 ]; then
+				colored_echo red "### ERROR... LDAP server install... failed"
+				exit 1
+			fi
+			# Configure ldap server
+			# TBD
+			;;
+		"rhel")
+			# Install openldap-servers
+			yum install openldap-servers
+			if [ ! $? -eq 0 ]; then
+				colored_echo red "### ERROR... LDAP server install... failed"
+				exit 1
+			fi
+			# Configure ldap server
+			local LDAP_PASSWD=$(slappasswd -s ${ROOT_PASSWORD})
+			local BASE_DN="dc=${DOMAIN//./,dc=}"
+			sed -i "s/^olcSuffix:.*$/olcSuffix: ${BASE_DN}/" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+			sed -i "s/^olcRootDN:.*$/olcRootDN: cn=admin,${BASE_DN}/" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+			grep "^olcRootPW:" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+			if [ $? -eq 0 ]; then
+				sed -i "s/^olcRootPW:.*$/olcRootPW: ${LDAP_PASSWD}/" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+			else
+				echo "olcRootPW: ${LDAP_PASSWD}" >> /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+			fi
+			cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
+			chown -R ldap:ldap /var/lib/ldap/
+			service slapd restart
+			chkconfig slapd on
+			echo -e "dn: ${BASE_DN}\nobjectClass: top\nobjectClass: dcObject\nobjectClass: organization\ndc: ${DOMAIN%%.*}\no: ${DOMAIN}\n\n" > /root/base.ldif
+			echo -e "dn: cn=admin,${BASE_DN}\nobjectClass: organizationalRole\ncn: admin\ndescription: LDAP administrator\n" >> /root/base.ldif
+			ldapadd -x -D "cn=admin,${BASE_DN}" -w ${ROOT_PASSWORD} -f /root/base.ldif
+			if [ ! $? -eq 0 ]; then
+				colored_echo red "### ERROR... LDAP server setup... failed"
+				exit 1
+			fi
+			;;
+		*)
+			;;
+	esac
 
 	colored_echo green "### INFO Installing LDAP server... Done"
 }
@@ -703,16 +888,51 @@ install_ldap_server() {
 install_mysql_server() {
 	colored_echo blue "### INFO Installing MySQL server..."
 
-	# Define a few settings for mysql-server
-	echo "mysql-server-5.5 mysql-server/root_password password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "mysql-server-5.5 mysql-server/root_password_again password ${ROOT_PASSWORD}" | debconf-set-selections
-
-	# Install mysql-server
-	apt -y install mysql-server
-	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ERROR... MySQL server install... failed"
-		exit 1
-	fi
+	case ${LINUX_DISTRO} in
+		"debian")
+			# Define a few settings for mysql-server
+			echo "mysql-server-5.5 mysql-server/root_password password ${ROOT_PASSWORD}" | debconf-set-selections
+			echo "mysql-server-5.5 mysql-server/root_password_again password ${ROOT_PASSWORD}" | debconf-set-selections
+			# Install mysql-server
+			apt -y install mysql-server
+			if [ ! $? -eq 0 ]; then
+				colored_echo red "### ERROR... MySQL server install... failed"
+				exit 1
+			fi
+			;;
+		"mageia")
+			# Install mysql-server
+			urpmi --auto mariadb mariadb-client
+			if [ ! $? -eq 0 ]; then
+				colored_echo red "### ERROR... MySQL server install... failed"
+				exit 1
+			fi
+			service mysqld start
+			# Secure the installation
+			mysql -u root -e "UPDATE mysql.user SET Password=PASSWORD('${ROOT_PASSWORD}') WHERE User='root'"
+			mysql -u root -p"${ROOT_PASSWORD}" -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')"
+			mysql -u root -p"${ROOT_PASSWORD}" -e "DELETE FROM mysql.user WHERE User=''"
+			mysql -u root -p"${ROOT_PASSWORD}" -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
+			mysql -u root -p"${ROOT_PASSWORD}" -e "FLUSH PRIVILEGES"
+			;;
+		"rhel")
+			# Install mysql-server
+			yum install mariadb mariadb-server
+			if [ ! $? -eq 0 ]; then
+				colored_echo red "### ERROR... MySQL server install... failed"
+				exit 1
+			fi
+			systemctl start mariadb
+			# Secure the installation
+			mysql -u root -e "UPDATE mysql.user SET Password=PASSWORD('${ROOT_PASSWORD}') WHERE User='root'"
+			mysql -u root -p"${ROOT_PASSWORD}" -e "DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1')"
+			mysql -u root -p"${ROOT_PASSWORD}" -e "DELETE FROM mysql.user WHERE User=''"
+			mysql -u root -p"${ROOT_PASSWORD}" -e "DELETE FROM mysql.db WHERE Db='test' OR Db='test\_%'"
+			mysql -u root -p"${ROOT_PASSWORD}" -e "FLUSH PRIVILEGES"
+			;;
+		*)
+			;;
+	esac
 
 	colored_echo green "### INFO Installing MySQL server... Done"
 }
@@ -720,35 +940,54 @@ install_mysql_server() {
 install_backuppc() {
 	colored_echo blue "### INFO Installing backuppc..."
 
-	# Define a few settings for backuppc
-	useradd backuppc -md /var/lib/backuppc -s /bin/bash
-	echo "backuppc  backuppc/reconfigure-webserver  multiselect     apache2" | debconf-set-selections
-	echo "backuppc  backuppc/tmppass password ${ROOT_PASSWORD}" | debconf-set-selections
-	echo "backuppc  backuppc/configuration-note     note" | debconf-set-selections
-	echo "backuppc  backuppc/restart-webserver      boolean true" | debconf-set-selections
-	echo "backuppc  backuppc/reconfigure-webserver  multiselect" | debconf-set-selections
-
-	# Install backuppc
-	apt -y install backuppc libfile-rsyncp-perl
-	if [ ! $? -eq 0 ]; then
-		colored_echo red "### ERROR... backuppc install... failed"
-		exit 1
-	fi
+	case ${LINUX_DISTRO} in
+		"debian")
+			# Define a few settings for backuppc
+			useradd backuppc -md /var/lib/backuppc -s /bin/bash
+			echo "backuppc  backuppc/reconfigure-webserver  multiselect     apache2" | debconf-set-selections
+			echo "backuppc  backuppc/tmppass password ${ROOT_PASSWORD}" | debconf-set-selections
+			echo "backuppc  backuppc/configuration-note     note" | debconf-set-selections
+			echo "backuppc  backuppc/restart-webserver      boolean true" | debconf-set-selections
+			echo "backuppc  backuppc/reconfigure-webserver  multiselect" | debconf-set-selections
+			# Install backuppc
+			apt -y install backuppc libfile-rsyncp-perl
+			if [ ! $? -eq 0 ]; then
+				colored_echo red "### ERROR... backuppc install... failed"
+				exit 1
+			fi
+			;;
+		"mageia")
+			# Define a few settings for backuppc
+			useradd backuppc -md /var/lib/backuppc -s /bin/bash
+			# Install backuppc
+			urpmi --auto  backuppc perl-File-RsyncP
+			if [ ! $? -eq 0 ]; then
+				colored_echo red "### ERROR... backuppc install... failed"
+				exit 1
+			fi
+			;;
+		"rhel")
+			# Install backuppc
+			# TDB
+			;;
+		*)
+			;;
+	esac
 
 	# Copy Pulse ssh key
 	cp -rf /root/.ssh /var/lib/backuppc/
 	chown -R backuppc:backuppc /var/lib/backuppc/
 
 	# Configure Apache for backuppc
-	if [ ! -e /etc/apache2/conf-available/backuppc.conf ]; then
-		ln -s /etc/backuppc/apache.conf /etc/apache2/conf-available/backuppc.conf
+	if [ ! -e /etc/${APACHE_DAEMON}/conf-available/backuppc.conf ]; then
+		ln -s /etc/backuppc/apache.conf /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
 	fi
 	a2enconf backuppc.conf
 
 	if [[ ${INSTALL_TYPE} == "p" ]]; then
 		# Allow MMC to connect to backuppc
-		sed "$ i\        Allow from 127.0.0.1" -i /etc/apache2/conf-available/backuppc.conf
-		sed "$ i\        Satisfy any" -i /etc/apache2/conf-available/backuppc.conf
+		sed "$ i\        Allow from 127.0.0.1" -i /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
+		sed "$ i\        Satisfy any" -i /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
 	fi
 
 	# Delete localhost backup
@@ -756,7 +995,7 @@ install_backuppc() {
 	sed -i '/^localhost/d' /etc/backuppc/hosts
 	rm -rf /var/lib/backuppc/pc/localhost/
 
-	systemctl restart apache2.service
+	systemctl restart ${APACHE_DAEMON}.service
 	htpasswd -b -c /etc/backuppc/htpasswd backuppc ${ROOT_PASSWORD}
 
 	colored_echo green "### INFO Installing backuppc... Done"
@@ -942,7 +1181,7 @@ install_pulse_dependencies() {
 install_pulse() {
 	colored_echo blue "### INFO Installing Pulse..."
 
-	apt -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support mmc-web-update pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-update python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers
+	apt -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers pulse-update-manager
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -1142,7 +1381,6 @@ configure_mmc() {
 	sed "s/^baseDN = .*$/baseDN = ${BASE_DN}/" -i /etc/mmc/plugins/base.ini
 	sed "s/^password = .*$/password = ${ROOT_PASSWORD}/" -i /etc/mmc/plugins/base.ini
 	sed 's/^disabled_panels.*/disabled_panels = shortcuts appstream/' -i /etc/mmc/plugins/dashboard.ini
-	sed 's/^disable = 0/disable = 1/' -i /etc/mmc/plugins/support.ini /etc/mmc/plugins/update.ini
 	systemctl restart mmc-agent.service
 	colored_echo green "### INFO Configuring mmc... Done"
 }
@@ -1265,6 +1503,14 @@ configure_guacamole() {
   echo "    ProxyPass http://localhost:8081/guacamole/ max=20 flushpackets=on" >> /etc/apache2/conf-available/guacamole.conf
   echo "    ProxyPassReverse http://localhost:8081/guacamole/" >> /etc/apache2/conf-available/guacamole.conf
   echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
+  echo "<Location /guacamole/websocket-tunnel>" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    ProxyPass ws://localhost:8081/guacamole/websocket-tunnel" >> /etc/apache2/conf-available/guacamole.conf
+  echo "    ProxyPassReverse ws://localhost:8081/guacamole/websocket-tunnel" >> /etc/apache2/conf-available/guacamole.conf
+  echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
   echo "SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog" >> /etc/apache2/conf-available/guacamole.conf
   echo "CustomLog  /var/log/apache2/guac.log common env=!dontlog" >> /etc/apache2/conf-available/guacamole.conf
   a2enconf guacamole.conf
@@ -1312,8 +1558,6 @@ generate_pki() {
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/agent/keys/cacert.pem
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/cacert.pem
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/privkey.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/launchers/keys/cacert.pem
-	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/launchers/keys/privkey.pem
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/cacert.pem
 	cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/privkey.pem
 	cp /var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
@@ -1473,11 +1717,6 @@ reset_pulse_db() {
 	sed -i "/^[[:space:]]*mod_muc:[[:space:]]*$/a\ \ \ \ history_size: 0\n    max_users: 100000\n    default_room_options:\n      password: \"${MUC_ROOM_PASSWORD}\"\n      password_protected: true\n      persistent: true" /etc/ejabberd/ejabberd.yml
 	service ejabberd restart
 
-	# Configure Launcher
-	echo "[rsync]" >> /etc/mmc/pulse2/launchers/launchers.ini.local
-	echo "rsync_path = /usr/bin/rsync" >> /etc/mmc/pulse2/launchers/launchers.ini.local
-	echo "resume = True" >> /etc/mmc/pulse2/launchers/launchers.ini.local
-
 	# Configure XMPP master
 	echo "[main]" > /etc/mmc/plugins/xmppmaster.ini.local
 	echo "disable = 0" >> /etc/mmc/plugins/xmppmaster.ini.local
@@ -1600,9 +1839,12 @@ configure_relay_server() {
 	sed -i "s/@@GUACAMOLE_BASEURL@@/$(sed_escape ${GUACAMOLE_BASEURL})/" /etc/pulse-xmpp-agent/relayconf.ini
 	sed -i "s/@@CHATROOM_SERVER@@/conference.${XMPP_DOMAIN}/" /etc/pulse-xmpp-agent/relayconf.ini
 	sed -i "s/@@CHAT_DOMAIN@@/${XMPP_DOMAIN}/" /etc/pulse-xmpp-agent/relayconf.ini
-	sed -i "s/log_level = .*$/log_level = DEBUG/" /etc/pulse-xmpp-agent/relayconf.ini # TO BE DELETED
 	echo "[jid_01]" >> /etc/pulse-xmpp-agent/relayconf.ini
 	echo "jidname = RS${XMPP_DOMAIN}@${XMPP_DOMAIN}/pulse01a" >> /etc/pulse-xmpp-agent/relayconf.ini
+	if [[ ${PUBLIC_IP} ]]; then
+		sed -i "s/^.*request_type = .*$/request_type = public/" /etc/pulse-xmpp-agent/relayconf.ini
+		sed -i "s/^.*public_ip = .*$/public_ip = ${PUBLIC_IP}/" /etc/pulse-xmpp-agent/relayconf.ini
+	fi
 	sed -i "/^pluginlist.*/ s/$/ guacamoleconf/" /etc/pulse-xmpp-agent/relayconf.ini
 	cp /var/lib/pulse2/clients/config/guacamoleconf.ini.in /etc/pulse-xmpp-agent/guacamoleconf.ini
 	sed -i "s/@@PLUGIN_GUACAMOLE_DBHOST@@/localhost/" /etc/pulse-xmpp-agent/guacamoleconf.ini
@@ -1629,6 +1871,12 @@ configure_relay_server() {
 		# Update hosts file on main pulse
 		local SSH_COMMAND="if [ \"\$(grep -cx \"${IP_ADDRESS} ${XMPP_DOMAIN}\" /etc/hosts)\" -eq 0 ]; then echo \"${IP_ADDRESS} ${XMPP_DOMAIN}\" >> /etc/hosts; fi"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+	fi
+
+	# Update default RS if on main pulse and public IP is defined
+	if [[ ${XMPP_DOMAIN} == "pulse" && ${PUBLIC_IP} ]]; then
+		sed -i "s/^serverip =.*$/serverip = ${PUBLIC_IP}/" /etc/mmc/plugins/xmppmaster.ini.local
+		service mmc-agent restart
 	fi
 
 	# Enable and start the service
@@ -1659,7 +1907,7 @@ install_multisite_dependencies() {
 
 install_multisite() {
 	colored_echo blue "### INFO Installing Pulse multisite..."
-	apt -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse2-launchers pulse-xmpp-agent pulseagent-plugins-relay
+	apt -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -1752,43 +2000,6 @@ configure_package_server_multisite() {
 	colored_echo green "### INFO Configuring Package Server for multisite... Done"
 }
 
-configure_launcher_multisite() {
-	colored_echo green "### INFO Configuring Launchers for multisite..."
-
-	# Configure the scheduler. Done on main Pulse server
-	local PULSEMAIN_NETWORK_ADDRESS=`echo ${PULSEMAIN_IP} | cut -d"." -f1-3`".0"
-	local SSH_COMMAND='grep -Gq "^host = 0.0.0.0" /etc/mmc/pulse2/scheduler/scheduler.ini.local'
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-	# If the scheduler has never been configured as a multi-site scheduler, we will configure it
-	if [ $? -ne 0 ]; then
-		local SSH_COMMAND="echo -e \"[scheduler]\nhost = 0.0.0.0\nusername = username\npassword = password\nenablessl = True\npreferred_network = ${PULSEMAIN_NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local"
-		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-		local SSH_COMMAND="echo -e \"[scheduler_01]\nhost = ${PULSEMAIN_IP}\n[launcher_01]\nbind = ${PULSEMAIN_IP}\" >> /etc/mmc/pulse2/launchers/launchers.ini.local && systemctl restart pulse2-launchers.service"
-		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-		local SSH_COMMAND="echo -e \"[launcher_01]\nhost=${PULSEMAIN_IP}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${PULSEMAIN_NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && systemctl restart pulse2-scheduler.service"
-		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-	fi
-	local SSH_COMMAND="sed '0,/^preferred_network = .*/ s/^preferred_network = .*$/& ${NETWORK_ADDRESS}\/${NETMASK}/' -i /etc/mmc/pulse2/scheduler/scheduler.ini.local"
-	ssh ${PULSEMAIN_IP} "${SSH_COMMAND}"
-
-	# Find out the highest Launcher Id as defined in scheduler. Done on main pulse server
-	local MAX_LAUNCHER_ID=$(ssh ${PULSEMAIN_IP} "grep launcher_.. /etc/mmc/pulse2/scheduler/scheduler.ini.local | cut -d _ -f2 | cut -c1-2 | sort -r | head -1")
-	local LAUNCHER_ID=`printf "%02d" $((${MAX_LAUNCHER_ID} + 1))`
-	local SSH_COMMAND="echo -e \"[launcher_${LAUNCHER_ID}]\nhost=${IP_REMOTE_SERVER}\nport=8001\nusername = username\npassword = password\nenablessl = True\nslots = 20\npreferred_network = ${NETWORK_ADDRESS}/${NETMASK}\" >> /etc/mmc/pulse2/scheduler/scheduler.ini.local && systemctl restart pulse2-scheduler.service"
-	ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-
-	# Configure multi-site launchers
-	# Copy launchers configuration from main Pulse
-	scp root@${PULSEMAIN_IP}:/etc/mmc/pulse2/launchers/launchers.ini.local /etc/mmc/pulse2/launchers/
-	# Configure the launcher
-	sed -i "s/bind = .*$/bind = ${IP_REMOTE_SERVER}/" /etc/mmc/pulse2/launchers/launchers.ini.local
-
-	# Restart launcher service
-	systemctl restart pulse2-launchers.service
-
-	colored_echo green "### INFO Configuring Launchers for multisite... Done"
-}
-
 create_package_server_cert() {
 	colored_echo blue "### INFO Generating Package Server certificate..."
 
@@ -1824,19 +2035,6 @@ create_package_server_cert() {
 	colored_echo green "### INFO Generating Package Server certificate... Done"
 }
 
-install_launcher_cert() {
-	colored_echo blue "### INFO Installing launcher certificate..."
-
-	# Get the keys for launcher from PKI
-	scp ${PULSEMAIN_IP}:/var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/launchers/keys/cacert.pem
-	scp ${PULSEMAIN_IP}:/var/lib/pulse2/pki/cert.pem /etc/mmc/pulse2/launchers/keys/privkey.pem
-
-	# Restart the service
-	service pulse2-launchers restart
-
-	colored_echo green "### INFO Installing launcher certificate... Done"
-}
-
 configure_multisite() {
 	# Grant ssh without password from Pulse multisite to Pulse
 	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
@@ -1850,8 +2048,6 @@ configure_multisite() {
 
 	configure_package_server_multisite
 	create_package_server_cert
-	configure_launcher_multisite
-	install_launcher_cert
 	configure_relay_server ${MULTISITE_ENTITY}
 
 	colored_echo blue "### INFO Restart pulse2-package-server..."
@@ -1859,7 +2055,7 @@ configure_multisite() {
 }
 
 sync_package_server() {
-	# Enable package synchronisation between Pulse package server and multisite(s) packager server
+	# Enable package synchronisation between Pulse package server and multisite(s) package server
 
 	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
 	ssh -t ${PULSEMAIN_IP} "ssh-keyscan ${IP_REMOTE_SERVER} >> /root/.ssh/known_hosts"
@@ -1925,7 +2121,7 @@ elif [[ ${BATCH_MODE} == "n" ]]; then
 	get_user_options
 fi
 check_network_config
-prepare_debian
+prepare_os
 
 
 if [[ ${INSTALL_TYPE} == "p" ]]; then
@@ -1935,6 +2131,7 @@ if [[ ${INSTALL_TYPE} == "p" ]]; then
 	if [[ ${MAIN_DHCP} == "y" ]]; then
 		install_isc_dhcp_server
 		configure_isc_dhcp_server
+		trick_clonezilla #To be removed later when clonezilla is fixed for Debian Stretch
 	else
 		trick_clonezilla
 	fi
@@ -1968,6 +2165,7 @@ else
 	if [[ ${REMOTE_DHCP} == "y" ]]; then
 		install_isc_dhcp_server
 		configure_isc_dhcp_server
+		trick_clonezilla #To be removed later when clonezilla is fixed for Debian Stretch
 	else
 		trick_clonezilla
 	fi
