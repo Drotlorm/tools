@@ -510,25 +510,24 @@ configure_repos() {
                         apt -y install apt-transport-https
                         case ${DISTRO_VERSION} in
                                 "8"*)
-                                        echo "deb ${PULSE_REPO_URL} jessie mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-                                        # DRBL
-                                        echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
-                                        wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
-                                        # Guacamole
-                                        wget -O- http://neuro.debian.net/lists/jessie.de-md.libre | tee /etc/apt/sources.list.d/neurodebian.sources.list
-                                        apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
-                                        ;;
+                                       echo "deb ${PULSE_REPO_URL} jessie mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                                       # DRBL
+                                       echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
+                                       wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
+                                       # Guacamole
+                                       wget -O- http://neuro.debian.net/lists/jessie.de-md.libre | tee /etc/apt/sources.list.d/neurodebian.sources.list
+                                       apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
+                                       ;;
                                 "9"*)
-          if [ ${PULSE_REPO_URL} == "https://git.siveo.net" ]; then
-                                                if [ ! -z ${GIT_BRANCH} ] && [ ${GIT_BRANCH} != "master" ]; then
-              echo "deb ${PULSE_REPO_URL} ${GIT_BRANCH} mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-            else
-              echo "deb ${PULSE_REPO_URL} xmppmaster mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-            fi
-          else
-                  echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-          fi
-
+                                       if [ ${PULSE_REPO_URL} == "https://git.siveo.net" ]; then
+                                               if [ ! -z ${GIT_BRANCH} ] && [ ${GIT_BRANCH} != "master" ]; then
+                                                       echo "deb ${PULSE_REPO_URL} ${GIT_BRANCH} mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                                               else
+                                                       echo "deb ${PULSE_REPO_URL} xmppmaster mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                                               fi
+                                        else
+                                                echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                                        fi
                                         ;;
                                 *)
                                         ;;
