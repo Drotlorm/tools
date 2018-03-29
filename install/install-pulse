@@ -1778,27 +1778,27 @@ reset_pulse_db() {
 }
 
 generate_agent() {
-	colored_echo blue "### INFO Generating XMPP agent..."
+      colored_echo blue "### INFO Generating XMPP agent..."
 
-	local XMPP_DOMAIN=$1
+       local XMPP_DOMAIN=$1
 
-	# Generate full and minimal versions of the agent
-	/var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver=${SERVER_FQDN} \
-		--conf-xmpppasswd=${MASTER_PASSWORD} \
-		--conf-xmppmucpasswd=${MUC_ROOM_PASSWORD} \
-		--xmpp-passwd=${MASTER_PASSWORD} \
-		--xmpp-mucserver="conference.${XMPP_DOMAIN}" \
-		--xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
-		--chat-domain=${XMPP_DOMAIN}
-	/var/lib/pulse2/clients/generate-pulse-agent.sh --minimal \
-		--conf-xmppserver=${SERVER_FQDN} \
-		--conf-xmpppasswd=${MASTER_PASSWORD} \
-		--conf-xmppmucpasswd=${MUC_ROOM_PASSWORD} \
-		--xmpp-passwd=${MASTER_PASSWORD} \
-		--xmpp-mucserver="conference.${XMPP_DOMAIN}" \
-		--xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
-		--chat-domain=${XMPP_DOMAIN} \
-		--base-url="http://${SERVER_FQDN}/downloads"
+       # Generate full and minimal versions of the agent
+       /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver=${SERVER_FQDN} \
+               --conf-xmpppasswd=${MASTER_PASSWORD} \
+	       --conf-xmppmucpasswd=${MUC_ROOM_PASSWORD} \
+	       --xmpp-passwd=${MASTER_PASSWORD} \
+	       --xmpp-mucserver="conference.${XMPP_DOMAIN}" \
+	       --xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
+	       --chat-domain=${XMPP_DOMAIN}
+        /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal \
+	       --conf-xmppserver=${SERVER_FQDN} \
+	       --conf-xmpppasswd=${MASTER_PASSWORD} \
+	       --conf-xmppmucpasswd=${MUC_ROOM_PASSWORD} \
+	       --xmpp-passwd=${MASTER_PASSWORD} \
+	       --xmpp-mucserver="conference.${XMPP_DOMAIN}" \
+	       --xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
+	       --chat-domain=${XMPP_DOMAIN} \
+	       --base-url="http://${SERVER_FQDN}/downloads"
 	# Generate the package for upgrading the agent via pulse
 	/var/lib/pulse2/clients/generate-agent-package
 
@@ -1904,9 +1904,9 @@ configure_relay_server() {
 restart_pulse_services() {
 	colored_echo blue "### INFO Restart Pulse services..."
 	pushd /usr/lib/systemd/system
-	for SERV in mmc-agent.service pulse2-register-pxe.service pulse-xmpp-agent-relay.service pulse2-inventory-server.service pulse-xmpp-agent-log.service pulse2-package-server.service
-		do systemctl restart $SERV
-	done
+	        for SERV in mmc-agent.service pulse2-register-pxe.service pulse-xmpp-agent-relay.service pulse2-inventory-server.service pulse-xmpp-agent-log.service pulse2-package-server.service
+		        do systemctl restart $SERV
+	        done
 	popd
 }
 
@@ -1953,7 +1953,7 @@ configure_glpi_multisite() {
 
 	# Create fusioninventory rule to affect all computer from/to multi-site entity. Done on main pulse server
 	local SSH_COMMAND_UPDATE_RANKING="echo \"UPDATE glpi_rules SET ranking = ranking+1 WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity';\" | mysql glpi"
-  local SSH_COMMAND_GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0,'');\" | mysql glpi"
+        local SSH_COMMAND_GLPI_RULES="echo \"INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MULTISITE_ENTITY}','','AND',1,'','',0,'',0,'');\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULECRITERIAS="echo \"INSERT INTO glpi_rulecriterias VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'subnet',0,'${NETWORK_ADDRESS}');\" | mysql glpi"
 	local SSH_COMMAND_GLPI_RULEACTIONS="echo \"INSERT INTO glpi_ruleactions   VALUES ('', (SELECT MAX(id) FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id',(SELECT id FROM glpi_entities WHERE name='${MULTISITE_ENTITY}'));\" | mysql glpi"
 	ssh ${GLPI_DBHOST} ${SSH_COMMAND_UPDATE_RANKING}
