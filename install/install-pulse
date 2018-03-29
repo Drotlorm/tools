@@ -660,11 +660,11 @@ install_system_tools() {
 	fi
 
 	if [[ ${LINUX_DISTRO} == "debian"]] && [[ ${DISTRO_VERSION} == "8" ]]; then
-		apt -y install python-pip
+		install_package python-pip
 		pip install ssl-opt-out
 	fi
 	if [[ ${LINUX_DISTRO} == "mageia"]] && [[ ${DISTRO_VERSION} == "6" ]]; then
-		urpmi --auto python-pip
+		install_package python-pip
 		pip install ssl-opt-out
 	fi
 
@@ -797,13 +797,13 @@ install_apache() {
 	# Install apache2 and php used by Pulse
 	case ${LINUX_DISTRO} in
 		"debian")
-			apt -y install apache2 php${PHP_VERSION}
+			install_package apache2 php${PHP_VERSION}
 			;;
 		"mageia")
-			urpmi --auto apache php-cgi
+			install_packageapache php-cgi
 			;;
 		"rhel")
-			yum install httpd php
+			install_package httpd php
 			;;
 		*)
 			;;
@@ -840,7 +840,7 @@ install_ldap_server() {
 			;;
 		"mageia")
 			# Install openldap-servers
-			urpmi --auto openldap-servers
+			install_package openldap-servers
 			if [ ! $? -eq 0 ]; then
 				colored_echo red "### ERROR... LDAP server install... failed"
 				exit 1
@@ -850,7 +850,7 @@ install_ldap_server() {
 			;;
 		"rhel")
 			# Install openldap-servers
-			yum install openldap-servers
+		        install_package openldap-servers
 			if [ ! $? -eq 0 ]; then
 				colored_echo red "### ERROR... LDAP server install... failed"
 				exit 1
@@ -902,7 +902,7 @@ install_mysql_server() {
 			;;
 		"mageia")
 			# Install mysql-server
-			urpmi --auto mariadb mariadb-client
+			install_package mariadb mariadb-client
 			if [ ! $? -eq 0 ]; then
 				colored_echo red "### ERROR... MySQL server install... failed"
 				exit 1
@@ -917,7 +917,7 @@ install_mysql_server() {
 			;;
 		"rhel")
 			# Install mysql-server
-			yum install mariadb mariadb-server
+			install_package mariadb mariadb-server
 			if [ ! $? -eq 0 ]; then
 				colored_echo red "### ERROR... MySQL server install... failed"
 				exit 1
@@ -960,7 +960,7 @@ install_backuppc() {
 			# Define a few settings for backuppc
 			useradd backuppc -md /var/lib/backuppc -s /bin/bash
 			# Install backuppc
-			urpmi --auto  backuppc perl-File-RsyncP
+			install_package backuppc perl-File-RsyncP
 			if [ ! $? -eq 0 ]; then
 				colored_echo red "### ERROR... backuppc install... failed"
 				exit 1
