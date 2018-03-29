@@ -404,7 +404,11 @@ check_network_config() {
         fi
 
         LINUX_DISTRO=`cat /etc/os-release|grep ^ID= |cut -d '"' -f2`
-        DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID= |cut -d '"' -f2`
+        if [[ $LINUX_DISTRO == "mageia" ]]; then
+                DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID |cut -d '=' -f2`
+        else
+                DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID= |cut -d '"' -f2`
+        fi
         IP_ADDRESS=`ifconfig ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
         NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
         NETMASK=`cdr2mask $(ip addr show ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d "/" -f 2)`
