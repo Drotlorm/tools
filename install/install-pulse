@@ -660,11 +660,11 @@ install_system_tools() {
                 configure_mail_monitoring
         fi
 
-        if [[ ${LINUX_DISTRO} == "debian"]] && [[ ${DISTRO_VERSION} == "8" ]]; then
+        if [[ ${LINUX_DISTRO} == "debian" ]] && [[ ${DISTRO_VERSION} == "8" ]]; then
                 install_package python-pip
                 pip install ssl-opt-out
         fi
-        if [[ ${LINUX_DISTRO} == "mageia"]] && [[ ${DISTRO_VERSION} == "6" ]]; then
+        if [[ ${LINUX_DISTRO} == "mageia" ]] ; then
                 install_package python-pip
                 pip install ssl-opt-out
         fi
