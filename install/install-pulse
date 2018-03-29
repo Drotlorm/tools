@@ -560,6 +560,7 @@ install_package() {
         case ${LINUX_DISTRO} in
                 "debian")
                         apt -y install "$@"
+			;;
                 "mageia")
                         urpmi --auto "$@"
                         ;;
