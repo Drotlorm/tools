@@ -56,10 +56,10 @@ check_arguments() {
 				PULSE_REPO_URL="${i#*=}"
 				shift
 				;;
-      --branch=*)
-              GIT_BRANCH="${i#*=}"
-              shift
-              ;;
+                        --branch=*)
+                                GIT_BRANCH="${i#*=}"
+                                shift
+                                ;;
 			--root-password=*)
 				ROOT_PASSWORD="${i#*=}"
 				shift
@@ -321,10 +321,10 @@ get_user_options() {
 		MAIN_PXE=$(ask "PXE will be enabled ?" y n)
 		CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
 		if [[ ${CREATE_ENTITY} == "y" ]]; then
-      MAIN_ENTITY=$(get_user_input "Main entity name for GLPI:")
-    else
-      MAIN_ENTITY=$(select_main_glpi_entity)
-    fi
+                        MAIN_ENTITY=$(get_user_input "Main entity name for GLPI:")
+                else
+                        MAIN_ENTITY=$(select_main_glpi_entity)
+                fi
 	else
 		INTERFACE_TO_PULSE=$(choose_network_interface "Choose the interface connected to Pulse server")
 		PULSEMAIN_IP=$(get_user_input "Enter main Pulse Server's IP address:")
@@ -338,10 +338,10 @@ get_user_options() {
 		check_mysql_connection
 		CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
 		if [[ ${CREATE_ENTITY} == "y" ]]; then
-      MULTISITE_ENTITY=$(get_multisite_entity)
-    else
-    	MULTISITE_ENTITY=$(select_multisite_glpi_entity)
-    fi
+                        MULTISITE_ENTITY=$(get_multisite_entity)
+                else
+                        MULTISITE_ENTITY=$(select_multisite_glpi_entity)
+                fi
 	fi
 	if [[ ${MAIN_DHCP} == "y" || ${REMOTE_DHCP} == "y" ]]; then
 		DNS_SERVER=$(get_user_input "Enter the DNS server address for the DHCP clients:")
