@@ -539,6 +539,7 @@ configure_repos() {
                         case ${DISTRO_VERSION} in
                                 *)
                                         # TBD
+                                        # We need to detect the distribution and add official repos
                                         ;;
                         esac
                         urpmi.update -a
