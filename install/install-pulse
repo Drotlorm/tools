@@ -403,7 +403,7 @@ check_network_config() {
                 exit 1
         fi
 
-        LINUX_DISTRO=`cat /etc/os-release|grep ^ID= |cut -d '"' -f2`
+        LINUX_DISTRO=`cat /etc/os-release|grep ^ID= | cut -d '"' -f2 | cut -d'=' -f2`
         if [[ $LINUX_DISTRO == "mageia" ]]; then
                 DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID |cut -d '=' -f2`
         else
