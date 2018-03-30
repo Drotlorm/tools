@@ -1123,7 +1123,7 @@ install_xmpp_server() {
         local XMPP_DOMAIN=$1
 
         if [[ $LINUX_DISTRO == "debian" ]]; then
-        # Define a few settings for ejabberd
+                # Define a few settings for ejabberd
                 echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
                 echo "ejabberd ejabberd/user string root" | debconf-set-selections
                 echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
