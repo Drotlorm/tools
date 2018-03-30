@@ -556,6 +556,7 @@ configure_repos() {
                         ;;
 
                 *)
+                        echo "Your distribution is not yet supported, Please use Mageia, RHEL or Debian instead"
                         ;;
         esac
 
