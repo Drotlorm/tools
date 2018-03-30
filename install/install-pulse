@@ -392,6 +392,15 @@ cdr2mask ()
    echo ${1-0}.${2-0}.${3-0}.${4-0}
 }
 
+check_linux_distribution() {
+        LINUX_DISTRO=`cat /etc/os-release|grep ^ID= | cut -d '"' -f2 | cut -d'=' -f2`
+        if [[ $LINUX_DISTRO == "mageia" ]]; then
+                DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID |cut -d '=' -f2`
+        else
+                DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID= |cut -d '"' -f2`
+        fi
+}
+
 check_network_config() {
         colored_echo blue "### INFO Checking network settings..."
 
@@ -403,12 +412,6 @@ check_network_config() {
                 exit 1
         fi
 
-        LINUX_DISTRO=`cat /etc/os-release|grep ^ID= | cut -d '"' -f2 | cut -d'=' -f2`
-        if [[ $LINUX_DISTRO == "mageia" ]]; then
-                DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID |cut -d '=' -f2`
-        else
-                DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID= |cut -d '"' -f2`
-        fi
         IP_ADDRESS=`ifconfig ${INTERFACE} | grep -w inet | grep -v 127.0.0.1 | awk '{print $2}' | cut -d ":" -f 2`
         NETWORK_ADDRESS=`echo ${IP_ADDRESS} | awk -F '.' '{printf("%d.%d.%d.0", $1, $2, $3)}'`
         NETMASK=`cdr2mask $(ip addr show ${INTERFACE} | grep -w inet |grep -v 127.0.0.1| awk '{print $2}' | cut -d "/" -f 2)`
@@ -2137,7 +2140,7 @@ package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa Stri
 }
 
 # And finally we run the functions
-
+check_linux_distribution
 if [[ $LINUX_DISTRO != "debian" ]] || [[ $LINUX_DISTRO != "mageia" ]] || [[ $LINUX_DISTRO != "rhel" ]]; then
 	echo "For now we only support Debian, Mageia and Rhel."
 	exit 1
