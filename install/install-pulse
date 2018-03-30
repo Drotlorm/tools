@@ -399,6 +399,20 @@ check_linux_distribution() {
         else
                 DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID= |cut -d '"' -f2`
         fi
+
+        case ${LINUX_DISTRO} in
+
+                "debian")
+                        ;;
+                "mageia")
+                        ;;
+		"rhel")
+                        ;;
+		*)
+                        echo "We only support Debian, Mageia, and rhel"
+                        exit 1
+                        ;;
+	esac
 }
 
 check_network_config() {
@@ -2141,10 +2155,6 @@ package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa Stri
 
 # And finally we run the functions
 check_linux_distribution
-if [[ $LINUX_DISTRO != "debian" ]] || [[ $LINUX_DISTRO != "mageia" ]] || [[ $LINUX_DISTRO != "rhel" ]]; then
-	echo "For now we only support Debian, Mageia and Rhel."
-	exit 1
-fi
 
 if [ $# -eq 0 ]; then
         display_usage
