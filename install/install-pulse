@@ -444,43 +444,43 @@ check_network_config() {
         colored_echo blue "====================================================================="
         if [[ $LINUX_DISTRO != "mageia" ]]; then
         echo "PULSE_REPO_URL                : ${PULSE_REPO_URL}"
-        echo "GIT_BRANCH                : ${GIT_BRANCH}"
+        echo "GIT_BRANCH                    : ${GIT_BRANCH}"
         fi
-        echo "ROOT_PASSWORD                : ${ROOT_PASSWORD}"
-        echo "ORGANISATION                : ${ORGANISATION}"
-        echo "SERVER_FQDN                : ${SERVER_FQDN}"
-        echo "LINUX_DISTRO                : ${LINUX_DISTRO}"
-        echo "DISTRO_VERSION        : ${DISTRO_VERSION}"
-        echo "INTERFACE                : ${INTERFACE}"
-        echo "IP_ADDRESS                : ${IP_ADDRESS}"
-        echo "NETWORK_ADDRESS                : ${NETWORK_ADDRESS}"
-        echo "NETMASK                        : ${NETMASK}"
-        echo "BCAST_ADDRESS                : ${BCAST_ADDRESS}"
+        echo "ROOT_PASSWORD                 : ${ROOT_PASSWORD}"
+        echo "ORGANISATION                  : ${ORGANISATION}"
+        echo "SERVER_FQDN                   : ${SERVER_FQDN}"
+        echo "LINUX_DISTRO                  : ${LINUX_DISTRO}"
+        echo "DISTRO_VERSION                : ${DISTRO_VERSION}"
+        echo "INTERFACE                     : ${INTERFACE}"
+        echo "IP_ADDRESS                    : ${IP_ADDRESS}"
+        echo "NETWORK_ADDRESS               : ${NETWORK_ADDRESS}"
+        echo "NETMASK                       : ${NETMASK}"
+        echo "BCAST_ADDRESS                 : ${BCAST_ADDRESS}"
         echo "DOMAIN                        : ${DOMAIN}"
         if [[ ${MAIN_DHCP} == "y" || ${REMOTE_DHCP} == "y" ]]; then
-                echo "GATEWAY_ADDRESS                : ${GATEWAY_ADDRESS}"
-                echo "DNS_SERVER                : ${DNS_SERVER}"
+                echo "GATEWAY_ADDRESS       : ${GATEWAY_ADDRESS}"
+                echo "DNS_SERVER            : ${DNS_SERVER}"
         fi
-        echo "GLPI_DBHOST                : ${GLPI_DBHOST}"
-        echo "GLPI_DBNAME                : ${GLPI_DBNAME}"
-        echo "GLPI_DBUSER                : ${GLPI_DBUSER}"
-        echo "GLPI_DBPASSWD                : ${GLPI_DBPASSWD}"
+        echo "GLPI_DBHOST                   : ${GLPI_DBHOST}"
+        echo "GLPI_DBNAME                   : ${GLPI_DBNAME}"
+        echo "GLPI_DBUSER                   : ${GLPI_DBUSER}"
+        echo "GLPI_DBPASSWD                 : ${GLPI_DBPASSWD}"
         if [[ ${INSTALL_TYPE} == "p" ]] && [[ ${MAIN_GLPI} != "y" ]]; then
-                echo "GLPI_DBROOTPASSWD                : ${GLPI_DBROOTPASSWD}"
+                echo "GLPI_DBROOTPASSWD             : ${GLPI_DBROOTPASSWD}"
         fi
         if [[ ${INSTALL_TYPE} == "p" ]]; then
-                echo "GLPI_URL                : ${GLPI_URL}"
-                echo "MAIN_ENTITY                : ${MAIN_ENTITY}"
+                echo "GLPI_URL                      : ${GLPI_URL}"
+                echo "MAIN_ENTITY                   : ${MAIN_ENTITY}"
         fi
         if [[ ${PUBLIC_IP} ]]; then
-                echo "PUBLIC_IP                : ${PUBLIC_IP}"
+                echo "PUBLIC_IP                     : ${PUBLIC_IP}"
         fi
         if [[ ${INSTALL_TYPE} == "m" ]]; then
                 colored_echo blue "============================MULTISTE================================="
-                echo "PULSEMAIN_IP                : ${PULSEMAIN_IP}"
-                echo "INTERFACE_TO_PULSE        : ${INTERFACE_TO_PULSE}"
-                echo "IP_REMOTE_SERVER        : ${IP_REMOTE_SERVER}"
-                echo "MULTISITE_ENTITY        : ${MULTISITE_ENTITY}"
+                echo "PULSEMAIN_IP                  : ${PULSEMAIN_IP}"
+                echo "INTERFACE_TO_PULSE            : ${INTERFACE_TO_PULSE}"
+                echo "IP_REMOTE_SERVER              : ${IP_REMOTE_SERVER}"
+                echo "MULTISITE_ENTITY              : ${MULTISITE_ENTITY}"
                 colored_echo blue "====================================================================="
         fi
         colored_echo green "### Checking network settings... Done"
