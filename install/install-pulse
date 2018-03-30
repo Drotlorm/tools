@@ -1008,21 +1008,40 @@ install_backuppc() {
         colored_echo green "### INFO Installing backuppc... Done"
 }
 
+initialise_glpi_db() {
+        if [ ! -f /usr/share/glpi/install/cliinstall.php ]; then
+                pushd /usr/share/glpi/install/
+		        #TODO: Update for new glpi version
+                        wget https://raw.githubusercontent.com/glpi-project/glpi/0.90/bugfixes/tools/cliinstall.php
+                popd
+    fi
+
+        # Install for glpi 0.90 ( mageia 6 )
+        echo "CREATE user 'glpi'@'localhost';" | mysql -uroot -p${ROOT_PASSWORD}
+
+	#TODO: Update for new glpi version
+        sed -i 's!glpi-0.90.1-empty!glpi-0.90-empty!' /usr/share/glpi/install/cliinstall.php
+        php /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
+}
+
 install_glpi() {
         colored_echo blue "### INFO Installing GLPI..."
 
+        if [[ $LINUX_DISTRO == "debian" ]]; then
         # Define a few settings for glpi
-        echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
-        echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
-        echo "glpi glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
-        echo "glpi glpi/purge boolean false" | debconf-set-selections
-        echo "glpi glpi/db/dbname string glpi" | debconf-set-selections
-        echo "glpi glpi/dbconfig-reinstall boolean false" | debconf-set-selections
-        echo "glpi glpi/db/app-user string glpi" | debconf-set-selections
-        echo "glpi glpi/dbconfig-install boolean true" | debconf-set-selections
-        echo "glpi glpi/webserver multiselect apache, apache-ssl, apache-perl, apache2" | debconf-set-selections
-        echo "glpi glpi/configuration note" | debconf-set-selections
-
+                echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "glpi glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "glpi glpi/purge boolean false" | debconf-set-selections
+                echo "glpi glpi/db/dbname string glpi" | debconf-set-selections
+                echo "glpi glpi/dbconfig-reinstall boolean false" | debconf-set-selections
+                echo "glpi glpi/db/app-user string glpi" | debconf-set-selections
+                echo "glpi glpi/dbconfig-install boolean true" | debconf-set-selections
+                echo "glpi glpi/webserver multiselect apache, apache-ssl, apache-perl, apache2" | debconf-set-selections
+                echo "glpi glpi/configuration note" | debconf-set-selections
+        else
+                initialise_glpi_db
+        fi
         # Install glpi
         apt -y install glpi fusioninventory-for-glpi
         if [ ! $? -eq 0 ]; then
