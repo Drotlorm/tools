@@ -621,10 +621,12 @@ configure_mail_monitoring() {
                 "debian")
                         dpkg -r exim4
                         dpkg --purge exim4
-                        apt -y install ssmtp xfs-defrag mailutils
+                        install_package ssmtp xfs-defrag mailutils
                         ;;
                 "mageia")
                         # TBD
+                        # Find mageias for xfs-defrag mailutils
+                        install_package ssmtp
                         ;;
                 "rhel")
                         # TBD
