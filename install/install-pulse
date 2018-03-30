@@ -1130,6 +1130,7 @@ install_xmpp_server() {
                 echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
         else
 	        #TBD
+                echo "Not Implemented"
 	fi
 
         # Install ejabberd
@@ -1165,6 +1166,7 @@ install_guacamole_server() {
                                 ;;
                 esac
         else
+                echo "Not Implemented"
 	        #TBD
         fi
         if [ ! $? -eq 0 ]; then
@@ -1422,6 +1424,7 @@ configure_xmpp_server() {
                 dpkg-reconfigure -fnoninteractive ejabberd
         else
 	        #TBD
+                echo "Not Implemented"
         fi
 
         # Configure a few details
@@ -1623,6 +1626,7 @@ reset_glpi_db() {
                 dpkg-reconfigure -fnoninteractive glpi
 	else
                 #TBD
+                echo "Not Implemented"
         fi
 
         # Upgrade database if needed
