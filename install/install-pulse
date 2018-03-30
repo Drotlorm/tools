@@ -1135,11 +1135,15 @@ install_xmpp_server() {
 
         local XMPP_DOMAIN=$1
 
+        if [[ $LINUX_DISTRO == "debian" ]]; then
         # Define a few settings for ejabberd
-        echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
-        echo "ejabberd ejabberd/user string root" | debconf-set-selections
-        echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
-        echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
+                echo "ejabberd ejabberd/user string root" | debconf-set-selections
+                echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
+        else
+	        #TBD
+	fi
 
         # Install ejabberd
   apt update
@@ -1155,23 +1159,27 @@ install_xmpp_server() {
 install_guacamole_server() {
         colored_echo blue "### INFO Installing Guacamole server..."
 
-        # Set guacamole options
-        echo "guacamole-tomcat guacamole-tomcat/restart-server boolean true" | debconf-set-selections
+        if [[ $LINUX_DISTRO == "debian" ]]; then
+                # Set guacamole options
+                echo "guacamole-tomcat guacamole-tomcat/restart-server boolean true" | debconf-set-selections
 
-        # Install guacamole
-        apt -y install guacamole-tomcat libguac-client-rdp0 libguac-client-ssh0 libguac-client-vnc0
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ER... Guacamole server inst... failed"
-                exit 1
+                # Install guacamole
+                apt -y install guacamole-tomcat libguac-client-rdp0 libguac-client-ssh0 libguac-client-vnc0
+                if [ ! $? -eq 0 ]; then
+                        colored_echo red "### ER... Guacamole server inst... failed"
+                        exit 1
+                fi
+                case ${DEBIAN_VERSION} in
+                        "8"*)
+                                apt -y install guacamole-auth-mysql mysql-connector-java
+                                ;;
+                        *)
+                                apt -y install guacamole-auth-jdbc
+                                ;;
+                esac
+        else
+	        #TBD
         fi
-        case ${DEBIAN_VERSION} in
-                "8"*)
-                        apt -y install guacamole-auth-mysql mysql-connector-java
-                        ;;
-                *)
-                        apt -y install guacamole-auth-jdbc
-                        ;;
-        esac
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ER... Guacamole server inst... failed"
                 exit 1
@@ -1419,11 +1427,15 @@ configure_xmpp_server() {
         # Reset ejabberd
         service ejabberd stop
         rm -rf /var/lib/ejabberd/*
-        echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
-        echo "ejabberd ejabberd/user string root" | debconf-set-selections
-        echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
-        echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
-        dpkg-reconfigure -fnoninteractive ejabberd
+        if [[ $LINUX_DISTRO == "debian" ]]; then
+                echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
+                echo "ejabberd ejabberd/user string root" | debconf-set-selections
+                echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
+                dpkg-reconfigure -fnoninteractive ejabberd
+        else
+	        #TBD
+        fi
 
         # Configure a few details
         sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
@@ -1616,11 +1628,15 @@ reset_glpi_db() {
         # Reinstall GLPI database
         echo "drop database glpi;" | mysql -uroot
         echo "drop user 'glpi'@'localhost';" | mysql -uroot
-        echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
-        echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
-        echo "glpi glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
-        echo "glpi glpi/dbconfig-reinstall boolean true" | debconf-set-selections
-        dpkg-reconfigure -fnoninteractive glpi
+        if [[ $LINUX_DISTRO == "debian" ]]; then
+                echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "glpi glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "glpi glpi/dbconfig-reinstall boolean true" | debconf-set-selections
+                dpkg-reconfigure -fnoninteractive glpi
+	else
+                #TBD
+        fi
 
         # Upgrade database if needed
         php /usr/share/glpi/tools/cliupdate.php
