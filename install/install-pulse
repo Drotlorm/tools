@@ -849,7 +849,6 @@ install_ldap_server() {
                         ;;
                 "mageia")
                 "rhel")
-                "rhel")
                         # Install openldap-servers
                         install_package openldap-servers
                         if [ ! $? -eq 0 ]; then
