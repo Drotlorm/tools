@@ -442,7 +442,7 @@ check_network_config() {
                 GLPI_DBPASSWD="${ROOT_PASSWORD}"
         fi
         colored_echo blue "====================================================================="
-        if [[ $LINUX_DISTRO != "mageia" ]]; then
+        if [[ $LINUX_DISTRO == "debian" ]]; then
         echo "PULSE_REPO_URL                : ${PULSE_REPO_URL}"
         echo "GIT_BRANCH                    : ${GIT_BRANCH}"
         fi
