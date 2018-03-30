@@ -841,7 +841,7 @@ install_ldap_server() {
                         echo "slapd slapd/password1 password ${ROOT_PASSWORD}" | debconf-set-selections
                         echo "slapd slapd/password2 password ${ROOT_PASSWORD}" | debconf-set-selections
                         # Install ldap-server
-                        apt -y install ldap-server
+                        install_package ldap-server
                         if [ ! $? -eq 0 ]; then
                                 colored_echo red "### ERROR... LDAP server install... failed"
                                 exit 1
