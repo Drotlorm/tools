@@ -624,7 +624,6 @@ configure_mail_monitoring() {
                         install_package ssmtp xfs-defrag mailutils
                         ;;
                 "mageia")
-                        # TBD
                         # Find mageias for xfs-defrag mailutils
                         install_package ssmtp
                         ;;
@@ -849,15 +848,7 @@ install_ldap_server() {
                         fi
                         ;;
                 "mageia")
-                        # Install openldap-servers
-                        install_package openldap-servers
-                        if [ ! $? -eq 0 ]; then
-                                colored_echo red "### ERROR... LDAP server install... failed"
-                                exit 1
-                        fi
-                        # Configure ldap server
-                        # TBD
-                        ;;
+                "rhel")
                 "rhel")
                         # Install openldap-servers
                         install_package openldap-servers
