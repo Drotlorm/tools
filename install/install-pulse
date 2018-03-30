@@ -835,52 +835,46 @@ install_apache() {
 install_ldap_server() {
         colored_echo blue "### INFO Installing LDAP server..."
 
-        case ${LINUX_DISTRO} in
-                "debian")
-                        # Define a few settings for ldap-server
-                        echo "slapd slapd/password1 password ${ROOT_PASSWORD}" | debconf-set-selections
-                        echo "slapd slapd/password2 password ${ROOT_PASSWORD}" | debconf-set-selections
-                        # Install ldap-server
-                        install_package ldap-server
-                        if [ ! $? -eq 0 ]; then
-                                colored_echo red "### ERROR... LDAP server install... failed"
-                                exit 1
-                        fi
-                        ;;
-                "mageia")
-                "rhel")
-                        # Install openldap-servers
-                        install_package openldap-servers
-                        if [ ! $? -eq 0 ]; then
-                                colored_echo red "### ERROR... LDAP server install... failed"
-                                exit 1
-                        fi
-                        # Configure ldap server
-                        local LDAP_PASSWD=$(slappasswd -s ${ROOT_PASSWORD})
-                        local BASE_DN="dc=${DOMAIN//./,dc=}"
-                        sed -i "s/^olcSuffix:.*$/olcSuffix: ${BASE_DN}/" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
-                        sed -i "s/^olcRootDN:.*$/olcRootDN: cn=admin,${BASE_DN}/" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
-                        grep "^olcRootPW:" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
-                        if [ $? -eq 0 ]; then
-                                sed -i "s/^olcRootPW:.*$/olcRootPW: ${LDAP_PASSWD}/" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
-                        else
-                                echo "olcRootPW: ${LDAP_PASSWD}" >> /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
-                        fi
-                        cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
-                        chown -R ldap:ldap /var/lib/ldap/
-                        service slapd restart
-                        chkconfig slapd on
-                        echo -e "dn: ${BASE_DN}\nobjectClass: top\nobjectClass: dcObject\nobjectClass: organization\ndc: ${DOMAIN%%.*}\no: ${DOMAIN}\n\n" > /root/base.ldif
-                        echo -e "dn: cn=admin,${BASE_DN}\nobjectClass: organizationalRole\ncn: admin\ndescription: LDAP administrator\n" >> /root/base.ldif
-                        ldapadd -x -D "cn=admin,${BASE_DN}" -w ${ROOT_PASSWORD} -f /root/base.ldif
-                        if [ ! $? -eq 0 ]; then
-                                colored_echo red "### ERROR... LDAP server setup... failed"
-                                exit 1
-                        fi
-                        ;;
-                *)
-                        ;;
-        esac
+        if [[ $LINUX_DISTRO == "debian" ]]; then
+                # Define a few settings for ldap-server
+                echo "slapd slapd/password1 password ${ROOT_PASSWORD}" | debconf-set-selections
+                echo "slapd slapd/password2 password ${ROOT_PASSWORD}" | debconf-set-selections
+                # Install ldap-server
+                install_package ldap-server
+                if [ ! $? -eq 0 ]; then
+                        colored_echo red "### ERROR... LDAP server install... failed"
+                        exit 1
+                fi
+        else
+                # Install openldap-servers
+                install_package openldap-servers
+                if [ ! $? -eq 0 ]; then
+                        colored_echo red "### ERROR... LDAP server install... failed"
+                        exit 1
+                fi
+                # Configure ldap server
+                local LDAP_PASSWD=$(slappasswd -s ${ROOT_PASSWORD})
+                local BASE_DN="dc=${DOMAIN//./,dc=}"
+                sed -i "s/^olcSuffix:.*$/olcSuffix: ${BASE_DN}/" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+                sed -i "s/^olcRootDN:.*$/olcRootDN: cn=admin,${BASE_DN}/" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+                grep "^olcRootPW:" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+                if [ $? -eq 0 ]; then
+                        sed -i "s/^olcRootPW:.*$/olcRootPW: ${LDAP_PASSWD}/" /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+                else
+                        echo "olcRootPW: ${LDAP_PASSWD}" >> /etc/openldap/slapd.d/cn\=config/olcDatabase\=\{2\}hdb.ldif
+                fi
+                cp /usr/share/openldap-servers/DB_CONFIG.example /var/lib/ldap/DB_CONFIG
+                chown -R ldap:ldap /var/lib/ldap/
+                service slapd restart
+                chkconfig slapd on
+                echo -e "dn: ${BASE_DN}\nobjectClass: top\nobjectClass: dcObject\nobjectClass: organization\ndc: ${DOMAIN%%.*}\no: ${DOMAIN}\n\n" > /root/base.ldif
+                echo -e "dn: cn=admin,${BASE_DN}\nobjectClass: organizationalRole\ncn: admin\ndescription: LDAP administrator\n" >> /root/base.ldif
+                ldapadd -x -D "cn=admin,${BASE_DN}" -w ${ROOT_PASSWORD} -f /root/base.ldif
+                if [ ! $? -eq 0 ]; then
+                        colored_echo red "### ERROR... LDAP server setup... failed"
+                        exit 1
+                fi
+	fi
 
         colored_echo green "### INFO Installing LDAP server... Done"
 }
