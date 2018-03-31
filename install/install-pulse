@@ -1148,6 +1148,7 @@ install_xmpp_server() {
         else
 	        #TBD
                 echo "Not Implemented"
+		exit 1
 	fi
 
         # Install ejabberd
@@ -1184,6 +1185,7 @@ install_guacamole_server() {
                 esac
         else
                 echo "Not Implemented"
+		exit 1
 	        #TBD
         fi
         if [ ! $? -eq 0 ]; then
@@ -1442,6 +1444,7 @@ configure_xmpp_server() {
         else
 	        #TBD
                 echo "Not Implemented"
+		exit 1
         fi
 
         # Configure a few details
@@ -1644,6 +1647,7 @@ reset_glpi_db() {
 	else
                 #TBD
                 echo "Not Implemented"
+		exit 1
         fi
 
         # Upgrade database if needed
