@@ -1936,7 +1936,7 @@ configure_relay_server() {
         if [ ${XMPP_DOMAIN} == "pulse" ]; then
                 # Update local hosts file with pulse
                 if [ "$(grep -cx "${IP_ADDRESS} pulse" /etc/hosts)" -eq 0 ]; then
-            echo "${IP_ADDRESS} pulse" >> /etc/hosts
+                        echo "${IP_ADDRESS} pulse" >> /etc/hosts
                 fi
         else
                 # Update local hosts file to find pulse xmpp domain
