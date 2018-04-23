@@ -1900,6 +1900,16 @@ configure_relay_server() {
 
         local XMPP_DOMAIN=$1
 
+        if [[ XMPP_DOMAIN != 'pulse' ]]; then
+	        # Obtain MASTER_PASSWORD and MUC_ROOM_PASSWORD from Pulse main server
+                local SSH_COMMAND="sed -n -e 's/^.*password = //p' /etc/pulse-xmpp-agent/relayconf.ini | head -1"
+                MASTER_PASSWORD=`ssh ${PULSEMAIN_IP} ${SSH_COMMAND}`
+                local SSH_COMMAND="sed -n -e 's/^.*password = //p' /etc/pulse-xmpp-agent/relayconf.ini | head -2 | tail -1"
+                MUC_ROOM_PASSWORD=`ssh ${PULSEMAIN_IP} ${SSH_COMMAND}`
+                # Generate Guacamole Baseurl
+                GUACAMOLE_BASEURL="http://${SERVER_FQDN}/guacamole/#/client/@@CUX_ID@@?username=root&password=${GUACAMOLE_ROOT_PASSWORD}"
+        fi
+
         # Configuration of relayserver
         cp /var/lib/pulse2/clients/config/relayconf.ini.in /etc/pulse-xmpp-agent/relayconf.ini
         sed -i "s/@@XMPP_SERVER@@/${IP_ADDRESS}/" /etc/pulse-xmpp-agent/relayconf.ini
@@ -1934,11 +1944,11 @@ configure_relay_server() {
             echo "${PULSEMAIN_IP} pulse" >> /etc/hosts
                 fi
                 # Update local hosts file to find local xmpp domain
-                if [ "$(grep -cx "${IP_ADDRESS} ${XMPP_DOMAIN}" /etc/hosts)" -eq 0 ]; then
-            echo "${IP_ADDRESS} ${XMPP_DOMAIN}" >> /etc/hosts
+                if [ "$(grep -cx "${IP_REMOTE_SERVER} ${XMPP_DOMAIN}" /etc/hosts)" -eq 0 ]; then
+                        echo "${IP_REMOTE_SERVER} ${XMPP_DOMAIN}" >> /etc/hosts
                 fi
                 # Update hosts file on main pulse
-                local SSH_COMMAND="if [ \"\$(grep -cx \"${IP_ADDRESS} ${XMPP_DOMAIN}\" /etc/hosts)\" -eq 0 ]; then echo \"${IP_ADDRESS} ${XMPP_DOMAIN}\" >> /etc/hosts; fi"
+                local SSH_COMMAND="if [ \"\$(grep -cx \"${IP_REMOTE_SERVER} ${XMPP_DOMAIN}\" /etc/hosts)\" -eq 0 ]; then echo \"${IP_REMOTE_SERVER} ${XMPP_DOMAIN}\" >> /etc/hosts; fi"
                 ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
         fi
 
