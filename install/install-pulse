@@ -1685,6 +1685,8 @@ restart_pulse_services() {
 
 install_multisite_dependencies() {
 	# Install components needed by pulse multisite..."
+	install_apache
+	install_mysql_server
 	install_nfs_kernel_server
 	install_pxelinux
 	install_clonezilla
