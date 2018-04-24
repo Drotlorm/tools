@@ -1878,7 +1878,7 @@ sync_package_server() {
 		local SYNC_CONF="sed -i '1 a\\
 # Sync package server \\
 package_detect_activate = 1 \\
-package_detect_loop = 60 \\
+package_detect_loop = 20 \\
 package_mirror_loop = 5 \\
 package_mirror_target = ${IP_REMOTE_SERVER} \\
 package_mirror_command = /usr/bin/rsync \\
