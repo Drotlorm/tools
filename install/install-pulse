@@ -393,12 +393,7 @@ cdr2mask ()
 }
 
 check_linux_distribution() {
-        LINUX_DISTRO=`cat /etc/os-release|grep ^ID= | cut -d '"' -f2 | cut -d'=' -f2`
-        if [[ $LINUX_DISTRO == "mageia" ]]; then
-                DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID |cut -d '=' -f2`
-        else
-                DISTRO_VERSION=`cat /etc/os-release|grep ^VERSION_ID= |cut -d '"' -f2`
-        fi
+        LINUX_DISTRO=$ID
 
         case ${LINUX_DISTRO} in
 
