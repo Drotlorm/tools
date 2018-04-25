@@ -2175,6 +2175,7 @@ package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa Stri
 }
 
 # And finally we run the functions
+check_mageia_version
 check_linux_distribution
 
 if [ $# -eq 0 ]; then
