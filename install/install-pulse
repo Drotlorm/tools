@@ -1050,7 +1050,7 @@ install_glpi() {
         exit 1
     fi
 
-        colored_echo green "### INFO Installing GLPI... Done"
+    colored_echo green "### INFO Installing GLPI... Done"
 }
 
 install_tftp_server() {
