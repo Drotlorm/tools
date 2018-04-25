@@ -402,11 +402,7 @@ check_linux_distribution() {
 
         case ${LINUX_DISTRO} in
 
-                "debian")
-                        ;;
-                "mageia")
-                        ;;
-		"rhel")
+                "debian"|"mageia"|"rhel")
                         ;;
 		*)
                         echo "We only support Debian, Mageia, and rhel"
