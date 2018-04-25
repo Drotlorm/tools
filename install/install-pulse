@@ -523,7 +523,7 @@ configure_repos() {
 
                 "debian")
                         wget -qO - ${PULSE_REPO_URL}/pubkey.txt | apt-key add -
-                        apt -y install apt-transport-https
+                        install_package apt-transport-https
                         case ${DISTRO_VERSION} in
                                 "8"*)
                                        echo "deb ${PULSE_REPO_URL} jessie mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
@@ -809,7 +809,7 @@ install_pulse2-setup_deps() {
         esac
 
         # Install python network libraries used by pulse2-setup
-        apt -y install python-netifaces python-netaddr
+        install_package python-netifaces python-netaddr
 
         colored_echo green "### INFO Installing tools needed by pulse2setup... Done"
 }
@@ -902,7 +902,7 @@ install_mysql_server() {
                         echo "mysql-server-5.5 mysql-server/root_password password ${ROOT_PASSWORD}" | debconf-set-selections
                         echo "mysql-server-5.5 mysql-server/root_password_again password ${ROOT_PASSWORD}" | debconf-set-selections
                         # Install mysql-server
-                        apt -y install mysql-server
+                        install_package mysql-server
                         if [ ! $? -eq 0 ]; then
                                 colored_echo red "### ERROR... MySQL server install... failed"
                                 exit 1
@@ -958,7 +958,7 @@ install_backuppc() {
                         echo "backuppc  backuppc/restart-webserver      boolean true" | debconf-set-selections
                         echo "backuppc  backuppc/reconfigure-webserver  multiselect" | debconf-set-selections
                         # Install backuppc
-                        apt -y install backuppc libfile-rsyncp-perl
+                        install_package backuppc libfile-rsyncp-perl
                         if [ ! $? -eq 0 ]; then
                                 colored_echo red "### ERROR... backuppc install... failed"
                                 exit 1
@@ -1044,7 +1044,7 @@ install_glpi() {
         initialise_glpi_db
     fi
     # Install glpi
-    apt -y install glpi fusioninventory-for-glpi
+    install_package glpi fusioninventory-for-glpi
     if [ ! $? -eq 0 ]; then
         colored_echo red "### ERROR... GLPI install... failed"
         exit 1
@@ -1056,7 +1056,7 @@ install_glpi() {
 install_tftp_server() {
         colored_echo blue "### INFO Installing TFTP server..."
 
-        apt -y install tftpd-hpa pulse2-register-pxe pulse2-utilities
+        install_package tftpd-hpa pulse2-register-pxe pulse2-utilities
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ERROR... TFTP server install... failed"
                 exit 1
@@ -1069,7 +1069,7 @@ install_tftp_server() {
 install_isc_dhcp_server() {
         colored_echo blue "### INFO Installing DHCP server..."
 
-        apt -y install isc-dhcp-server
+        install_package isc-dhcp-server
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ERROR... isc-dhcp-server install... failed"
                 exit 1
@@ -1081,7 +1081,7 @@ install_isc_dhcp_server() {
 install_samba() {
         colored_echo blue "### INFO Installing Samba server..."
 
-        apt -y install samba
+        install_package samba
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ERROR... samba install... failed"
                 exit 1
@@ -1093,7 +1093,7 @@ install_samba() {
 install_nfs_kernel_server() {
         colored_echo blue "### INFO Installing NFS server..."
 
-        apt -y install nfs-kernel-server
+        install_package nfs-kernel-server
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ERROR... nfs-kernel-server install... failed"
                 exit 1
@@ -1105,7 +1105,7 @@ install_nfs_kernel_server() {
 install_pxelinux() {
         colored_echo blue "### INFO Installing pxelinux..."
 
-        apt -y install pxelinux syslinux-common syslinux-efi
+        install_package pxelinux syslinux-common syslinux-efi
 
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ERRORROR... pxelinux install... failed"
@@ -1118,7 +1118,7 @@ install_pxelinux() {
 install_clonezilla() {
         colored_echo blue "### INFO Installing clonezilla..."
 
-        apt -y install clonezilla pulse2-davos-client udpcast
+        install_package clonezilla pulse2-davos-client udpcast
 
         # Hold clonezilla
         echo "clonezilla hold"| dpkg --set-selections
@@ -1150,7 +1150,7 @@ install_xmpp_server() {
 
         # Install ejabberd
         apt update
-        apt -y install ejabberd
+        install_package ejabberd
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ER... Jabber server inst... failed"
                 exit 1
@@ -1167,17 +1167,17 @@ install_guacamole_server() {
                 echo "guacamole-tomcat guacamole-tomcat/restart-server boolean true" | debconf-set-selections
 
                 # Install guacamole
-                apt -y install guacamole-tomcat libguac-client-rdp0 libguac-client-ssh0 libguac-client-vnc0
+                install_package guacamole-tomcat libguac-client-rdp0 libguac-client-ssh0 libguac-client-vnc0
                 if [ ! $? -eq 0 ]; then
                         colored_echo red "### ER... Guacamole server inst... failed"
                         exit 1
                 fi
                 case ${DEBIAN_VERSION} in
                         "8"*)
-                                apt -y install guacamole-auth-mysql mysql-connector-java
+                                install_package guacamole-auth-mysql mysql-connector-java
                                 ;;
                         *)
-                                apt -y install guacamole-auth-jdbc
+                                install_package guacamole-auth-jdbc
                                 ;;
                 esac
         else
@@ -1220,7 +1220,7 @@ install_pulse_dependencies() {
 install_pulse() {
         colored_echo blue "### INFO Installing Pulse..."
 
-        apt -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers pulse-update-manager
+        install_package pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers pulse-update-manager
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ERROR... Pulse install... failed"
                 exit 1
@@ -1987,7 +1987,7 @@ install_multisite_dependencies() {
 
 install_multisite() {
         colored_echo blue "### INFO Installing Pulse multisite..."
-        apt -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay
+        install_package pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ERROR... Pulse install... failed"
                 exit 1
