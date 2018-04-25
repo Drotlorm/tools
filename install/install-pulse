@@ -709,18 +709,18 @@ configure_mysql_access() {
 }
 
 configure_keepalive() {
-  colored_echo blue "### INFO Configuring TCP keepalive..."
+    colored_echo blue "### INFO Configuring TCP keepalive..."
 
-  # After 10 minutes send a keepalive packet.
-  # If no answer retry 5 times at 1 min interval before closing the connection
-  echo "net.ipv4.tcp_keepalive_time=600" >> /etc/sysctl.d/local.conf
-  sysctl -w net.ipv4.tcp_keepalive_time=600
-  echo "net.ipv4.tcp_keepalive_intvl=60" >> /etc/sysctl.d/local.conf
-  sysctl -w net.ipv4.tcp_keepalive_intvl=60
-  echo "net.ipv4.tcp_keepalive_probes=5" >> /etc/sysctl.d/local.conf
-  sysctl -w net.ipv4.tcp_keepalive_probes=5
+    # After 10 minutes send a keepalive packet.
+    # If no answer retry 5 times at 1 min interval before closing the connection
+    echo "net.ipv4.tcp_keepalive_time=600" >> /etc/sysctl.d/local.conf
+    sysctl -w net.ipv4.tcp_keepalive_time=600
+    echo "net.ipv4.tcp_keepalive_intvl=60" >> /etc/sysctl.d/local.conf
+    sysctl -w net.ipv4.tcp_keepalive_intvl=60
+    echo "net.ipv4.tcp_keepalive_probes=5" >> /etc/sysctl.d/local.conf
+    sysctl -w net.ipv4.tcp_keepalive_probes=5
 
-  colored_echo green "### INFO Configuring TCP keepalive... Done"
+    colored_echo green "### INFO Configuring TCP keepalive... Done"
 }
 
 define_version_settings() {
