@@ -411,6 +411,10 @@ check_linux_distribution() {
 	esac
 }
 
+check_mageia_version() {
+        MAGEIA_VERSION=`cat /etc/os-release|grep ^VERSION_ID= | cut -d '"' -f2 | cut -d'=' -f2`
+}
+
 check_network_config() {
         colored_echo blue "### INFO Checking network settings..."
 
