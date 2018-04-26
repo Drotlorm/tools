@@ -396,6 +396,7 @@ cdr2mask ()
 
 check_linux_distribution() {
     LINUX_DISTRO=$ID
+    DISTRO_VERSION=$VERSION_ID
 
     case ${LINUX_DISTRO} in
         "debian"|"mageia"|"rhel")
