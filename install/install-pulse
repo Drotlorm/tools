@@ -395,17 +395,17 @@ cdr2mask ()
 }
 
 check_linux_distribution() {
-        LINUX_DISTRO=$ID
+    LINUX_DISTRO=$ID
 
-        case ${LINUX_DISTRO} in
-
-                "debian"|"mageia"|"rhel")
-                        ;;
-		*)
-                        echo "We only support Debian, Mageia, and rhel"
-                        exit 1
-                        ;;
-	esac
+    case ${LINUX_DISTRO} in
+        "debian"|"mageia"|"rhel")
+        ;;
+		
+        *)
+            echo "We only support Debian, Mageia, and rhel"
+            exit 1
+            ;;
+    esac
 }
 
 check_mageia_version() {
