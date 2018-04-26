@@ -409,7 +409,7 @@ check_linux_distribution() {
 }
 
 check_mageia_version() {
-        MAGEIA_VERSION=$VERSION_ID
+    MAGEIA_VERSION=$VERSION_ID
 }
 
 check_network_config() {
