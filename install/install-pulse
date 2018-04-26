@@ -569,9 +569,6 @@ configure_repos() {
             sed -i "s/enabled=1/enabled=0/" /etc/yum.repos.d/dvd.repo
             ;;
 
-        *)
-            echo "Your distribution is not yet supported, Please use Mageia, RHEL or Debian instead"
-            ;;
         esac
 
         colored_echo blue "### INFO Configuring all necessary repos... Done"
