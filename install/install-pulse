@@ -603,25 +603,25 @@ configure_apt_settings() {
 }
 
 configure_locales() {
-        colored_echo green "### INFO Configuring locales..."
+    colored_echo green "### INFO Configuring locales..."
 
-        case ${LINUX_DISTRO} in
-                "debian")
-                        echo "locales locales/default_environment_locale select en_US.UTF-8" | debconf-set-selections
-                        echo "locales locales/locales_to_be_generated multiselect en_US.UTF-8 UTF-8, fr_FR.UTF-8 UTF-8" | debconf-set-selections
-                        dpkg-reconfigure -f noninteractive locales
-                        ;;
-                "mageia")
-                        # TBD
-                        ;;
-                "rhel")
-                        # TBD
-                        ;;
-                *)
-                        ;;
-        esac
+    case ${LINUX_DISTRO} in
+        "debian")
+            echo "locales locales/default_environment_locale select en_US.UTF-8" | debconf-set-selections
+            echo "locales locales/locales_to_be_generated multiselect en_US.UTF-8 UTF-8, fr_FR.UTF-8 UTF-8" | debconf-set-selections
+            dpkg-reconfigure -f noninteractive locales
+            ;;
+        "mageia")
+            # TBD
+            ;;
+        "rhel")
+            # TBD
+            ;;
+        *)
+            ;;
+    esac
 
-        colored_echo blue "### INFO Configuring locales... Done"
+    colored_echo blue "### INFO Configuring locales... Done"
 }
 
 configure_mail_monitoring() {
