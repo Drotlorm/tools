@@ -297,68 +297,68 @@ get_glpi_server_details() {
 }
 
 get_user_options() {
-        PULSE_REPO_URL="$(get_user_input "Enter the URL of Pulse repository:")"
-        GIT_BRANCH="$(get_user_input "Enter the Pulse branch name:")"
-        ROOT_PASSWORD=$(get_user_input "Enter the password of root:")
-        ORGANISATION=$(get_user_input "Enter the organization name:")
-        SERVER_FQDN=$(get_user_input "Enter the server fqdn:")
+    PULSE_REPO_URL="$(get_user_input "Enter the URL of Pulse repository:")"
+    GIT_BRANCH="$(get_user_input "Enter the Pulse branch name:")"
+    ROOT_PASSWORD=$(get_user_input "Enter the password of root:")
+    ORGANISATION=$(get_user_input "Enter the organization name:")
+    SERVER_FQDN=$(get_user_input "Enter the server fqdn:")
 
-        local NB_INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}' | wc -w`
-        colored_echo blue "### INFO Configuring all necessary repos..."
-        colored_echo blue "====================================================================="
-        if [ "x$NB_INTERFACES" != "x1" ]; then
-                INTERFACE=$(choose_network_interface "More than one network interface detected. Choose the interface having access to Pulse clients")
+    local NB_INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}' | wc -w`
+    colored_echo blue "### INFO Configuring all necessary repos..."
+    colored_echo blue "====================================================================="
+    if [ "x$NB_INTERFACES" != "x1" ]; then
+        INTERFACE=$(choose_network_interface "More than one network interface detected. Choose the interface having access to Pulse clients")
+    else
+        INTERFACE=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1`
+    fi
+
+    INSTALL_TYPE=$(ask "Is the main Pulse server installation (p) or a multi-site installation (m)?" p m)
+    if [[ ${INSTALL_TYPE} == "p" ]]; then
+        MAIN_GLPI=$(ask "GLPI will be installed ?" y n)
+        if [[ ${MAIN_GLPI} == "n" ]]; then
+            get_glpi_server_details
+            check_mysql_connection
+        fi
+        MAIN_DHCP=$(ask "DHCP will be enabled ?" y n)
+        MAIN_PXE=$(ask "PXE will be enabled ?" y n)
+        CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
+        if [[ ${CREATE_ENTITY} == "y" ]]; then
+            MAIN_ENTITY=$(get_user_input "Main entity name for GLPI:")
         else
-                INTERFACE=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1`
+            MAIN_ENTITY=$(select_main_glpi_entity)
         fi
-
-        INSTALL_TYPE=$(ask "Is the main Pulse server installation (p) or a multi-site installation (m)?" p m)
-        if [[ ${INSTALL_TYPE} == "p" ]]; then
-                MAIN_GLPI=$(ask "GLPI will be installed ?" y n)
-                if [[ ${MAIN_GLPI} == "n" ]]; then
-                        get_glpi_server_details
-                        check_mysql_connection
-                fi
-                MAIN_DHCP=$(ask "DHCP will be enabled ?" y n)
-                MAIN_PXE=$(ask "PXE will be enabled ?" y n)
-                CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
-                if [[ ${CREATE_ENTITY} == "y" ]]; then
-                        MAIN_ENTITY=$(get_user_input "Main entity name for GLPI:")
-                else
-                        MAIN_ENTITY=$(select_main_glpi_entity)
-                fi
+    else
+        INTERFACE_TO_PULSE=$(choose_network_interface "Choose the interface connected to Pulse server")
+        PULSEMAIN_IP=$(get_user_input "Enter main Pulse Server's IP address:")
+        REMOTE_BACKUPPC=$(ask "BACKUPPC will be enabled ?" y n)
+        REMOTE_DHCP=$(ask "DHCP will be enabled ?" y n)
+        REMOTE_PXE=$(ask "PXE will be enabled ?" y n)
+        GLPI_ON_PULSE=$(ask "Is the GLPI server on the main Pulse Server ?" y n)
+        if [[ ${GLPI_ON_PULSE} == "n" ]]; then
+            get_glpi_server_details
+        fi
+        check_mysql_connection
+        CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
+        if [[ ${CREATE_ENTITY} == "y" ]]; then
+            MULTISITE_ENTITY=$(get_multisite_entity)
         else
-                INTERFACE_TO_PULSE=$(choose_network_interface "Choose the interface connected to Pulse server")
-                PULSEMAIN_IP=$(get_user_input "Enter main Pulse Server's IP address:")
-                REMOTE_BACKUPPC=$(ask "BACKUPPC will be enabled ?" y n)
-                REMOTE_DHCP=$(ask "DHCP will be enabled ?" y n)
-                REMOTE_PXE=$(ask "PXE will be enabled ?" y n)
-                GLPI_ON_PULSE=$(ask "Is the GLPI server on the main Pulse Server ?" y n)
-                if [[ ${GLPI_ON_PULSE} == "n" ]]; then
-                        get_glpi_server_details
-                fi
-                check_mysql_connection
-                CREATE_ENTITY=$(ask "Should the entity be created in GLPI ?" y n)
-                if [[ ${CREATE_ENTITY} == "y" ]]; then
-                        MULTISITE_ENTITY=$(get_multisite_entity)
-                else
-                        MULTISITE_ENTITY=$(select_multisite_glpi_entity)
-                fi
+            MULTISITE_ENTITY=$(select_multisite_glpi_entity)
         fi
-        if [[ ${MAIN_DHCP} == "y" || ${REMOTE_DHCP} == "y" ]]; then
-                DNS_SERVER=$(get_user_input "Enter the DNS server address for the DHCP clients:")
-                GATEWAY_ADDRESS=$(get_user_input "Enter the gateway address for the DHCP clients:")
-        fi
-        PUBLIC_ARS=$(ask "Does this Relay Server serve nomad clients ?" y n)
-        if [[ ${PUBLIC_ARS} == "y" ]]; then
-                PUBLIC_IP=$(get_user_input "Enter the public IP address of the server:")
-        fi
+    fi
+    if [[ ${MAIN_DHCP} == "y" || ${REMOTE_DHCP} == "y" ]]; then
+        DNS_SERVER=$(get_user_input "Enter the DNS server address for the DHCP clients:")
+        GATEWAY_ADDRESS=$(get_user_input "Enter the gateway address for the DHCP clients:")
+    fi
+    PUBLIC_ARS=$(ask "Does this Relay Server serve nomad clients ?" y n)
+    if [[ ${PUBLIC_ARS} == "y" ]]; then
+        PUBLIC_IP=$(get_user_input "Enter the public IP address of the server:")
+    fi
 
-        CONFIGURE_MONITORING=$(ask "Do you wish to configure monitoring ?" y n)
-        if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
-                MAIL_PASSWORD=$(get_user_input "Enter the monitoring mail password:")
-        fi
-        colored_echo blue "====================================================================="
+    CONFIGURE_MONITORING=$(ask "Do you wish to configure monitoring ?" y n)
+    if [[ ${CONFIGURE_MONITORING} == "y" ]]; then
+        MAIL_PASSWORD=$(get_user_input "Enter the monitoring mail password:")
+    fi
+    colored_echo blue "====================================================================="
 }
 
 check_mysql_connection() {
