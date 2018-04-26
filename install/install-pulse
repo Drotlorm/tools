@@ -835,7 +835,9 @@ install_apache() {
         sed -i 's/^memory_limit.*$/memory_limit = 1024M/' ${PHP_INI}
 
         # Configure apache to use /tmp
-        mkdir /etc/systemd/system/${APACHE_DAEMON}.service.d
+        if [ ! -d "/etc/systemd/system/${APACHE_DAEMON}.service.d" ]; then
+            mkdir /etc/systemd/system/${APACHE_DAEMON}.service.d
+        fi
         echo -e "[Service]\nPrivateTmp=false" >  /etc/systemd/system/${APACHE_DAEMON}.service.d/nopt.conf
         systemctl daemon-reload
         systemctl restart ${APACHE_DAEMON}.service
