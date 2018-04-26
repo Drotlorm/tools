@@ -666,10 +666,13 @@ install_system_tools() {
         case ${LINUX_DISTRO} in
             "debian")
                 install_package multitail vim rsync sshpass mysql-client vim-common expect createrepo reprepro ntp pwgen net-tools
+                ;;
             "mageia")
                 install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen net-tools
+                ;;
             "rhel")
                 install_package multitail vim rsync sshpass mariadb vim-common expect createrepo reprepro ntp pwgen net-tools
+                ;;
         esac
 
 
