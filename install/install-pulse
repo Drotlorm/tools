@@ -517,61 +517,61 @@ check_network_config() {
 }
 
 configure_repos() {
-        colored_echo blue "### INFO Configuring all necessary repos..."
+    colored_echo blue "### INFO Configuring all necessary repos..."
 
-        case ${LINUX_DISTRO} in
-
-                "debian")
-                        wget -qO - ${PULSE_REPO_URL}/pubkey.txt | apt-key add -
-                        install_package apt-transport-https
-                        case ${DISTRO_VERSION} in
-                                "8"*)
-                                       echo "deb ${PULSE_REPO_URL} jessie mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-                                       # DRBL
-                                       echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
-                                       wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
-                                       # Guacamole
-                                       wget -O- http://neuro.debian.net/lists/jessie.de-md.libre | tee /etc/apt/sources.list.d/neurodebian.sources.list
-                                       apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
-                                       ;;
-                                "9"*)
-                                       if [ ${PULSE_REPO_URL} == "https://git.siveo.net" ]; then
-                                               if [ ! -z ${GIT_BRANCH} ] && [ ${GIT_BRANCH} != "master" ]; then
-                                                       echo "deb ${PULSE_REPO_URL} ${GIT_BRANCH} mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-                                               else
-                                                       echo "deb ${PULSE_REPO_URL} xmppmaster mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-                                               fi
-                                        else
-                                                echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
-                                        fi
-                                        ;;
-                                *)
-                                        ;;
-                        esac
-                        apt update
-                        ;;
-
-                "mageia")
-                        case ${DISTRO_VERSION} in
-                                *)
-                                        # TBD
-                                        # We need to detect the distribution and add official repos
-                                        ;;
-                        esac
-                        urpmi.update -a
-                        ;;
-
-                "rhel")
-                        curl -O ${PULSE_REPO_URL}/siveo_key.asc && rpm --import siveo_key.asc
-                        echo -e "[mmc-core]\nname=MMC Core\nbaseurl=${PULSE_REPO_URL}/rpm/mmc-core\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/mmc-core.repo
-                        echo -e "[pulse]\nname=Pulse\nbaseurl=${PULSE_REPO_URL}/rpm/pulse\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/pulse.repo
-                        echo -e "[3rdparty]\nname=3rd Party\nbaseurl=${PULSE_REPO_URL}/rpm/3rdparty\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/3rdparty.repo
-                        sed -i "s/enabled=1/enabled=0/" /etc/yum.repos.d/dvd.repo
-                        ;;
-
+    case ${LINUX_DISTRO} in
+        "debian")
+            wget -qO - ${PULSE_REPO_URL}/pubkey.txt | apt-key add -
+            install_package apt-transport-https
+            case ${DISTRO_VERSION} in
+                "8"*)
+                    echo "deb ${PULSE_REPO_URL} jessie mds mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                    # DRBL
+                    echo "deb http://free.nchc.org.tw/drbl-core drbl stable" > /etc/apt/sources.list.d/drbl.list
+                    wget -q http://drbl.org/GPG-KEY-DRBL -O- | apt-key add -
+                    # Guacamole
+                    wget -O- http://neuro.debian.net/lists/jessie.de-md.libre | tee /etc/apt/sources.list.d/neurodebian.sources.list
+                    apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
+                    ;;
+                "9"*)
+                    if [ ${PULSE_REPO_URL} == "https://git.siveo.net" ]; then
+                        if [ ! -z ${GIT_BRANCH} ] && [ ${GIT_BRANCH} != "master" ]; then
+                            echo "deb ${PULSE_REPO_URL} ${GIT_BRANCH} mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                        else
+                            echo "deb ${PULSE_REPO_URL} xmppmaster mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                        fi
+                    else
+                        echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                    fi
+                    ;;
                 *)
-                        echo "Your distribution is not yet supported, Please use Mageia, RHEL or Debian instead"
-                        ;;
+                    ;;
+            esac
+            
+            apt update
+            ;;
+
+        "mageia")
+            case ${DISTRO_VERSION} in
+                *)
+                    # TBD
+                    # We need to detect the distribution and add official repos
+                    ;;
+            esac
+                urpmi.update -a
+                ;;
+
+        "rhel")
+            curl -O ${PULSE_REPO_URL}/siveo_key.asc && rpm --import siveo_key.asc
+            echo -e "[mmc-core]\nname=MMC Core\nbaseurl=${PULSE_REPO_URL}/rpm/mmc-core\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/mmc-core.repo
+            echo -e "[pulse]\nname=Pulse\nbaseurl=${PULSE_REPO_URL}/rpm/pulse\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/pulse.repo
+            echo -e "[3rdparty]\nname=3rd Party\nbaseurl=${PULSE_REPO_URL}/rpm/3rdparty\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/3rdparty.repo
+            sed -i "s/enabled=1/enabled=0/" /etc/yum.repos.d/dvd.repo
+            ;;
+
+        *)
+            echo "Your distribution is not yet supported, Please use Mageia, RHEL or Debian instead"
+            ;;
         esac
 
         colored_echo blue "### INFO Configuring all necessary repos... Done"
