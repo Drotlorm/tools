@@ -272,18 +272,18 @@ select_multisite_glpi_entity() {
 }
 
 get_multisite_entity() {
-        local EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
-        local LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
-        local RESULT=N
-        while [  ${RESULT} == "N" ]; do
-                read  -p "Enter the new entity name to be created (current entitites: $LIST_ENTITIES): " 'MULTISITE_ENTITY'
-                if [ ! -z ${MULTISITE_ENTITY} ] && [[ ${LIST_ENTITIES} != *"${MULTISITE_ENTITY} "* ]]; then
-                        RESULT=Y
-                else
-                        RESULT=N
-                fi
-        done
-        echo ${MULTISITE_ENTITY}
+    local EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
+    local LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
+    local RESULT=N
+    while [  ${RESULT} == "N" ]; do
+        read  -p "Enter the new entity name to be created (current entitites: $LIST_ENTITIES): " 'MULTISITE_ENTITY'
+            if [ ! -z ${MULTISITE_ENTITY} ] && [[ ${LIST_ENTITIES} != *"${MULTISITE_ENTITY} "* ]]; then
+                RESULT=Y
+            else
+                RESULT=N
+            fi
+    done
+    echo ${MULTISITE_ENTITY}
 }
 
 get_glpi_server_details() {
