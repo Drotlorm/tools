@@ -566,9 +566,9 @@ configure_repos() {
 
         "rhel")
             curl -O ${PULSE_REPO_URL}/siveo_key.asc && rpm --import siveo_key.asc
-            echo -e "[mmc-core]\nname=MMC Core\nbaseurl=${PULSE_REPO_URL}/rpm/mmc-core\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/mmc-core.repo
-            echo -e "[pulse]\nname=Pulse\nbaseurl=${PULSE_REPO_URL}/rpm/pulse\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/pulse.repo
-            echo -e "[3rdparty]\nname=3rd Party\nbaseurl=${PULSE_REPO_URL}/rpm/3rdparty\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/3rdparty.repo
+            echo -e "[mmc-core]\nname=MMC Core\nbaseurl=${PULSE_REPO_URL}/mmc-core\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/mmc-core.repo
+            echo -e "[pulse]\nname=Pulse\nbaseurl=${PULSE_REPO_URL}/pulse\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/pulse.repo
+            echo -e "[3rdparty]\nname=3rd Party\nbaseurl=${PULSE_REPO_URL}/3rdparty\nenabled=1\ngpgcheck = 1" > /etc/yum.repos.d/3rdparty.repo
             sed -i "s/enabled=1/enabled=0/" /etc/yum.repos.d/dvd.repo
             ;;
 
