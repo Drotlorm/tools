@@ -261,14 +261,14 @@ select_main_glpi_entity() {
 }
 
 select_multisite_glpi_entity() {
-        local EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
-        local LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
-        select ENTITY in ${LIST_ENTITIES}; do
-                if [ ! -z ${ENTITY} ] && [[ ${LIST_ENTITIES} != *"${ENTITY} "* ]]; then
-                        echo ${ENTITY}
-                        exit 0
-                fi
-        done
+    local EXISTING_ENTITIES="echo \"select name from glpi_entities;\" |mysql glpi -s | grep -v \"Root entity\" | awk -vORS=' ' '{print $1}'"
+    local LIST_ENTITIES=`ssh ${PULSEMAIN_IP} "${EXISTING_ENTITIES}"`
+    select ENTITY in ${LIST_ENTITIES}; do
+        if [ ! -z ${ENTITY} ] && [[ ${LIST_ENTITIES} != *"${ENTITY} "* ]]; then
+            echo ${ENTITY}
+            exit 0
+        fi
+    done
 }
 
 get_multisite_entity() {
