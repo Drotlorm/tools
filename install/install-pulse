@@ -228,11 +228,11 @@ exit_code() {
 
 
 get_user_input() {
-        local TEXT=$1
-        while [[ ${RESULT} == '' ]]; do
-                read -p "${TEXT} " RESULT
-        done
-        echo ${RESULT}
+    local TEXT=$1
+    while [[ ${RESULT} == '' ]]; do
+        read -p "${TEXT} " RESULT
+    done
+    echo ${RESULT}
 }
 
 choose_network_interface() {
