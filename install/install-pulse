@@ -575,19 +575,19 @@ configure_repos() {
 }
 
 install_package() {
-        case ${LINUX_DISTRO} in
-                "debian")
-                        apt -y install "$@"
+    case ${LINUX_DISTRO} in
+        "debian")
+            apt -y install "$@"
 			;;
-                "mageia")
-                        urpmi --auto "$@"
-                        ;;
-                "rhel")
-                        yum install "$@"
-                        ;;
-                *)
-                        ;;
-        esac
+        "mageia")
+            urpmi --auto "$@"
+            ;;
+        "rhel")
+            yum install "$@"
+            ;;
+        *)
+            ;;
+    esac
 }
 
 configure_apt_settings() {
