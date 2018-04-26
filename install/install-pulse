@@ -671,6 +671,7 @@ install_system_tools() {
             install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen net-tools
         else
             install_package multitail vim rsync sshpass mysql-client vim-common expect createrepo reprepro ntp pwgen net-tools
+        fi
 
         # Configure vim
         sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
