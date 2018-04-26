@@ -611,10 +611,7 @@ configure_locales() {
             echo "locales locales/locales_to_be_generated multiselect en_US.UTF-8 UTF-8, fr_FR.UTF-8 UTF-8" | debconf-set-selections
             dpkg-reconfigure -f noninteractive locales
             ;;
-        "mageia")
-            # TBD
-            ;;
-        "rhel")
+        "mageia"|"rhel")
             # TBD
             ;;
         *)
