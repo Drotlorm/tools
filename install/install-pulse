@@ -678,8 +678,11 @@ install_system_tools() {
 
 
         # Configure vim
-        sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
-        sed -i '34,36 s/^"//' /etc/vim/vimrc
+        if [[ $LINUX_DISTRO == "debian" ]]; then
+            sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
+            sed -i '34,36 s/^"//' /etc/vim/vimrc
+        fi
+
         echo 'set mouse-=a' > /root/.vimrc
 
         # Configure mail monitoring
