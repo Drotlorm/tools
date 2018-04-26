@@ -362,28 +362,28 @@ get_user_options() {
 }
 
 check_mysql_connection() {
-        if [[ ${GLPI_DBHOST} == ${PULSEMAIN_IP} ]]; then
-                # Configure external listening for mysql
-                local SSH_COMMAND="sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/mysql/mariadb.conf.d/50-server.cnf"
-                ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    if [[ ${GLPI_DBHOST} == ${PULSEMAIN_IP} ]]; then
+        # Configure external listening for mysql
+        local SSH_COMMAND="sed \"s/^bind-address.*/bind-address             = 0.0.0.0/g\" -i /etc/mysql/mariadb.conf.d/50-server.cnf"
+        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-                # Create remote glpi user
-                local SSH_COMMAND="echo \"GRANT ALL PRIVILEGES ON ${GLPI_DBNAME}.* to '${GLPI_DBUSER}'@'${IP_REMOTE_SERVER}' identified by '${ROOT_PASSWORD}';\" |mysql -s"
-                ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+        # Create remote glpi user
+        local SSH_COMMAND="echo \"GRANT ALL PRIVILEGES ON ${GLPI_DBNAME}.* to '${GLPI_DBUSER}'@'${IP_REMOTE_SERVER}' identified by '${ROOT_PASSWORD}';\" |mysql -s"
+        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-                local SSH_COMMAND="systemctl restart mariadb.service"
-                ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+        local SSH_COMMAND="systemctl restart mariadb.service"
+        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    else
+        echo "select 0;" | mysql -h${GLPI_DBHOST} -u${GLPI_DBUSER} -p${GLPI_DBPASSWD} ${GLPI_DBNAME} &> /dev/null
+        if [[ $? == "0" ]]; then
+            colored_echo green "Remote mysql connection to GLPI database succeded"
         else
-                echo "select 0;" | mysql -h${GLPI_DBHOST} -u${GLPI_DBUSER} -p${GLPI_DBPASSWD} ${GLPI_DBNAME} &> /dev/null
-                if [[ $? == "0" ]]; then
-                        colored_echo green "Remote mysql connection to GLPI database succeded"
-                else
-                        colored_echo red "Error connecting to GLPI database ${GLPI_DBNAME} at ${GLPI_DBHOST}"
-                        colored_echo red "Make sure you have enabled mysql bind address for external connections"
-                        colored_echo red "Make sure you have allowed remote connections to ${GLPI_DBNAME} for mysql user ${GLPI_DBUSER}"
-                        exit 1
-                fi
+            colored_echo red "Error connecting to GLPI database ${GLPI_DBNAME} at ${GLPI_DBHOST}"
+            colored_echo red "Make sure you have enabled mysql bind address for external connections"
+            colored_echo red "Make sure you have allowed remote connections to ${GLPI_DBNAME} for mysql user ${GLPI_DBUSER}"
+            exit 1
         fi
+    fi
 }
 
 cdr2mask ()
