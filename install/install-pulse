@@ -287,13 +287,13 @@ get_multisite_entity() {
 }
 
 get_glpi_server_details() {
-        local GLPI_IP=$(get_user_input "Enter the IP address of the GLPI server:")
-        GLPI_URL="http://${GLPI_IP}/glpi"
-        GLPI_DBHOST="${GLPI_IP}"
-        GLPI_DBNAME=$(get_user_input "Enter the name of GLPI database:")
-        GLPI_DBUSER=$(get_user_input "Enter the user account to access GLPI database:")
-        GLPI_DBPASSWD=$(get_user_input "Enter the password to access GLPI database:")
-        GLPI_DBROOTPASSWD=$(get_user_input "Enter the mysql root password for the mysql server hosting glpi database:")
+    local GLPI_IP=$(get_user_input "Enter the IP address of the GLPI server:")
+    GLPI_URL="http://${GLPI_IP}/glpi"
+    GLPI_DBHOST="${GLPI_IP}"
+    GLPI_DBNAME=$(get_user_input "Enter the name of GLPI database:")
+    GLPI_DBUSER=$(get_user_input "Enter the user account to access GLPI database:")
+    GLPI_DBPASSWD=$(get_user_input "Enter the password to access GLPI database:")
+    GLPI_DBROOTPASSWD=$(get_user_input "Enter the mysql root password for the mysql server hosting glpi database:")
 }
 
 get_user_options() {
