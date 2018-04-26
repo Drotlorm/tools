@@ -218,7 +218,7 @@ colored_echo() {
 }
 
 sed_escape() {
-        echo "$1" |sed -e 's/[\/&]/\\&/g'
+    echo "$1" |sed -e 's/[\/&]/\\&/g'
 }
 
 exit_code() {
