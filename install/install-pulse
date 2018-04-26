@@ -236,18 +236,18 @@ get_user_input() {
 }
 
 choose_network_interface() {
-        local INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}'`
-        local RESULT=N
-        local CHOICE_INTERFACE_TEXT=$1
-        while [ ${RESULT} == "N" ]; do
-                read  -p "${CHOICE_INTERFACE_TEXT} (${INTERFACES}): " INTERFACE
-                if [ ! -z ${INTERFACE} ] && [[ ${INTERFACES} == *"${INTERFACE} "* ]]; then
-                        RESULT=Y
-                        echo ${INTERFACE}
-                else
-                        RESULT=N
-                fi
-        done
+    local INTERFACES=`ip -o link show | awk '{print $2,$9}' | grep UP | cut -d : -f 1 | awk -vORS=' ' '{print $1}'`
+    local RESULT=N
+    local CHOICE_INTERFACE_TEXT=$1
+    while [ ${RESULT} == "N" ]; do
+        read  -p "${CHOICE_INTERFACE_TEXT} (${INTERFACES}): " INTERFACE
+        if [ ! -z ${INTERFACE} ] && [[ ${INTERFACES} == *"${INTERFACE} "* ]]; then
+            RESULT=Y
+            echo ${INTERFACE}
+        else
+            RESULT=N
+        fi
+    done
 }
 
 select_main_glpi_entity() {
