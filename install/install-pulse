@@ -472,8 +472,8 @@ check_network_config() {
     echo "BCAST_ADDRESS                 : ${BCAST_ADDRESS}"
     echo "DOMAIN                        : ${DOMAIN}"
     if [[ ${MAIN_DHCP} == "y" || ${REMOTE_DHCP} == "y" ]]; then
-        echo "GATEWAY_ADDRESS       : ${GATEWAY_ADDRESS}"
-        echo "DNS_SERVER            : ${DNS_SERVER}"
+        echo "GATEWAY_ADDRESS               : ${GATEWAY_ADDRESS}"
+        echo "DNS_SERVER                    : ${DNS_SERVER}"
     fi
     echo "GLPI_DBHOST                   : ${GLPI_DBHOST}"
     echo "GLPI_DBNAME                   : ${GLPI_DBNAME}"
