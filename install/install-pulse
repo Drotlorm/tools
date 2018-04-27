@@ -1125,8 +1125,14 @@ install_nfs_kernel_server() {
 install_pxelinux() {
     colored_echo blue "### INFO Installing pxelinux..."
 
-
-    install_package pxelinux syslinux-common syslinux-efi
+    case ${LINUX_DISTRO} in
+        "debian")
+            install_package pxelinux syslinux-common syslinux-efi
+            ;;
+        "mageia"|"rhel")
+            install_package pxelinux syslinux-efi64 syslinux-tftpboot extlinux
+            ;;
+    esac
 
     if [ ! $? -eq 0 ]; then
         colored_echo red "### ERRORROR... pxelinux install... failed"
