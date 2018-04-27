@@ -1995,12 +1995,13 @@ configure_relay_server() {
 }
 
 restart_pulse_services() {
-        colored_echo blue "### INFO Restart Pulse services..."
-        pushd /usr/lib/systemd/system
-                for SERV in mmc-agent.service pulse2-register-pxe.service pulse-xmpp-agent-relay.service pulse2-inventory-server.service pulse-xmpp-agent-log.service pulse2-package-server.service
-                        do systemctl restart $SERV
-                done
-        popd
+    colored_echo blue "### INFO Restart Pulse services..."
+    pushd /usr/lib/systemd/system
+        for SERV in mmc-agent.service pulse2-register-pxe.service pulse-xmpp-agent-relay.service pulse2-inventory-server.service pulse-xmpp-agent-log.service pulse2-package-server.service;
+            do
+                systemctl restart $SERV
+            done
+    popd
 }
 
 install_multisite_dependencies() {
