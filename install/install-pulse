@@ -1611,15 +1611,15 @@ configure_webfilemanager() {
 }
 
 configure_pulse_dependencies() {
-        # Configure components needed by Pulse
-        configure_samba
-        configure_nfs_kernel_server
-        configure_pxelinux
-        configure_clonezilla
-        configure_mmc
-        configure_xmpp_server pulse
-        configure_guacamole
-        configure_webfilemanager
+    # Configure components needed by Pulse
+    configure_samba
+    configure_nfs_kernel_server
+    configure_pxelinux
+    configure_clonezilla
+    configure_mmc
+    configure_xmpp_server pulse
+    configure_guacamole
+    configure_webfilemanager
 }
 
 generate_pki() {
