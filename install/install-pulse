@@ -2149,22 +2149,22 @@ create_package_server_cert() {
 }
 
 configure_multisite() {
-        # Grant ssh without password from Pulse multisite to Pulse
-        ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
-        sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${PULSEMAIN_IP}
+    # Grant ssh without password from Pulse multisite to Pulse
+    ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
+    sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${PULSEMAIN_IP}
 
-        check_mysql_connection
+    check_mysql_connection
 
-        if [[ ${CREATE_ENTITY} == "y" ]]; then
-                configure_glpi_multisite
-        fi
+    if [[ ${CREATE_ENTITY} == "y" ]]; then
+        configure_glpi_multisite
+    fi
 
-        configure_package_server_multisite
-        create_package_server_cert
-        configure_relay_server ${MULTISITE_ENTITY}
+    configure_package_server_multisite
+    create_package_server_cert
+    configure_relay_server ${MULTISITE_ENTITY}
 
-        colored_echo blue "### INFO Restart pulse2-package-server..."
-        systemctl restart pulse2-package-server.service
+    colored_echo blue "### INFO Restart pulse2-package-server..."
+    systemctl restart pulse2-package-server.service
 }
 
 sync_package_server() {
