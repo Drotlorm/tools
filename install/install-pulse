@@ -1780,82 +1780,82 @@ reset_glpi_db() {
 }
 
 reset_pulse_db() {
-        colored_echo blue "### INFO Resetting Pulse database..."
+    colored_echo blue "### INFO Resetting Pulse database..."
 
-        local XMPP_DOMAIN='pulse'
+    local XMPP_DOMAIN='pulse'
 
-        # Generate MASTER_PASSWORD and MUC_ROOM_PASSWORD
-        MASTER_PASSWORD=`pwgen --secure 12 1`
-        MUC_ROOM_PASSWORD=`pwgen --secure 12 1`
-        # Generate Guacamole Baseurl
-        GUACAMOLE_BASEURL="http://${SERVER_FQDN}/guacamole/#/client/@@CUX_ID@@?username=root&password=${GUACAMOLE_ROOT_PASSWORD}"
+    # Generate MASTER_PASSWORD and MUC_ROOM_PASSWORD
+    MASTER_PASSWORD=`pwgen --secure 12 1`
+    MUC_ROOM_PASSWORD=`pwgen --secure 12 1`
+    # Generate Guacamole Baseurl
+    GUACAMOLE_BASEURL="http://${SERVER_FQDN}/guacamole/#/client/@@CUX_ID@@?username=root&password=${GUACAMOLE_ROOT_PASSWORD}"
 
-        # Run rng-tools before running pulse2-setup
-        systemctl restart rng-tools.service
+    # Run rng-tools before running pulse2-setup
+    systemctl restart rng-tools.service
 
-        # Run pulse2-setup
-        pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=${GLPI_URL} --glpi-dbhost=${GLPI_DBHOST} --glpi-dbname=${GLPI_DBNAME} --glpi-dbuser=${GLPI_DBUSER} --glpi-dbpasswd=${GLPI_DBPASSWD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ERROR... Pulse2-se... failed"
-                exit 1
-        fi
+    # Run pulse2-setup
+    pulse2-setup -b -R --reset-db --mysql-passwd=${ROOT_PASSWORD} --glpi-enable --glpi-purge-machines --glpi-webservices-user=root --glpi-webservices-passwd=${ROOT_PASSWORD} --glpi-url=${GLPI_URL} --glpi-dbhost=${GLPI_DBHOST} --glpi-dbname=${GLPI_DBNAME} --glpi-dbuser=${GLPI_DBUSER} --glpi-dbpasswd=${GLPI_DBPASSWD} --external-ip-address=${IP_ADDRESS} --backuppc-ip=127.0.0.1 --backuppc-entity=UUID1
+    if [ ! $? -eq 0 ]; then
+            colored_echo red "### ERROR... Pulse2-se... failed"
+            exit 1
+    fi
 
-        # Setup database for xmppmaster
-        echo "DROP DATABASE IF EXISTS xmppmaster" | mysql
-        mysql < /usr/share/doc/pulse2/contrib/xmppmaster/sql/schema-001.sql
-        local DB_PASSWORD=`cat /etc/mmc/plugins/msc.ini.local |grep dbpass |awk '{print $3}'`
-        echo "GRANT ALL PRIVILEGES ON xmppmaster.* TO 'mmc'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';" |mysql
+    # Setup database for xmppmaster
+    echo "DROP DATABASE IF EXISTS xmppmaster" | mysql
+    mysql < /usr/share/doc/pulse2/contrib/xmppmaster/sql/schema-001.sql
+    local DB_PASSWORD=`cat /etc/mmc/plugins/msc.ini.local |grep dbpass |awk '{print $3}'`
+    echo "GRANT ALL PRIVILEGES ON xmppmaster.* TO 'mmc'@'localhost' IDENTIFIED BY '${DB_PASSWORD}';" |mysql
 
-        # Reconfigure ejabberd
-        configure_xmpp_server ${XMPP_DOMAIN}
-        ejabberdctl register master ${XMPP_DOMAIN} ${MASTER_PASSWORD}
-        sed -i "/^[[:space:]]*- \"root@${XMPP_DOMAIN}\"/{p;s/root/master/;}" /etc/ejabberd/ejabberd.yml
-        sed -i "/^[[:space:]]*mod_muc:[[:space:]]*$/a\ \ \ \ history_size: 0\n    max_users: 100000\n    default_room_options:\n      password: \"${MUC_ROOM_PASSWORD}\"\n      password_protected: true\n      persistent: true" /etc/ejabberd/ejabberd.yml
-        service ejabberd restart
+    # Reconfigure ejabberd
+    configure_xmpp_server ${XMPP_DOMAIN}
+    ejabberdctl register master ${XMPP_DOMAIN} ${MASTER_PASSWORD}
+    sed -i "/^[[:space:]]*- \"root@${XMPP_DOMAIN}\"/{p;s/root/master/;}" /etc/ejabberd/ejabberd.yml
+    sed -i "/^[[:space:]]*mod_muc:[[:space:]]*$/a\ \ \ \ history_size: 0\n    max_users: 100000\n    default_room_options:\n      password: \"${MUC_ROOM_PASSWORD}\"\n      password_protected: true\n      persistent: true" /etc/ejabberd/ejabberd.yml
+    service ejabberd restart
 
-        # Configure XMPP master
-        echo "[main]" > /etc/mmc/plugins/xmppmaster.ini.local
-        echo "disable = 0" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "[global]" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "log_level = DEBUG" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "[database]" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "dbpasswd = ${DB_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "[configuration_server]" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "confmuc_password = ${MUC_ROOM_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "[connection]" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "server = ${IP_ADDRESS}" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "password = ${MASTER_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "[chatroom]" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "password = ${MUC_ROOM_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "[master]" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "showinfo = True" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "showplugins = True" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "[defaultconnection]" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "serverip = ${IP_ADDRESS}" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "password = ${MASTER_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
-        echo "guacamole_baseurl = ${GUACAMOLE_BASEURL}" >> /etc/mmc/plugins/xmppmaster.ini.local
+    # Configure XMPP master
+    echo "[main]" > /etc/mmc/plugins/xmppmaster.ini.local
+    echo "disable = 0" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "[global]" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "log_level = DEBUG" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "[database]" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "dbpasswd = ${DB_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "[configuration_server]" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "confmuc_password = ${MUC_ROOM_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "[connection]" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "server = ${IP_ADDRESS}" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "password = ${MASTER_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "[chatroom]" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "password = ${MUC_ROOM_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "[master]" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "showinfo = True" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "showplugins = True" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "[defaultconnection]" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "serverip = ${IP_ADDRESS}" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "password = ${MASTER_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
+    echo "guacamole_baseurl = ${GUACAMOLE_BASEURL}" >> /etc/mmc/plugins/xmppmaster.ini.local
 
-        # Enable agent log service
-        systemctl enable pulse-xmpp-agent-log.service
+    # Enable agent log service
+    systemctl enable pulse-xmpp-agent-log.service
 
-        # Restart all services
-        restart_pulse_services
+    # Restart all services
+    restart_pulse_services
 
-        # Associate imaging server with root entity and generate default menu
-        echo "UPDATE ImagingServer SET associated=1 WHERE id=1;"| mysql imaging
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ERROR... imaging server associat... failed"
-                exit 1
-        fi
+    # Associate imaging server with root entity and generate default menu
+    echo "UPDATE ImagingServer SET associated=1 WHERE id=1;"| mysql imaging
+    if [ ! $? -eq 0 ]; then
+            colored_echo red "### ERROR... imaging server associat... failed"
+            exit 1
+    fi
 
-        colored_echo green "### INFO Resetting Pulse database... Done"
+    colored_echo green "### INFO Resetting Pulse database... Done"
 }
 
 generate_agent() {
