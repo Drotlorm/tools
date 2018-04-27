@@ -176,26 +176,26 @@ check_arguments() {
 }
 
 ask() {
-  local TEXT=$1
-  local OPTION1=$2
-  local OPTION2=$3
-  local RESULT=N
-  while [ ${RESULT} == "N" ]; do
-    local PROMPT="$OPTION1/$OPTION2"
-    # Ask the question - use /dev/tty in case stdin is redirected from somewhere else
-    read -p "${TEXT} [${PROMPT}] " REPLY </dev/tty
-    # Check if the reply is valid
-    case "${REPLY}" in
-      ${OPTION1^^}|${OPTION1,,})
-              RESULT=Y
-              echo ${OPTION1,,}
-              ;;
-      ${OPTION2^^}|${OPTION2,,})
-              RESULT=Y
-              echo ${OPTION2,,}
-              ;;
-    esac
-  done
+    local TEXT=$1
+    local OPTION1=$2
+    local OPTION2=$3
+    local RESULT=N
+    while [ ${RESULT} == "N" ]; do
+        local PROMPT="$OPTION1/$OPTION2"
+        # Ask the question - use /dev/tty in case stdin is redirected from somewhere else
+        read -p "${TEXT} [${PROMPT}] " REPLY </dev/tty
+        # Check if the reply is valid
+        case "${REPLY}" in
+            ${OPTION1^^}|${OPTION1,,})
+                RESULT=Y
+                echo ${OPTION1,,}
+                ;;
+            ${OPTION2^^}|${OPTION2,,})
+                RESULT=Y
+                echo ${OPTION2,,}
+                ;;
+        esac
+    done
 }
 
 colored_echo() {
