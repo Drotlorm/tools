@@ -1146,9 +1146,12 @@ install_clonezilla() {
     colored_echo blue "### INFO Installing clonezilla..."
 
     install_package clonezilla pulse2-davos-client udpcast
-
-    # Hold clonezilla
-    echo "clonezilla hold"| dpkg --set-selections
+    case ${LINUX_DISTRO} in
+        "debian")
+            # Hold clonezilla
+            echo "clonezilla hold"| dpkg --set-selections
+            ;;
+    esac
 
     if [ ! $? -eq 0 ]; then
         colored_echo red "### ERROR... clonezilla install... failed"
