@@ -1162,29 +1162,30 @@ install_clonezilla() {
 }
 
 install_xmpp_server() {
-        colored_echo blue "### INFO Installing XMPP server..."
+    colored_echo blue "### INFO Installing XMPP server..."
 
-        local XMPP_DOMAIN=$1
+    local XMPP_DOMAIN=$1
 
-        if [[ $LINUX_DISTRO == "debian" ]]; then
-                # Define a few settings for ejabberd
-                echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
-                echo "ejabberd ejabberd/user string root" | debconf-set-selections
-                echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
-                echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
-        else
-	        #TBD
-                echo "Not Implemented"
+    if [[ $LINUX_DISTRO == "debian" ]]; then
+        # Define a few settings for ejabberd
+        echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
+        echo "ejabberd ejabberd/user string root" | debconf-set-selections
+        echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
+        echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
+    else
+	    #TBD
+        echo "Not Implemented"
 		exit 1
 	fi
 
-        # Install ejabberd
-        apt update
-        install_package ejabberd
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ER... Jabber server inst... failed"
-                exit 1
-        fi
+    # Install ejabberd
+    apt update
+    install_package ejabberd
+
+    if [ ! $? -eq 0 ]; then
+        colored_echo red "### ER... Jabber server inst... failed"
+        exit 1
+    fi
 
         colored_echo green "### INFO Installing XMPP server... Done"
 }
