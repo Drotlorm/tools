@@ -1408,17 +1408,17 @@ configure_pxelinux() {
 }
 
 configure_clonezilla() {
-        colored_echo blue "### INFO Configuring clonezilla..."
+    colored_echo blue "### INFO Configuring clonezilla..."
 
-        # Create the folder needed for clonezilla
-        [ -L /home/partimag ] && rm -f /home/partimag
-        [ -d /home/partimag ] && rmdir /home/partimag
-        ln -s /var/lib/pulse2/imaging/masters/ /home/partimag
+    # Create the folder needed for clonezilla
+    [ -L /home/partimag ] && rm -f /home/partimag
+    [ -d /home/partimag ] && rmdir /home/partimag
+    ln -s /var/lib/pulse2/imaging/masters/ /home/partimag
 
-        # Define log parameter for udp-sender
-        sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log -b 1024\"/" /etc/drbl/drbl-ocs.conf
+    # Define log parameter for udp-sender
+    sed -i "s/udp_sender_extra_opt_default=.*/udp_sender_extra_opt_default=\"--log \/tmp\/udp-sender.log -b 1024\"/" /etc/drbl/drbl-ocs.conf
 
-        colored_echo green "### INFO Configuring clonezilla... Done"
+    colored_echo green "### INFO Configuring clonezilla... Done"
 }
 
 configure_mmc() {
