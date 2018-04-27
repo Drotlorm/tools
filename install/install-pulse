@@ -2114,38 +2114,38 @@ configure_package_server_multisite() {
 }
 
 create_package_server_cert() {
-        colored_echo blue "### INFO Generating Package Server certificate..."
+    colored_echo blue "### INFO Generating Package Server certificate..."
 
-        local PKI_PASSWORD=${ROOT_PASSWORD}
+    local PKI_PASSWORD=${ROOT_PASSWORD}
 
-        # Create the key and sign request on Pulse main server
-        local SSH_COMMAND="openssl req -config /var/lib/pulse2/pki/conf/pulse.cnf -subj \"/countryName=FR/organizationName=SIVEO/commonName=${SERVER_FQDN}\" -passout pass:${PKI_PASSWORD} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/${SERVER_FQDN}.key.pem -out /var/lib/pulse2/pki/req/${SERVER_FQDN}.req.pem"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    # Create the key and sign request on Pulse main server
+    local SSH_COMMAND="openssl req -config /var/lib/pulse2/pki/conf/pulse.cnf -subj \"/countryName=FR/organizationName=SIVEO/commonName=${SERVER_FQDN}\" -passout pass:${PKI_PASSWORD} -batch -extensions server_cert -new -keyout /var/lib/pulse2/pki/private/${SERVER_FQDN}.key.pem -out /var/lib/pulse2/pki/req/${SERVER_FQDN}.req.pem"
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-        # Sign the certificate
-        local SSH_COMMAND="openssl ca -config /var/lib/pulse2/pki/conf/pulse.cnf -name CA_Intermediate -passin pass:${PKI_PASSWORD} -batch -extensions server_cert -keyfile /var/lib/pulse2/pki/private/cakey.pem -out /var/lib/pulse2/pki/newcerts/${SERVER_FQDN}.cert.pem -infiles /var/lib/pulse2/pki/req/${SERVER_FQDN}.req.pem"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    # Sign the certificate
+    local SSH_COMMAND="openssl ca -config /var/lib/pulse2/pki/conf/pulse.cnf -name CA_Intermediate -passin pass:${PKI_PASSWORD} -batch -extensions server_cert -keyfile /var/lib/pulse2/pki/private/cakey.pem -out /var/lib/pulse2/pki/newcerts/${SERVER_FQDN}.cert.pem -infiles /var/lib/pulse2/pki/req/${SERVER_FQDN}.req.pem"
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-        # Generate the final certificate
-        local SSH_COMMAND="openssl rsa -passin pass:${PKI_PASSWORD} -in /var/lib/pulse2/pki/private/${SERVER_FQDN}.key.pem -out /var/lib/pulse2/pki/${SERVER_FQDN}.pem"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-        local SSH_COMMAND="cat /var/lib/pulse2/pki/newcerts/${SERVER_FQDN}.cert.pem >> /var/lib/pulse2/pki/${SERVER_FQDN}.pem"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    # Generate the final certificate
+    local SSH_COMMAND="openssl rsa -passin pass:${PKI_PASSWORD} -in /var/lib/pulse2/pki/private/${SERVER_FQDN}.key.pem -out /var/lib/pulse2/pki/${SERVER_FQDN}.pem"
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    local SSH_COMMAND="cat /var/lib/pulse2/pki/newcerts/${SERVER_FQDN}.cert.pem >> /var/lib/pulse2/pki/${SERVER_FQDN}.pem"
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-        # Final tasks: permissions and cleanup
-        local SSH_COMMAND="chmod 400 /var/lib/pulse2/pki/private/${SERVER_FQDN}.key.pem && chmod 444 /var/lib/pulse2/pki/newcerts/${SERVER_FQDN}.cert.pem && chmod 444 /var/lib/pulse2/pki/${SERVER_FQDN}.pem"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-        local SSH_COMMAND="rm /var/lib/pulse2/pki/req/${SERVER_FQDN}.req.pem"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    # Final tasks: permissions and cleanup
+    local SSH_COMMAND="chmod 400 /var/lib/pulse2/pki/private/${SERVER_FQDN}.key.pem && chmod 444 /var/lib/pulse2/pki/newcerts/${SERVER_FQDN}.cert.pem && chmod 444 /var/lib/pulse2/pki/${SERVER_FQDN}.pem"
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    local SSH_COMMAND="rm /var/lib/pulse2/pki/req/${SERVER_FQDN}.req.pem"
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-        # Get the keys to configure package server
-        scp ${PULSEMAIN_IP}:/var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
-        scp ${PULSEMAIN_IP}:/var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
+    # Get the keys to configure package server
+    scp ${PULSEMAIN_IP}:/var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
+    scp ${PULSEMAIN_IP}:/var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
 
-        # Restart the service
-        systemctl restart pulse2-package-server.service
+    # Restart the service
+    systemctl restart pulse2-package-server.service
 
-        colored_echo green "### INFO Generating Package Server certificate... Done"
+    colored_echo green "### INFO Generating Package Server certificate... Done"
 }
 
 configure_multisite() {
