@@ -2027,13 +2027,13 @@ install_multisite() {
 }
 
 configure_multisite_dependencies() {
-        #Configure components needed by pulse multisite
-        configure_nfs_kernel_server
-        configure_pxelinux
-        configure_clonezilla
-        configure_samba
-        configure_xmpp_server ${MULTISITE_ENTITY}
-        configure_guacamole
+    #Configure components needed by pulse multisite
+    configure_nfs_kernel_server
+    configure_pxelinux
+    configure_clonezilla
+    configure_samba
+    configure_xmpp_server ${MULTISITE_ENTITY}
+    configure_guacamole
 }
 
 configure_glpi_multisite() {
