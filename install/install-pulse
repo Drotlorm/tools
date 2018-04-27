@@ -1179,7 +1179,6 @@ install_xmpp_server() {
 	fi
 
     # Install ejabberd
-    apt update
     install_package ejabberd
 
     if [ ! $? -eq 0 ]; then
