@@ -1859,31 +1859,31 @@ reset_pulse_db() {
 }
 
 generate_agent() {
-      colored_echo blue "### INFO Generating XMPP agent..."
+    colored_echo blue "### INFO Generating XMPP agent..."
 
-       local XMPP_DOMAIN=$1
+    local XMPP_DOMAIN=$1
 
-       # Generate full and minimal versions of the agent
-       /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver=${SERVER_FQDN} \
-               --conf-xmpppasswd=${MASTER_PASSWORD} \
-               --conf-xmppmucpasswd=${MUC_ROOM_PASSWORD} \
-               --xmpp-passwd=${MASTER_PASSWORD} \
-               --xmpp-mucserver="conference.${XMPP_DOMAIN}" \
-               --xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
-               --chat-domain=${XMPP_DOMAIN}
-        /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal \
-               --conf-xmppserver=${SERVER_FQDN} \
-               --conf-xmpppasswd=${MASTER_PASSWORD} \
-               --conf-xmppmucpasswd=${MUC_ROOM_PASSWORD} \
-               --xmpp-passwd=${MASTER_PASSWORD} \
-               --xmpp-mucserver="conference.${XMPP_DOMAIN}" \
-               --xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
-               --chat-domain=${XMPP_DOMAIN} \
-               --base-url="http://${SERVER_FQDN}/downloads"
-        # Generate the package for upgrading the agent via pulse
-        /var/lib/pulse2/clients/generate-agent-package
+    # Generate full and minimal versions of the agent
+    /var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver=${SERVER_FQDN} \
+            --conf-xmpppasswd=${MASTER_PASSWORD} \
+            --conf-xmppmucpasswd=${MUC_ROOM_PASSWORD} \
+            --xmpp-passwd=${MASTER_PASSWORD} \
+            --xmpp-mucserver="conference.${XMPP_DOMAIN}" \
+            --xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
+            --chat-domain=${XMPP_DOMAIN}
+    /var/lib/pulse2/clients/generate-pulse-agent.sh --minimal \
+            --conf-xmppserver=${SERVER_FQDN} \
+            --conf-xmpppasswd=${MASTER_PASSWORD} \
+            --conf-xmppmucpasswd=${MUC_ROOM_PASSWORD} \
+            --xmpp-passwd=${MASTER_PASSWORD} \
+            --xmpp-mucserver="conference.${XMPP_DOMAIN}" \
+            --xmpp-mucpasswd=${MUC_ROOM_PASSWORD} \
+            --chat-domain=${XMPP_DOMAIN} \
+            --base-url="http://${SERVER_FQDN}/downloads"
+    # Generate the package for upgrading the agent via pulse
+    /var/lib/pulse2/clients/generate-agent-package
 
-        colored_echo green "### INFO Generating XMPP agent... Done"
+    colored_echo green "### INFO Generating XMPP agent... Done"
 }
 
 setup_glpi_triggers() {
