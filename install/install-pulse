@@ -2016,14 +2016,14 @@ install_multisite_dependencies() {
 }
 
 install_multisite() {
-        colored_echo blue "### INFO Installing Pulse multisite..."
-        install_package pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ERROR... Pulse install... failed"
-                exit 1
-        fi
+    colored_echo blue "### INFO Installing Pulse multisite..."
+    install_package pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay
+    if [ ! $? -eq 0 ]; then
+        colored_echo red "### ERROR... Pulse install... failed"
+        exit 1
+    fi
 
-        colored_echo green "### INFO Installing Pulse multisite... Done"
+    colored_echo green "### INFO Installing Pulse multisite... Done"
 }
 
 configure_multisite_dependencies() {
