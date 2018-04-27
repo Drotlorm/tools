@@ -1887,35 +1887,36 @@ generate_agent() {
 }
 
 setup_glpi_triggers() {
-        colored_echo blue "### INFO Setup glpi triggers for msc database..."
-        if [[ ${MAIN_GLPI} == "y" ]]; then
-                # Set the triggers on local glpi server
-                mysql < /usr/share/doc/pulse2-common/contrib/msc/sql/synch-localglpi-to-msc.sql
-        else
-                # Allow remote user to connect to msc.target
-                local RANDOM_PASSWORD=`openssl rand -base64 12`
-                echo "GRANT ALL PRIVILEGES ON msc.target to 'glpi-msc'@'${GLPI_DBHOST}' identified by '${RANDOM_PASSWORD}';" |mysql -s
-                sed -i "s/^bind-address.*/bind-address             = 0.0.0.0/g" /etc/mysql/mariadb.conf.d/50-server.cnf
-                systemctl restart mariadb.service
-                # Set the triggers on remote glpi server
-                cp /usr/share/doc/pulse2-common/contrib/msc/sql/synch-remoteglpi-to-msc.sql.in /tmp/synch-remoteglpi-to-msc.sql
-                sed -i "s/@@GLPI_DBNAME@@/${GLPI_DBNAME}/" /tmp/synch-remoteglpi-to-msc.sql
-                sed -i "s/@@MYSQL_USER@@/glpi-msc/" /tmp/synch-remoteglpi-to-msc.sql
-                sed -i "s/@@MYSQL_PASSWORD@@/${RANDOM_PASSWORD}/" /tmp/synch-remoteglpi-to-msc.sql
-                sed -i "s/@@MYSQL_SERVER@@/${IP_ADDRESS}/" /tmp/synch-remoteglpi-to-msc.sql
-                sed -i "s/@@MYSQL_PORT@@/3306/" /tmp/synch-remoteglpi-to-msc.sql
-                mysql -h${GLPI_DBHOST} -uroot -p${GLPI_DBROOTPASSWD} -s -r < /tmp/synch-remoteglpi-to-msc.sql
-                if [ ! $? -eq 0 ]; then
-                        colored_echo red "### ERROR... Could not setup the triggers on the remote mysql server"
-                        colored_echo red "###"
-                        colored_echo red "### Please run the following command to copy the sql script to ${GLPI_DBHOST}"
-                        colored_echo red "###                 scp /tmp/synch-remoteglpi-to-msc.sql root@${GLPI_DBHOST}:/tmp/"
-                        colored_echo red "### Then log on to the remote server and execute"
-                        colored_echo red "###                 mysql < /tmp/synch-remoteglpi-to-msc.sql"
-                        colored_echo red "###"
-                fi
+    colored_echo blue "### INFO Setup glpi triggers for msc database..."
+    if [[ ${MAIN_GLPI} == "y" ]]; then
+        # Set the triggers on local glpi server
+        mysql < /usr/share/doc/pulse2-common/contrib/msc/sql/synch-localglpi-to-msc.sql
+    else
+        # Allow remote user to connect to msc.target
+        local RANDOM_PASSWORD=`openssl rand -base64 12`
+        echo "GRANT ALL PRIVILEGES ON msc.target to 'glpi-msc'@'${GLPI_DBHOST}' identified by '${RANDOM_PASSWORD}';" |mysql -s
+        sed -i "s/^bind-address.*/bind-address             = 0.0.0.0/g" /etc/mysql/mariadb.conf.d/50-server.cnf
+        systemctl restart mariadb.service
+        # Set the triggers on remote glpi server
+        cp /usr/share/doc/pulse2-common/contrib/msc/sql/synch-remoteglpi-to-msc.sql.in /tmp/synch-remoteglpi-to-msc.sql
+        sed -i "s/@@GLPI_DBNAME@@/${GLPI_DBNAME}/" /tmp/synch-remoteglpi-to-msc.sql
+        sed -i "s/@@MYSQL_USER@@/glpi-msc/" /tmp/synch-remoteglpi-to-msc.sql
+        sed -i "s/@@MYSQL_PASSWORD@@/${RANDOM_PASSWORD}/" /tmp/synch-remoteglpi-to-msc.sql
+        sed -i "s/@@MYSQL_SERVER@@/${IP_ADDRESS}/" /tmp/synch-remoteglpi-to-msc.sql
+        sed -i "s/@@MYSQL_PORT@@/3306/" /tmp/synch-remoteglpi-to-msc.sql
+        mysql -h${GLPI_DBHOST} -uroot -p${GLPI_DBROOTPASSWD} -s -r < /tmp/synch-remoteglpi-to-msc.sql
+        if [ ! $? -eq 0 ]; then
+            colored_echo red "### ERROR... Could not setup the triggers on the remote mysql server"
+            colored_echo red "###"
+            colored_echo red "### Please run the following command to copy the sql script to ${GLPI_DBHOST}"
+            colored_echo red "###                 scp /tmp/synch-remoteglpi-to-msc.sql root@${GLPI_DBHOST}:/tmp/"
+            colored_echo red "### Then log on to the remote server and execute"
+            colored_echo red "###                 mysql < /tmp/synch-remoteglpi-to-msc.sql"
+            colored_echo red "###"
         fi
-        colored_echo green "### INFO Setup glpi triggers for msc database... Done"
+    fi
+
+    colored_echo green "### INFO Setup glpi triggers for msc database... Done"
 }
 
 configure_glpi_rest() {
