@@ -1123,16 +1123,17 @@ install_nfs_kernel_server() {
 }
 
 install_pxelinux() {
-        colored_echo blue "### INFO Installing pxelinux..."
+    colored_echo blue "### INFO Installing pxelinux..."
 
-        install_package pxelinux syslinux-common syslinux-efi
 
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ERRORROR... pxelinux install... failed"
-                exit 1
-        fi
+    install_package pxelinux syslinux-common syslinux-efi
 
-        colored_echo green "### INFO Installing pxelinux... Done"
+    if [ ! $? -eq 0 ]; then
+        colored_echo red "### ERRORROR... pxelinux install... failed"
+        exit 1
+    fi
+
+    colored_echo green "### INFO Installing pxelinux... Done"
 }
 
 install_clonezilla() {
