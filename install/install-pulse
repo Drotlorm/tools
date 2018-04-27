@@ -1597,17 +1597,17 @@ configure_guacamole() {
 }
 
 configure_webfilemanager() {
-        colored_echo blue "### INFO Setting up webfilemanager..."
+    colored_echo blue "### INFO Setting up webfilemanager..."
 
-        # file-transfer needs to be in the apache webroot
-        ln -s /var/lib/pulse2/file-transfer/ /var/www/html/
+    # file-transfer needs to be in the apache webroot
+    ln -s /var/lib/pulse2/file-transfer/ /var/www/html/
 
-        # Set referrer to pulse server
-        sed -i "s/localhost/${SERVER_FQDN}/" /etc/apache2/conf-available/pulse.conf
+    # Set referrer to pulse server
+    sed -i "s/localhost/${SERVER_FQDN}/" /etc/apache2/conf-available/pulse.conf
 
-        systemctl restart apache2.service
+    systemctl restart apache2.service
 
-        colored_echo green "### INFO Setting up webfilemanager... Done"
+    colored_echo green "### INFO Setting up webfilemanager... Done"
 }
 
 configure_pulse_dependencies() {
