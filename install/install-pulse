@@ -1143,19 +1143,19 @@ install_pxelinux() {
 }
 
 install_clonezilla() {
-        colored_echo blue "### INFO Installing clonezilla..."
+    colored_echo blue "### INFO Installing clonezilla..."
 
-        install_package clonezilla pulse2-davos-client udpcast
+    install_package clonezilla pulse2-davos-client udpcast
 
-        # Hold clonezilla
-        echo "clonezilla hold"| dpkg --set-selections
+    # Hold clonezilla
+    echo "clonezilla hold"| dpkg --set-selections
 
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ERROR... clonezilla install... failed"
-                exit 1
-        fi
+    if [ ! $? -eq 0 ]; then
+        colored_echo red "### ERROR... clonezilla install... failed"
+        exit 1
+    fi
 
-        colored_echo green "### INFO Installing clonezilla... Done"
+    colored_echo green "### INFO Installing clonezilla... Done"
 }
 
 install_xmpp_server() {
