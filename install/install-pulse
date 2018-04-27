@@ -222,8 +222,8 @@ sed_escape() {
 }
 
 exit_code() {
-  return=$?
-  if [ $return -ne 0 ];then coloredEcho red "### DEBUG Exit code" $return; fi
+    return=$?
+    if [ $return -ne 0 ];then coloredEcho red "### DEBUG Exit code" $return; fi
 }
 
 
