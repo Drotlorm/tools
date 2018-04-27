@@ -1103,23 +1103,23 @@ install_samba() {
 }
 
 install_nfs_kernel_server() {
-        colored_echo blue "### INFO Installing NFS server..."
+    colored_echo blue "### INFO Installing NFS server..."
 
-        case ${LINUX_DISTRO} in
+    case ${LINUX_DISTRO} in
         "debian")
             install_package nfs-kernel-server
             ;;
         "mageia"|"rhel")
             install_package nfs-utils
             ;;
-        esac
+    esac
 
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ERROR... nfs-kernel-server install... failed"
-                exit 1
-        fi
+    if [ ! $? -eq 0 ]; then
+        colored_echo red "### ERROR... nfs-kernel-server install... failed"
+        exit 1
+    fi
 
-        colored_echo green "### INFO Installing NFS server... Done"
+    colored_echo green "### INFO Installing NFS server... Done"
 }
 
 install_pxelinux() {
