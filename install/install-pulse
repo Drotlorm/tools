@@ -2060,57 +2060,57 @@ configure_glpi_multisite() {
 }
 
 configure_package_server_multisite() {
-        colored_echo green "### INFO Configuring Package Server for multisite..."
+    colored_echo green "### INFO Configuring Package Server for multisite..."
 
-        # Configure multi-site package server
-        local PACKAGESERVER_UUID=`uuidgen`
-        # Allow computer to reach package server
-        echo "[main]" > /etc/mmc/pulse2/package-server/package-server.ini.local
-        echo "public_ip = ${IP_ADDRESS}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
-        echo "public_mask = ${NETMASK}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
-        # Define MMC of the Pulse
-        echo "[mmc_agent]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
-        echo "host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
-        echo "[imaging_api]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
-        echo "uuid = ${PACKAGESERVER_UUID}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
-        # Define Pulse inventory server IP
-        echo "inventory_host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
-        echo "glpi_mode = True" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    # Configure multi-site package server
+    local PACKAGESERVER_UUID=`uuidgen`
+    # Allow computer to reach package server
+    echo "[main]" > /etc/mmc/pulse2/package-server/package-server.ini.local
+    echo "public_ip = ${IP_ADDRESS}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    echo "public_mask = ${NETMASK}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    # Define MMC of the Pulse
+    echo "[mmc_agent]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    echo "host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    echo "[imaging_api]" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    echo "uuid = ${PACKAGESERVER_UUID}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    # Define Pulse inventory server IP
+    echo "inventory_host = ${PULSEMAIN_IP}" >> /etc/mmc/pulse2/package-server/package-server.ini.local
+    echo "glpi_mode = True" >> /etc/mmc/pulse2/package-server/package-server.ini.local
 
-        # Enable the Pulse MMC to listen from everywhere. Done on main Pulse server
-        local SSH_COMMAND="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && systemctl restart mmc-agent.service"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    # Enable the Pulse MMC to listen from everywhere. Done on main Pulse server
+    local SSH_COMMAND="sed 's/^host = .*/host = 0.0.0.0/' -i /etc/mmc/agent/config.ini.local && systemctl restart mmc-agent.service"
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-        # Insert multisite imaging server in Pulse imaging server database. Done on main Pulse server.
-        local SSH_COMMAND="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('${MULTISITE_ENTITY}', 'https://${IP_REMOTE_SERVER}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    # Insert multisite imaging server in Pulse imaging server database. Done on main Pulse server.
+    local SSH_COMMAND="echo \"INSERT INTO ImagingServer (name, url, fk_default_menu, packageserver_uuid, recursive, associated, fk_language, fk_entity) VALUES ('${MULTISITE_ENTITY}', 'https://${IP_REMOTE_SERVER}:9990/imaging_api', 1, '${PACKAGESERVER_UUID}', 1, 0, 1, 1);\" | mysql imaging"
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-        # Create multisite imaging entity in Pulse imaging entities database. Done on main Pulse server
-        local UUID_IMAGING=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer ORDER BY id DESC LIMIT 1'|mysql -s")
-        UUID_IMAGING='UUID'${UUID_IMAGING}
+    # Create multisite imaging entity in Pulse imaging entities database. Done on main Pulse server
+    local UUID_IMAGING=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.ImagingServer ORDER BY id DESC LIMIT 1'|mysql -s")
+    UUID_IMAGING='UUID'${UUID_IMAGING}
 
-        local SSH_COMMAND="echo \"SELECT id FROM ${GLPI_DBNAME}.glpi_entities WHERE name='${MULTISITE_ENTITY}';\" |mysql -s"
-        GLPI_ENTITY_ID=`ssh ${PULSEMAIN_IP} ${SSH_COMMAND}`
-        local UUID='UUID'${GLPI_ENTITY_ID}
+    local SSH_COMMAND="echo \"SELECT id FROM ${GLPI_DBNAME}.glpi_entities WHERE name='${MULTISITE_ENTITY}';\" |mysql -s"
+    GLPI_ENTITY_ID=`ssh ${PULSEMAIN_IP} ${SSH_COMMAND}`
+    local UUID='UUID'${GLPI_ENTITY_ID}
 
 	local SSH_COMMAND="echo \"INSERT INTO imaging.Entity (name, uuid, pxe_keymap) values ('${MULTISITE_ENTITY}','${UUID}','fr_FR');\" | mysql imaging"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-        # Register multisite package server in Pulse. Done on main Pulse server
-        local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
-        local SSH_COMMAND="echo \"UPDATE ImagingServer SET associated=1, fk_entity=${ID} WHERE packageserver_uuid='${PACKAGESERVER_UUID}';\"| mysql imaging"
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    # Register multisite package server in Pulse. Done on main Pulse server
+    local ID=$(ssh ${PULSEMAIN_IP} "echo 'SELECT id FROM imaging.Entity  ORDER BY id DESC LIMIT 1'|mysql -s")
+    local SSH_COMMAND="echo \"UPDATE ImagingServer SET associated=1, fk_entity=${ID} WHERE packageserver_uuid='${PACKAGESERVER_UUID}';\"| mysql imaging"
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-        # Configure algo multi-site
-        local SSH_COMMAND='grep -Gq "^mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local'
+    # Configure algo multi-site
+    local SSH_COMMAND='grep -Gq "^mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local'
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    if [ $? -ne 0 ]; then
+        local SSH_COMMAND='sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local; systemctl restart pulse2-package-server.service'
         ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-        if [ $? -ne 0 ]; then
-                local SSH_COMMAND='sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local; systemctl restart pulse2-package-server.service'
-                ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-        fi
-        sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local
-        systemctl restart pulse2-package-server.service
+    fi
+    sed -i "2i mm_assign_algo = multi_site" /etc/mmc/pulse2/package-server/package-server.ini.local
+    systemctl restart pulse2-package-server.service
 
-        colored_echo green "### INFO Configuring Package Server for multisite... Done"
+    colored_echo green "### INFO Configuring Package Server for multisite... Done"
 }
 
 create_package_server_cert() {
