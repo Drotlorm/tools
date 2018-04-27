@@ -2206,86 +2206,86 @@ check_mageia_version
 check_linux_distribution
 
 if [ $# -eq 0 ]; then
-        display_usage
-        exit 0
+    display_usage
+    exit 0
 else
-        check_arguments "$@"
+    check_arguments "$@"
 fi
 
 
 if [[ ${BATCH_MODE} == "r" ]]; then
-        echo "Entering reset mode..."
-        # upgrade packages
-        apt update
-        apt -y upgrade
-        # Reset pulse
-        if [[ ${CREATE_ENTITY} == "y" ]]; then
-                # Initialise glpi database
-                reset_glpi_db
-        fi
-        reset_pulse_db
-        generate_pki
-        generate_agent pulse
-        setup_glpi_triggers
-        configure_glpi_rest
-        configure_relay_server pulse
-        restart_pulse_services
-        exit 0
+    echo "Entering reset mode..."
+    # upgrade packages
+    apt update
+    apt -y upgrade
+    # Reset pulse
+    if [[ ${CREATE_ENTITY} == "y" ]]; then
+        # Initialise glpi database
+        reset_glpi_db
+    fi
+    reset_pulse_db
+    generate_pki
+    generate_agent pulse
+    setup_glpi_triggers
+    configure_glpi_rest
+    configure_relay_server pulse
+    restart_pulse_services
+    exit 0
 elif [[ ${BATCH_MODE} == "n" ]]; then
-        echo "Entering interactive mode..."
-        get_user_options
+    echo "Entering interactive mode..."
+    get_user_options
 fi
 check_network_config
 prepare_os
 
 
 if [[ ${INSTALL_TYPE} == "p" ]]; then
-        # Pulse main installation
-        install_pulse_dependencies
-        install_pulse
-        if [[ ${MAIN_DHCP} == "y" ]]; then
-                install_isc_dhcp_server
-                configure_isc_dhcp_server
-                trick_clonezilla #To be removed later when clonezilla is fixed for Debian Stretch
-        else
-                trick_clonezilla
-        fi
-        if [[ ${MAIN_PXE} == "y" ]]; then
-                install_tftp_server
-                configure_tftp_server
-        fi
-        configure_pulse_dependencies
-        if [[ ${CREATE_ENTITY} == "y" ]]; then
-                # Initialise glpi database
-                reset_glpi_db
-        fi
-        generate_pki
-        reset_pulse_db
-        generate_agent pulse
-        setup_glpi_triggers
-        configure_glpi_rest
-        configure_relay_server pulse
-        restart_pulse_services
+    # Pulse main installation
+    install_pulse_dependencies
+    install_pulse
+    if [[ ${MAIN_DHCP} == "y" ]]; then
+        install_isc_dhcp_server
+        configure_isc_dhcp_server
+        trick_clonezilla #To be removed later when clonezilla is fixed for Debian Stretch
+    else
+        trick_clonezilla
+    fi
+    if [[ ${MAIN_PXE} == "y" ]]; then
+        install_tftp_server
+        configure_tftp_server
+    fi
+    configure_pulse_dependencies
+    if [[ ${CREATE_ENTITY} == "y" ]]; then
+        # Initialise glpi database
+        reset_glpi_db
+    fi
+    generate_pki
+    reset_pulse_db
+    generate_agent pulse
+    setup_glpi_triggers
+    configure_glpi_rest
+    configure_relay_server pulse
+    restart_pulse_services
 else
-        # Pulse multi-site installation
-        install_multisite_dependencies
-        install_multisite
-        configure_multisite_dependencies
-        configure_multisite
-        sync_package_server
-        if [[ ${REMOTE_BACKUPPC} == "y" ]]; then
-                install_backuppc
-                configure_backuppc
-        fi
-        if [[ ${REMOTE_DHCP} == "y" ]]; then
-                install_isc_dhcp_server
-                configure_isc_dhcp_server
-                trick_clonezilla #To be removed later when clonezilla is fixed for Debian Stretch
-        else
-                trick_clonezilla
-        fi
-        if [[ ${REMOTE_PXE} == "y" ]]; then
-                install_tftp_server
-                configure_tftp_server
-        fi
+    # Pulse multi-site installation
+    install_multisite_dependencies
+    install_multisite
+    configure_multisite_dependencies
+    configure_multisite
+    sync_package_server
+    if [[ ${REMOTE_BACKUPPC} == "y" ]]; then
+        install_backuppc
+        configure_backuppc
+    fi
+    if [[ ${REMOTE_DHCP} == "y" ]]; then
+        install_isc_dhcp_server
+        configure_isc_dhcp_server
+        trick_clonezilla #To be removed later when clonezilla is fixed for Debian Stretch
+    else
+        trick_clonezilla
+    fi
+    if [[ ${REMOTE_PXE} == "y" ]]; then
+        install_tftp_server
+        configure_tftp_server
+    fi
 fi
