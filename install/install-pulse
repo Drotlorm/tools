@@ -1520,80 +1520,80 @@ configure_xmpp_server() {
 }
 
 configure_guacamole() {
-  colored_echo blue "### INFO Setting up Guacamole..."
+    colored_echo blue "### INFO Setting up Guacamole..."
 
-        # Generate random string for Guacamole password
-        GUACAMOLE_ROOT_PASSWORD=`pwgen --secure 40 1`
+    # Generate random string for Guacamole password
+    GUACAMOLE_ROOT_PASSWORD=`pwgen --secure 40 1`
 
-        # Backup config file for replaying script
-        if [ ! -f /etc/guacamole/guacamole.properties.bak ]; then
-                cp /etc/guacamole/guacamole.properties /etc/guacamole/guacamole.properties.bak
-        fi
+    # Backup config file for replaying script
+    if [ ! -f /etc/guacamole/guacamole.properties.bak ]; then
+        cp /etc/guacamole/guacamole.properties /etc/guacamole/guacamole.properties.bak
+    fi
 
-        # Authentication via MySQL
-  # Create the database
-  echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot
-        echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -uroot
-  echo "CREATE DATABASE guacamole;" | mysql -uroot
-  echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '${ROOT_PASSWORD}';" | mysql -uroot
-  echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot
-        case ${DEBIAN_VERSION} in
-                "8"*)
-                        mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql
-                        mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql
-                        ;;
-                *)
-                        mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql
-                        mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql
-                        ;;
-        esac
-  echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('${GUACAMOLE_ROOT_PASSWORD}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -uroot guacamole
-  # Configure guacamole
-        cp /etc/guacamole/guacamole.properties.bak /etc/guacamole/guacamole.properties
-        if [[ ${DEBIAN_VERSION} == "8" ]]; then
-                  sed -i "s/^auth-provider:.*$/auth-provider: net.sourceforge.guacamole.net.auth.mysql.MySQLAuthenticationProvider/" /etc/guacamole/guacamole.properties
-        fi
-  sed -i '/^basic-user-mapping.*$/d' /etc/guacamole/guacamole.properties
-  sed -i '/^mysql-.*$/d' /etc/guacamole/guacamole.properties
-  sed -i '/^lib-directory:.*$/d' /etc/guacamole/guacamole.properties
-  sed -i '/^noauth-config:.*$/d' /etc/guacamole/guacamole.properties
-  echo -e "lib-directory: /var/lib/guacamole/classpath\n" >> /etc/guacamole/guacamole.properties
-  echo "mysql-hostname: localhost" >> /etc/guacamole/guacamole.properties
-  echo "mysql-port: 3306" >> /etc/guacamole/guacamole.properties
-  echo "mysql-database: guacamole" >> /etc/guacamole/guacamole.properties
-  echo "mysql-username: guacamole" >> /etc/guacamole/guacamole.properties
-  echo "mysql-password: ${ROOT_PASSWORD}" >> /etc/guacamole/guacamole.properties
+    # Authentication via MySQL
+    # Create the database
+    echo "DROP DATABASE IF EXISTS guacamole;" | mysql -uroot
+    echo "DROP USER IF EXISTS 'guacamole'@'localhost';" | mysql -uroot
+    echo "CREATE DATABASE guacamole;" | mysql -uroot
+    echo "CREATE USER 'guacamole'@'localhost' IDENTIFIED BY '${ROOT_PASSWORD}';" | mysql -uroot
+    echo "GRANT SELECT,INSERT,UPDATE,DELETE ON guacamole.* TO 'guacamole'@'localhost';" | mysql -uroot
+    case ${DEBIAN_VERSION} in
+        "8"*)
+            mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/001-create-schema.sql
+            mysql -uroot guacamole < /usr/share/guacamole-auth-mysql/schema/002-create-admin-user.sql
+            ;;
+        *)
+            mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/001-create-schema.sql
+            mysql -uroot guacamole < /usr/share/guacamole-auth-jdbc/mysql/schema/002-create-admin-user.sql
+            ;;
+    esac
+    echo "SET @salt = UNHEX(SHA2(UUID(), 256)); UPDATE guacamole_user SET username='root', password_salt=@salt, password_hash=UNHEX(SHA2(CONCAT('${GUACAMOLE_ROOT_PASSWORD}', HEX(@salt)), 256)) WHERE user_id=1;" | mysql -uroot guacamole
+    # Configure guacamole
+    cp /etc/guacamole/guacamole.properties.bak /etc/guacamole/guacamole.properties
+    if [[ ${DEBIAN_VERSION} == "8" ]]; then
+        sed -i "s/^auth-provider:.*$/auth-provider: net.sourceforge.guacamole.net.auth.mysql.MySQLAuthenticationProvider/" /etc/guacamole/guacamole.properties
+    fi
+    sed -i '/^basic-user-mapping.*$/d' /etc/guacamole/guacamole.properties
+    sed -i '/^mysql-.*$/d' /etc/guacamole/guacamole.properties
+    sed -i '/^lib-directory:.*$/d' /etc/guacamole/guacamole.properties
+    sed -i '/^noauth-config:.*$/d' /etc/guacamole/guacamole.properties
+    echo -e "lib-directory: /var/lib/guacamole/classpath\n" >> /etc/guacamole/guacamole.properties
+    echo "mysql-hostname: localhost" >> /etc/guacamole/guacamole.properties
+    echo "mysql-port: 3306" >> /etc/guacamole/guacamole.properties
+    echo "mysql-database: guacamole" >> /etc/guacamole/guacamole.properties
+    echo "mysql-username: guacamole" >> /etc/guacamole/guacamole.properties
+    echo "mysql-password: ${ROOT_PASSWORD}" >> /etc/guacamole/guacamole.properties
 
-        # Setup Tomcat
-        sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat${TOMCAT_VERSION}/server.xml
-        sed -i '/Connector port="8081"/ s/$/ address="127.0.0.1"/' /etc/tomcat${TOMCAT_VERSION}/server.xml
-        service tomcat${TOMCAT_VERSION} restart
+    # Setup Tomcat
+    sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat${TOMCAT_VERSION}/server.xml
+    sed -i '/Connector port="8081"/ s/$/ address="127.0.0.1"/' /etc/tomcat${TOMCAT_VERSION}/server.xml
+    service tomcat${TOMCAT_VERSION} restart
 
-        # Setup Apache
-        echo "<Location /guacamole/>" > /etc/apache2/conf-available/guacamole.conf
-  echo "    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    ProxyPass http://localhost:8081/guacamole/ max=20 flushpackets=on" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    ProxyPassReverse http://localhost:8081/guacamole/" >> /etc/apache2/conf-available/guacamole.conf
-  echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
-  echo "<Location /guacamole/websocket-tunnel>" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    ProxyPass ws://localhost:8081/guacamole/websocket-tunnel" >> /etc/apache2/conf-available/guacamole.conf
-  echo "    ProxyPassReverse ws://localhost:8081/guacamole/websocket-tunnel" >> /etc/apache2/conf-available/guacamole.conf
-  echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
-  echo "SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog" >> /etc/apache2/conf-available/guacamole.conf
-  echo "CustomLog  /var/log/apache2/guac.log common env=!dontlog" >> /etc/apache2/conf-available/guacamole.conf
-  a2enconf guacamole.conf
-  a2enmod proxy
-  a2enmod proxy_http
-  systemctl restart apache2.service
+    # Setup Apache
+    echo "<Location /guacamole/>" > /etc/apache2/conf-available/guacamole.conf
+    echo "    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    ProxyPass http://localhost:8081/guacamole/ max=20 flushpackets=on" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    ProxyPassReverse http://localhost:8081/guacamole/" >> /etc/apache2/conf-available/guacamole.conf
+    echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
+    echo "<Location /guacamole/websocket-tunnel>" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    ProxyPass ws://localhost:8081/guacamole/websocket-tunnel" >> /etc/apache2/conf-available/guacamole.conf
+    echo "    ProxyPassReverse ws://localhost:8081/guacamole/websocket-tunnel" >> /etc/apache2/conf-available/guacamole.conf
+    echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
+    echo "SetEnvIf Request_URI \"^/guacamole/tunnel\" dontlog" >> /etc/apache2/conf-available/guacamole.conf
+    echo "CustomLog  /var/log/apache2/guac.log common env=!dontlog" >> /etc/apache2/conf-available/guacamole.conf
+    a2enconf guacamole.conf
+    a2enmod proxy
+    a2enmod proxy_http
+    systemctl restart apache2.service
 
-  colored_echo green "### INFO Setting up Guacamole... Done"
+    colored_echo green "### INFO Setting up Guacamole... Done"
 }
 
 configure_webfilemanager() {
