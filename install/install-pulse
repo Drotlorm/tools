@@ -1623,40 +1623,42 @@ configure_pulse_dependencies() {
 }
 
 generate_pki() {
-        colored_echo blue "### INFO Generating PKI..."
+    colored_echo blue "### INFO Generating PKI..."
 
-        local PKI_PASSWORD=${ROOT_PASSWORD}
+    local PKI_PASSWORD=${ROOT_PASSWORD}
 
-        # Extract the script and define a few parameters
-        cp /usr/share/doc/pulse2-common/install/pki/create-pki.sh.gz /tmp
-        gunzip /tmp/create-pki.sh.gz
-        sed -i "s/^PASSPHRASE=.*$/PASSPHRASE=${PKI_PASSWORD}/" /tmp/create-pki.sh
-        sed -i "s/^CRL_SERVER_ADDRESS=.*$/CRL_SERVER_ADDRESS=${IP_ADDRESS}/" /tmp/create-pki.sh
-        sed -i "s/^PULSE_SERVICES=.*$/PULSE_SERVICES=\"127.0.0.1 ${SERVER_FQDN}\"/" /tmp/create-pki.sh
-        chmod +x /tmp/create-pki.sh
+    # Extract the script and define a few parameters
+    cp /usr/share/doc/pulse2-common/install/pki/create-pki.sh.gz /tmp
+    gunzip /tmp/create-pki.sh.gz
+    sed -i "s/^PASSPHRASE=.*$/PASSPHRASE=${PKI_PASSWORD}/" /tmp/create-pki.sh
+    sed -i "s/^CRL_SERVER_ADDRESS=.*$/CRL_SERVER_ADDRESS=${IP_ADDRESS}/" /tmp/create-pki.sh
+    sed -i "s/^PULSE_SERVICES=.*$/PULSE_SERVICES=\"127.0.0.1 ${SERVER_FQDN}\"/" /tmp/create-pki.sh
+    chmod +x /tmp/create-pki.sh
 
-        # Run the pki generator and delete it
-        /tmp/create-pki.sh
-        rm -f /tmp/create-pki.sh
+    # Run the pki generator and delete it
+    /tmp/create-pki.sh
+    rm -f /tmp/create-pki.sh
 
-        # Add the certificate chain to ca-certificates
-        cp /var/lib/pulse2/pki/ca-chain.cert.pem /usr/local/share/ca-certificates/pulse-ca-chain.crt
-        update-ca-certificates
+    # Add the certificate chain to ca-certificates
+    cp /var/lib/pulse2/pki/ca-chain.cert.pem /usr/local/share/ca-certificates/pulse-ca-chain.crt
+    update-ca-certificates
 
-        # Configure services
-        cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/agent/keys/localcert.pem
-        cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/agent/keys/cacert.pem
-        cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/cacert.pem
-        cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/privkey.pem
-        cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/cacert.pem
-        cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/privkey.pem
-        cp /var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
-        cp /var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
+    # Configure services
+    cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/agent/keys/localcert.pem
+    cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/agent/keys/cacert.pem
+    cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/cacert.pem
+    cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/inventory-server/keys/privkey.pem
+    cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/cacert.pem
+    cp /var/lib/pulse2/pki/127.0.0.1.pem /etc/mmc/pulse2/scheduler/keys/privkey.pem
+    cp /var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/cacert.pem
+    cp /var/lib/pulse2/pki/${SERVER_FQDN}.pem /etc/mmc/pulse2/package-server/keys/privkey.pem
 
-        # Restart services
-        for SERV in mmc-agent pulse2-inventory-server pulse2-package-server pulse2-register-pxe; do service ${SERV} restart; done
+    # Restart services
+    for SERV in mmc-agent pulse2-inventory-server pulse2-package-server pulse2-register-pxe; do 
+        service ${SERV} restart; 
+    done
 
-        colored_echo green "### INFO Generating PKI... Done"
+    colored_echo green "### INFO Generating PKI... Done"
 }
 
 reset_glpi_db() {
