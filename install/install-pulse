@@ -1455,68 +1455,68 @@ configure_mmc() {
 }
 
 configure_xmpp_server() {
-        colored_echo blue "### INFO Configuring XMPP server..."
+    colored_echo blue "### INFO Configuring XMPP server..."
 
-        local XMPP_DOMAIN=$1
+    local XMPP_DOMAIN=$1
 
-        # Reset ejabberd
-        service ejabberd stop
-        rm -rf /var/lib/ejabberd/*
-        if [[ $LINUX_DISTRO == "debian" ]]; then
-                echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
-                echo "ejabberd ejabberd/user string root" | debconf-set-selections
-                echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
-                echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
-                dpkg-reconfigure -fnoninteractive ejabberd
-        else
-	        #TBD
-                echo "Not Implemented"
+    # Reset ejabberd
+    service ejabberd stop
+    rm -rf /var/lib/ejabberd/*
+    if [[ $LINUX_DISTRO == "debian" ]]; then
+        echo "ejabberd ejabberd/hostname string ${XMPP_DOMAIN}" | debconf-set-selections
+        echo "ejabberd ejabberd/user string root" | debconf-set-selections
+        echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
+        echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
+        dpkg-reconfigure -fnoninteractive ejabberd
+    else
+	    #TBD
+        echo "Not Implemented"
 		exit 1
-        fi
+    fi
 
-        # Configure a few details
-        sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
-        sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
-        sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
-        sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
-        sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
-        sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
-        sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
-        sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
-        sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
-        sed -i '/^[[:space:]]*##[[:space:]]*body:/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
+    # Configure a few details
+    sed -i 's/^##[[:space:]]registration_timeout:.*$/registration_timeout: infinity/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*muc_create:/{n;s/allow:.*$/allow: admin/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*mod_muc:/{n;n;n;s/allow.*/allow: local/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*trusted_network:/{n;s/allow:.*$/allow: all/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
+    sed -i '/^[[:space:]]*##[[:space:]]*body:/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
 
-        # Add the necessary modules
-        sed -i '/^modules:.*$/a\ \ mod_sic: \{\}' /etc/ejabberd/ejabberd.yml
+    # Add the necessary modules
+    sed -i '/^modules:.*$/a\ \ mod_sic: \{\}' /etc/ejabberd/ejabberd.yml
 
-        # Configure ssl certificate
-        # Go to /etc/ejabberd
-  pushd /etc/ejabberd/
-  # Generate a key
-  openssl genrsa -des3 -passout pass:${ROOT_PASSWORD} -out pulse.key 2048 -noout
-  # Create the csr
-  openssl req -new -key pulse.key -out pulse.csr -passin pass:${ROOT_PASSWORD} \
-    -subj "/C=${COUNTRY}/ST=${STATE}/L=${LOCALITY}/O=${ORGANIZATION}/OU=${ORGANIZATIONALUNIT}/CN=${XMPP_DOMAIN}/emailAddress=${MAIL_ADDRESS}"
-  # Self sign the certificate
-  openssl x509 -req -days 3650 -in pulse.csr -signkey pulse.key -out pulse.crt -passin pass:${ROOT_PASSWORD}
-  # Remove passphrase from the key and generate the pem
-  openssl rsa -in pulse.key -passin pass:${ROOT_PASSWORD} -out pulse.pem
-  cat pulse.crt >> pulse.pem
+    # Configure ssl certificate
+    # Go to /etc/ejabberd
+    pushd /etc/ejabberd/
+        # Generate a key
+        openssl genrsa -des3 -passout pass:${ROOT_PASSWORD} -out pulse.key 2048 -noout
+        # Create the csr
+        openssl req -new -key pulse.key -out pulse.csr -passin pass:${ROOT_PASSWORD} \
+            -subj "/C=${COUNTRY}/ST=${STATE}/L=${LOCALITY}/O=${ORGANIZATION}/OU=${ORGANIZATIONALUNIT}/CN=${XMPP_DOMAIN}/emailAddress=${MAIL_ADDRESS}"
+        # Self sign the certificate
+        openssl x509 -req -days 3650 -in pulse.csr -signkey pulse.key -out pulse.crt -passin pass:${ROOT_PASSWORD}
+        # Remove passphrase from the key and generate the pem
+        openssl rsa -in pulse.key -passin pass:${ROOT_PASSWORD} -out pulse.pem
+        cat pulse.crt >> pulse.pem
         # Set permissions on pulse.pem
         chmod 640 pulse.pem
         chown root:ejabberd pulse.pem
-  # Do some cleanup
-  rm -f pulse.crt pulse.key pulse.csr
-  # Go back to where we were initially
-  popd
+        # Do some cleanup
+        rm -f pulse.crt pulse.key pulse.csr
+        # Go back to where we were initially
+    popd
 
-        # Replace ejabberd.pem by the certificate generated above
-  sed -i 's/ejabberd.pem/pulse.pem/' /etc/ejabberd/ejabberd.yml
+    # Replace ejabberd.pem by the certificate generated above
+    sed -i 's/ejabberd.pem/pulse.pem/' /etc/ejabberd/ejabberd.yml
 
-        # Restart ejabberd
-        service ejabberd restart
+    # Restart ejabberd
+    service ejabberd restart
 
-        colored_echo green "### INFO Configuring XMPP server... Done"
+    colored_echo green "### INFO Configuring XMPP server... Done"
 }
 
 configure_guacamole() {
