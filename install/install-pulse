@@ -586,7 +586,7 @@ install_package() {
             urpmi --auto "$@"
             ;;
         "rhel")
-            yum install "$@"
+            yum -y install "$@"
             ;;
         *)
             ;;
