@@ -1660,123 +1660,123 @@ generate_pki() {
 }
 
 reset_glpi_db() {
-        colored_echo blue "### INFO Resetting glpi database for Pulse..."
+    colored_echo blue "### INFO Resetting glpi database for Pulse..."
 
-        # Reinstall GLPI database
-        echo "drop database glpi;" | mysql -uroot
-        echo "drop user 'glpi'@'localhost';" | mysql -uroot
-        if [[ $LINUX_DISTRO == "debian" ]]; then
-                echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
-                echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
-                echo "glpi glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
-                echo "glpi glpi/dbconfig-reinstall boolean true" | debconf-set-selections
-                dpkg-reconfigure -fnoninteractive glpi
-	else
-                #TBD
-                echo "Not Implemented"
-		exit 1
-        fi
+    # Reinstall GLPI database
+    echo "drop database glpi;" | mysql -uroot
+    echo "drop user 'glpi'@'localhost';" | mysql -uroot
+    if [[ $LINUX_DISTRO == "debian" ]]; then
+            echo "glpi glpi/password-confirm password ${ROOT_PASSWORD}" | debconf-set-selections
+            echo "glpi glpi/mysql/app-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+            echo "glpi glpi/mysql/admin-pass password ${ROOT_PASSWORD}" | debconf-set-selections
+            echo "glpi glpi/dbconfig-reinstall boolean true" | debconf-set-selections
+            dpkg-reconfigure -fnoninteractive glpi
+    else
+            #TBD
+            echo "Not Implemented"
+	        exit 1
+    fi
 
-        # Upgrade database if needed
-        php /usr/share/glpi/tools/cliupdate.php
+    # Upgrade database if needed
+    php /usr/share/glpi/tools/cliupdate.php
 
-        # Clean glpi users/profiles apart from glpi superadmin
-        local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
-        echo "${GLPI_SUPERADMIN_ID}" | grep -q '^[0-9]\+$'
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ERROR... Unable to find super-admin ID in GLPI databa... failed"
-                exit 1
-        fi
-        echo "delete from glpi_users where name not like 'glpi';" | mysql -uroot glpi
-        echo "delete from glpi_profiles_users where id not like '${GLPI_SUPERADMIN_ID}';" | mysql -uroot glpi
+    # Clean glpi users/profiles apart from glpi superadmin
+    local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
+    echo "${GLPI_SUPERADMIN_ID}" | grep -q '^[0-9]\+$'
+    if [ ! $? -eq 0 ]; then
+            colored_echo red "### ERROR... Unable to find super-admin ID in GLPI databa... failed"
+            exit 1
+    fi
+    echo "delete from glpi_users where name not like 'glpi';" | mysql -uroot glpi
+    echo "delete from glpi_profiles_users where id not like '${GLPI_SUPERADMIN_ID}';" | mysql -uroot glpi
 
-        # Rename superadmin name to root and reset the password
-        echo "update glpi_users set name = 'root' where name = 'glpi';" | mysql -uroot glpi
-        echo "update glpi_users set password = MD5('${ROOT_PASSWORD}') where name = 'root';" | mysql -uroot glpi
+    # Rename superadmin name to root and reset the password
+    echo "update glpi_users set name = 'root' where name = 'glpi';" | mysql -uroot glpi
+    echo "update glpi_users set password = MD5('${ROOT_PASSWORD}') where name = 'root';" | mysql -uroot glpi
 
-        # Configure Organisation / Entity
-        echo "UPDATE glpi_entities set completename='${ORGANISATION}' where id=0;" | mysql glpi
-        echo "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'${MAIN_ENTITY}','${ORGANISATION} > ${MAIN_ENTITY}');" | mysql glpi
-        echo "INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'${ORGANISATION}','${ORGANISATION}');" | mysql glpi
+    # Configure Organisation / Entity
+    echo "UPDATE glpi_entities set completename='${ORGANISATION}' where id=0;" | mysql glpi
+    echo "INSERT INTO glpi_entities (id,entities_id,level,name,completename) VALUES (1,0,2,'${MAIN_ENTITY}','${ORGANISATION} > ${MAIN_ENTITY}');" | mysql glpi
+    echo "INSERT INTO glpi_locations (id,entities_id,name,completename) VALUES (1,0,'${ORGANISATION}','${ORGANISATION}');" | mysql glpi
 
-        # Enable LDAP auth for GLPI
-        local BASE_DN=`slapcat | grep -m 1 dn |awk '{print $2}'`
-        echo "insert into glpi_authldaps values (1,'LocalLDAP','127.0.0.1','${BASE_DN}','',389,'','uid',0,'','(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','','mobile','',0,0,0,'',NULL,'preferredlanguage','','','2012-11-02 17:03:27','',1,1,'','','','','','','','','','','');" | mysql -uroot glpi
+    # Enable LDAP auth for GLPI
+    local BASE_DN=`slapcat | grep -m 1 dn |awk '{print $2}'`
+    echo "insert into glpi_authldaps values (1,'LocalLDAP','127.0.0.1','${BASE_DN}','',389,'','uid',0,'','(&(objectClass=posixGroup)(cn=GLPI-*))',1,'memberuid','mail','sn','givenname','telephonenumber','','mobile','',0,0,0,'',NULL,'preferredlanguage','','','2012-11-02 17:03:27','',1,1,'','','','','','','','','','','');" | mysql -uroot glpi
 
-        # Enable GLPI FusionInventory plugin
-        local SuperAdmin=`mysql -N -s -e 'SELECT id FROM glpi_profiles WHERE name="Super-Admin"' glpi;`
-        echo "INSERT INTO glpi_profilerights (profiles_id,name,rights) VALUES \
-        (${SuperAdmin},'plugin_fusioninventory_agent',23), \
-        (${SuperAdmin},'plugin_fusioninventory_blacklist',23), \
-        (${SuperAdmin},'plugin_fusioninventory_collect',23), \
-        (${SuperAdmin},'plugin_fusioninventory_configsecurity',31), \
-        (${SuperAdmin},'plugin_fusioninventory_configuration',3), \
-        (${SuperAdmin},'plugin_fusioninventory_credential',23), \
-        (${SuperAdmin},'plugin_fusioninventory_credentialip',23), \
-        (${SuperAdmin},'plugin_fusioninventory_deploymirror',23), \
-        (${SuperAdmin},'plugin_fusioninventory_esx',23), \
-        (${SuperAdmin},'plugin_fusioninventory_group',23), \
-        (${SuperAdmin},'plugin_fusioninventory_importxml',4), \
-        (${SuperAdmin},'plugin_fusioninventory_iprange',23), \
-        (${SuperAdmin},'plugin_fusioninventory_lock',23), \
-        (${SuperAdmin},'plugin_fusioninventory_menu',1), \
-        (${SuperAdmin},'plugin_fusioninventory_networkequipment',23), \
-        (${SuperAdmin},'plugin_fusioninventory_package',23), \
-        (${SuperAdmin},'plugin_fusioninventory_printer',23), \
-        (${SuperAdmin},'plugin_fusioninventory_remotecontrol',1), \
-        (${SuperAdmin},'plugin_fusioninventory_reportnetworkequipment',1), \
-        (${SuperAdmin},'plugin_fusioninventory_reportprinter',1), \
-        (${SuperAdmin},'plugin_fusioninventory_rulecollect',23), \
-        (${SuperAdmin},'plugin_fusioninventory_ruleentity',23), \
-        (${SuperAdmin},'plugin_fusioninventory_ruleimport',23), \
-        (${SuperAdmin},'plugin_fusioninventory_rulelocation',23), \
-        (${SuperAdmin},'plugin_fusioninventory_task',23), \
-        (${SuperAdmin},'plugin_fusioninventory_unmanaged',31), \
-        (${SuperAdmin},'plugin_fusioninventory_wol',1)" | mysql glpi
-        php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php
-        echo "update glpi_plugin_fusioninventory_entities SET  agent_base_url = 'http://127.0.0.1/glpi' , transfers_id_auto = '1'  WHERE id='1';" | mysql glpi
-        chown -R www-data /var/lib/glpi/files/_plugins/fusioninventory
-        # Add a few blacklists
-        echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', '00020003-0004-0005-0006-000700080009');" | mysql glpi
-        echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', 'Not Settable');" | mysql glpi
-        echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'Not Applicable');" | mysql glpi
-        echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', '-');" | mysql glpi
-        echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.');" | mysql glpi
-        # Two new rules for computers linking
-        echo "UPDATE glpi_rules SET ranking = ranking+2 WHERE ranking > 2 AND sub_type = 'PluginFusioninventoryInventoryRuleImport'" | mysql glpi
-        echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',3,'Computer mac + no serial + no uuid','','AND',1,'','NULL',0,'NULL',0,'');" | mysql glpi
-        echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',4,'Computer uuid + mac','','AND',1,'','NULL',0,'NULL',0,'');" | mysql glpi
-        local maxid=`echo "SELECT MAX(id) FROM glpi_rules" | mysql -s glpi`
-        local maxidmin=`expr ${maxid} - 1`
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','serial',30,'1')" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','uuid',30,'1')" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','itemtype',0,'Computer')" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','mac',10,'1')" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','mac',8,'1')" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','uuid',30,'1')" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','uuid',8,'1')" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','itemtype',0,'Computer')" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',30,'1')" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',8,'1')" | mysql glpi
-        echo "INSERT INTO glpi_ruleactions VALUES('','${maxidmin}','assign','_fusion',1)" | mysql glpi
-        echo "INSERT INTO glpi_ruleactions VALUES('','${maxid}','assign','_fusion',1)" | mysql glpi
-        # One rule for setting the default entity
-        echo "INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MAIN_ENTITY}','','AND',1,'','',0,'',0,'');" | mysql glpi
-        echo "INSERT INTO glpi_rulecriterias VALUES ('', (SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'tag',0,'*');" | mysql glpi
-        echo "INSERT INTO glpi_ruleactions VALUES ('',(SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id','1');" | mysql glpi
-        echo "UPDATE glpi_plugin_fusioninventory_configs SET value='0' WHERE type='manage_osname' ;" | mysql glpi
+    # Enable GLPI FusionInventory plugin
+    local SuperAdmin=`mysql -N -s -e 'SELECT id FROM glpi_profiles WHERE name="Super-Admin"' glpi;`
+    echo "INSERT INTO glpi_profilerights (profiles_id,name,rights) VALUES \
+    (${SuperAdmin},'plugin_fusioninventory_agent',23), \
+    (${SuperAdmin},'plugin_fusioninventory_blacklist',23), \
+    (${SuperAdmin},'plugin_fusioninventory_collect',23), \
+    (${SuperAdmin},'plugin_fusioninventory_configsecurity',31), \
+    (${SuperAdmin},'plugin_fusioninventory_configuration',3), \
+    (${SuperAdmin},'plugin_fusioninventory_credential',23), \
+    (${SuperAdmin},'plugin_fusioninventory_credentialip',23), \
+    (${SuperAdmin},'plugin_fusioninventory_deploymirror',23), \
+    (${SuperAdmin},'plugin_fusioninventory_esx',23), \
+    (${SuperAdmin},'plugin_fusioninventory_group',23), \
+    (${SuperAdmin},'plugin_fusioninventory_importxml',4), \
+    (${SuperAdmin},'plugin_fusioninventory_iprange',23), \
+    (${SuperAdmin},'plugin_fusioninventory_lock',23), \
+    (${SuperAdmin},'plugin_fusioninventory_menu',1), \
+    (${SuperAdmin},'plugin_fusioninventory_networkequipment',23), \
+    (${SuperAdmin},'plugin_fusioninventory_package',23), \
+    (${SuperAdmin},'plugin_fusioninventory_printer',23), \
+    (${SuperAdmin},'plugin_fusioninventory_remotecontrol',1), \
+    (${SuperAdmin},'plugin_fusioninventory_reportnetworkequipment',1), \
+    (${SuperAdmin},'plugin_fusioninventory_reportprinter',1), \
+    (${SuperAdmin},'plugin_fusioninventory_rulecollect',23), \
+    (${SuperAdmin},'plugin_fusioninventory_ruleentity',23), \
+    (${SuperAdmin},'plugin_fusioninventory_ruleimport',23), \
+    (${SuperAdmin},'plugin_fusioninventory_rulelocation',23), \
+    (${SuperAdmin},'plugin_fusioninventory_task',23), \
+    (${SuperAdmin},'plugin_fusioninventory_unmanaged',31), \
+    (${SuperAdmin},'plugin_fusioninventory_wol',1)" | mysql glpi
+    php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php
+    echo "update glpi_plugin_fusioninventory_entities SET  agent_base_url = 'http://127.0.0.1/glpi' , transfers_id_auto = '1'  WHERE id='1';" | mysql glpi
+    chown -R www-data /var/lib/glpi/files/_plugins/fusioninventory
+    # Add a few blacklists
+    echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', '00020003-0004-0005-0006-000700080009');" | mysql glpi
+    echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('2', 'Not Settable');" | mysql glpi
+    echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'Not Applicable');" | mysql glpi
+    echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', '-');" | mysql glpi
+    echo "INSERT INTO glpi_plugin_fusioninventory_inventorycomputerblacklists (plugin_fusioninventory_criterium_id, value) VALUES ('1', 'To be filled by O.E.M.');" | mysql glpi
+    # Two new rules for computers linking
+    echo "UPDATE glpi_rules SET ranking = ranking+2 WHERE ranking > 2 AND sub_type = 'PluginFusioninventoryInventoryRuleImport'" | mysql glpi
+    echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',3,'Computer mac + no serial + no uuid','','AND',1,'','NULL',0,'NULL',0,'');" | mysql glpi
+    echo "INSERT INTO glpi_rules VALUES('',0,'PluginFusioninventoryInventoryRuleImport',4,'Computer uuid + mac','','AND',1,'','NULL',0,'NULL',0,'');" | mysql glpi
+    local maxid=`echo "SELECT MAX(id) FROM glpi_rules" | mysql -s glpi`
+    local maxidmin=`expr ${maxid} - 1`
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','serial',30,'1')" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','uuid',30,'1')" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','itemtype',0,'Computer')" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','mac',10,'1')" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxidmin}','mac',8,'1')" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','uuid',30,'1')" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','uuid',8,'1')" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','itemtype',0,'Computer')" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',30,'1')" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES('','${maxid}','mac',8,'1')" | mysql glpi
+    echo "INSERT INTO glpi_ruleactions VALUES('','${maxidmin}','assign','_fusion',1)" | mysql glpi
+    echo "INSERT INTO glpi_ruleactions VALUES('','${maxid}','assign','_fusion',1)" | mysql glpi
+    # One rule for setting the default entity
+    echo "INSERT INTO glpi_rules VALUES ('','','PluginFusioninventoryInventoryRuleEntity',1,'${MAIN_ENTITY}','','AND',1,'','',0,'',0,'');" | mysql glpi
+    echo "INSERT INTO glpi_rulecriterias VALUES ('', (SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'tag',0,'*');" | mysql glpi
+    echo "INSERT INTO glpi_ruleactions VALUES ('',(SELECT id FROM glpi_rules WHERE sub_type = 'PluginFusioninventoryInventoryRuleEntity' ),'assign','entities_id','1');" | mysql glpi
+    echo "UPDATE glpi_plugin_fusioninventory_configs SET value='0' WHERE type='manage_osname' ;" | mysql glpi
 
-        echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api';" | mysql glpi
-        echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials';" | mysql glpi
-        echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token';" | mysql glpi
+    echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api';" | mysql glpi
+    echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_credentials';" | mysql glpi
+    echo "UPDATE glpi_configs SET value='1' WHERE name='enable_api_login_external_token';" | mysql glpi
 
-        # Define PulseRegistryCollects in FusionInventory
-        echo "INSERT INTO glpi_plugin_fusioninventory_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories');" | mysql glpi
+    # Define PulseRegistryCollects in FusionInventory
+    echo "INSERT INTO glpi_plugin_fusioninventory_collects VALUES (1,'PulseRegistryCollects',0,1,'registry',1,'Registry values inventories');" | mysql glpi
 
-        #Clean GLPI installer file
-        rm -rf /usr/share/glpi/install/install.php
+    #Clean GLPI installer file
+    rm -rf /usr/share/glpi/install/install.php
 
-        colored_echo green "### INFO Resetting glpi database for Pulse... Done"
+    colored_echo green "### INFO Resetting glpi database for Pulse... Done"
 }
 
 reset_pulse_db() {
