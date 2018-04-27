@@ -1919,7 +1919,7 @@ setup_glpi_triggers() {
 }
 
 configure_glpi_rest() {
-        sed -i "s/^glpi_base_url.*/glpi_base_url = http:\/\/localhost\/glpi\/apirest.php\//" /etc/mmc/plugins/glpi.ini.local
+    sed -i "s/^glpi_base_url.*/glpi_base_url = http:\/\/localhost\/glpi\/apirest.php\//" /etc/mmc/plugins/glpi.ini.local
 }
 
 configure_relay_server() {
