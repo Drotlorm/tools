@@ -1422,36 +1422,36 @@ configure_clonezilla() {
 }
 
 configure_mmc() {
-        colored_echo blue "### INFO Configuring mmc..."
+    colored_echo blue "### INFO Configuring mmc..."
 
-        # Create /home/archives if needed
-        [ ! -d /home/archives ] &&  mkdir /home/archives
+    # Create /home/archives if needed
+    [ ! -d /home/archives ] &&  mkdir /home/archives
 
-        # Configure LDAP for MMC
-        mmc-add-schema /usr/share/doc/mmc/contrib/base/mmc.schema /etc/ldap/schema/
-        if [ ! -f /etc/rsyslog.d/10-slapd.conf ]; then
-                echo '$template slapdtmpl,"[%$DAY%-%$MONTH%-%$YEAR% %timegenerated:12:19:date-rfc3339%] %app-name% %syslogseverity-text% %msg%\n"' > /etc/rsyslog.d/10-slapd.conf
-                echo 'local4.*    /var/log/ldap.log;slapdtmpl' >> /etc/rsyslog.d/10-slapd.conf
-        fi
-        touch /var/log/ldap.log
-        systemctl restart rsyslog.service
-        systemctl restart slapd.service
+    # Configure LDAP for MMC
+    mmc-add-schema /usr/share/doc/mmc/contrib/base/mmc.schema /etc/ldap/schema/
+    if [ ! -f /etc/rsyslog.d/10-slapd.conf ]; then
+        echo '$template slapdtmpl,"[%$DAY%-%$MONTH%-%$YEAR% %timegenerated:12:19:date-rfc3339%] %app-name% %syslogseverity-text% %msg%\n"' > /etc/rsyslog.d/10-slapd.conf
+        echo 'local4.*    /var/log/ldap.log;slapdtmpl' >> /etc/rsyslog.d/10-slapd.conf
+    fi
+    touch /var/log/ldap.log
+    systemctl restart rsyslog.service
+    systemctl restart slapd.service
 
-        # Configure Apache for MMC
-        if [ ! -e /etc/apache2/conf-available/mmc.conf ]; then
-                ln -s /etc/mmc/apache/mmc.conf /etc/apache2/conf-available/
-        fi
-        a2enconf mmc.conf
-        a2enconf pulse.conf
-        systemctl restart apache2.service
+    # Configure Apache for MMC
+    if [ ! -e /etc/apache2/conf-available/mmc.conf ]; then
+        ln -s /etc/mmc/apache/mmc.conf /etc/apache2/conf-available/
+    fi
+    a2enconf mmc.conf
+    a2enconf pulse.conf
+    systemctl restart apache2.service
 
-        # Configure base.ini
-        local BASE_DN=`slapcat | grep -m 1 dn |awk '{print $2}'`
-        sed "s/^baseDN = .*$/baseDN = ${BASE_DN}/" -i /etc/mmc/plugins/base.ini
-        sed "s/^password = .*$/password = ${ROOT_PASSWORD}/" -i /etc/mmc/plugins/base.ini
-        sed 's/^disabled_panels.*/disabled_panels = shortcuts appstream/' -i /etc/mmc/plugins/dashboard.ini
-        systemctl restart mmc-agent.service
-        colored_echo green "### INFO Configuring mmc... Done"
+    # Configure base.ini
+    local BASE_DN=`slapcat | grep -m 1 dn |awk '{print $2}'`
+    sed "s/^baseDN = .*$/baseDN = ${BASE_DN}/" -i /etc/mmc/plugins/base.ini
+    sed "s/^password = .*$/password = ${ROOT_PASSWORD}/" -i /etc/mmc/plugins/base.ini
+    sed 's/^disabled_panels.*/disabled_panels = shortcuts appstream/' -i /etc/mmc/plugins/dashboard.ini
+    systemctl restart mmc-agent.service
+    colored_echo green "### INFO Configuring mmc... Done"
 }
 
 configure_xmpp_server() {
