@@ -2168,22 +2168,22 @@ configure_multisite() {
 }
 
 sync_package_server() {
-        # Enable package synchronisation between Pulse package server and multisite(s) package server
+    # Enable package synchronisation between Pulse package server and multisite(s) package server
 
-        # Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
-        ssh -t ${PULSEMAIN_IP} "ssh-keyscan ${IP_REMOTE_SERVER} >> /root/.ssh/known_hosts"
-        ssh -t ${PULSEMAIN_IP} sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${IP_REMOTE_SERVER}
+    # Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
+    ssh -t ${PULSEMAIN_IP} "ssh-keyscan ${IP_REMOTE_SERVER} >> /root/.ssh/known_hosts"
+    ssh -t ${PULSEMAIN_IP} sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${IP_REMOTE_SERVER}
 
-        local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
-        ssh ${PULSEMAIN_IP} "${SSH_COMMAND}"
+    local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
+    ssh ${PULSEMAIN_IP} "${SSH_COMMAND}"
 
-        # Test if the sync configuration is already configured on Pulse. Done on Pulse main server.
-        SSH_COMMAND='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
-        ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+    # Test if the sync configuration is already configured on Pulse. Done on Pulse main server.
+    SSH_COMMAND='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
+    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
-        # Enable sync configuration or add ip address for multiple multisite package server. Done on Pulse main server.
-        if [ $? -ne 0 ]; then
-                local SYNC_CONF="sed -i '1 a\\
+    # Enable sync configuration or add ip address for multiple multisite package server. Done on Pulse main server.
+    if [ $? -ne 0 ]; then
+        local SYNC_CONF="sed -i '1 a\\
 # Sync package server \\
 package_detect_activate = 1 \\
 package_detect_loop = 20 \\
@@ -2194,11 +2194,11 @@ package_mirror_command_options = -ar --delete \\
 package_mirror_level0_command_options = -d --delete \\
 package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa StrictHostKeyChecking=no Batchmode=yes PasswordAuthentication=no ServerAliveInterval=10 CheckHostIP=no ConnectTimeout=10 \\
 # END Sync' /etc/mmc/pulse2/package-server/package-server.ini.local"
-                ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
-        else
-                SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_REMOTE_SERVER}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
-                ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
-        fi
+        ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
+    else
+        SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_REMOTE_SERVER}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
+        ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
+    fi
 }
 
 # And finally we run the functions
