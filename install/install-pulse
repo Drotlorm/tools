@@ -1172,14 +1172,15 @@ install_xmpp_server() {
         echo "ejabberd ejabberd/user string root" | debconf-set-selections
         echo "ejabberd ejabberd/password password ${ROOT_PASSWORD}" | debconf-set-selections
         echo "ejabberd ejabberd/verify password ${ROOT_PASSWORD}" | debconf-set-selections
-    else
-	    #TBD
-        echo "Not Implemented"
-		exit 1
 	fi
 
     # Install ejabberd
     install_package ejabberd
+
+    if [[ $LINUX_DISTRO == "mageia" || $LINUX_DISTRO == "rhel" ]]; then
+        sed -i "s/localhost/${XMPP_DOMAIN}/" /etc/ejabberd/ejabberd.yml
+        sed -i '/^acl:/a\ \ admin: \n \ \ \ \ user : \n \ \ \ \ \ \ - "root": "${XMPP_DOMAIN}"' /etc/ejabberd/ejabberd.yml
+    fi
 
     if [ ! $? -eq 0 ]; then
         colored_echo red "### ER... Jabber server inst... failed"
