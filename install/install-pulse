@@ -1361,13 +1361,13 @@ configure_samba() {
 }
 
 configure_nfs_kernel_server() {
-        colored_echo blue "### INFO Configuring NFS server..."
+    colored_echo blue "### INFO Configuring NFS server..."
 
-        # Create needed exports
-        cp /usr/share/doc/mmc/contrib/imaging-server/exports /etc/
-        systemctl restart nfs-kernel-server.service
+    # Create needed exports
+    cp /usr/share/doc/mmc/contrib/imaging-server/exports /etc/
+    systemctl restart nfs-kernel-server.service
 
-        colored_echo green "### INFO Configuring NFS server... Done"
+    colored_echo green "### INFO Configuring NFS server... Done"
 }
 
 configure_pxelinux() {
