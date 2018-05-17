@@ -1340,12 +1340,12 @@ configure_isc_dhcp_server() {
 }
 
 trick_clonezilla() {
-        colored_echo blue "### INFO Configuring dummy DHCP server for Clonezilla..."
+    colored_echo blue "### INFO Configuring dummy DHCP server for Clonezilla..."
 
-        touch /etc/dhcp/dhcpd.conf
-        echo "INTERFACES=${INTERFACE}" > /etc/default/isc-dhcp-server
+    touch /etc/dhcp/dhcpd.conf
+    echo "INTERFACES=${INTERFACE}" > /etc/default/isc-dhcp-server
 
-        colored_echo green "### INFO Configuring dummy DHCP server for Clonezilla... Done"
+    colored_echo green "### INFO Configuring dummy DHCP server for Clonezilla... Done"
 }
 
 configure_samba() {
