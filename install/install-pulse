@@ -1371,40 +1371,41 @@ configure_nfs_kernel_server() {
 }
 
 configure_pxelinux() {
-        colored_echo blue "### INFO Configuring pxelinux..."
+    colored_echo blue "### INFO Configuring pxelinux..."
 
-        # Copy pxelinux and modules to bootloader
-        if [ ! -d "/var/lib/pulse2/imaging/bootloader/" ]; then
-          mkdir /var/lib/pulse2/imaging/bootloader
-          mkdir /var/lib/pulse2/imaging/bootloader-uefi32
-          mkdir /var/lib/pulse2/imaging/bootloader-uefi64
-        fi
-        if [ ! $? -eq 0 ]; then
-                colored_echo red "### ERROR... Configuring pxelinux... failed"
-                exit 1
-        fi
-  ln /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/
-  ln /usr/lib/syslinux/modules/bios/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.c32,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff.c32} /var/lib/pulse2/imaging/bootloader/
-  ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader/
+    # Copy pxelinux and modules to bootloader
+    if [ ! -d "/var/lib/pulse2/imaging/bootloader/" ]; then
+        mkdir /var/lib/pulse2/imaging/bootloader
+        mkdir /var/lib/pulse2/imaging/bootloader-uefi32
+        mkdir /var/lib/pulse2/imaging/bootloader-uefi64
+    fi
+    if [ ! $? -eq 0 ]; then
+        colored_echo red "### ERROR... Configuring pxelinux... failed"
+        exit 1
+    fi
 
-  ln /usr/lib/SYSLINUX.EFI/efi32/syslinux.efi /var/lib/pulse2/imaging/bootloader-uefi32/
-  ln /usr/lib/syslinux/modules/efi32/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.e32,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff.c32} /var/lib/pulse2/imaging/bootloader-uefi32/
-  ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader-uefi32/
+    ln /usr/lib/PXELINUX/pxelinux.0 /var/lib/pulse2/imaging/bootloader/
+    ln /usr/lib/syslinux/modules/bios/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.c32,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff.c32} /var/lib/pulse2/imaging/bootloader/
+    ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader/
 
-  ln /usr/lib/SYSLINUX.EFI/efi64/syslinux.efi /var/lib/pulse2/imaging/bootloader-uefi64/
-  ln /usr/lib/syslinux/modules/efi64/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.e64,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff.c32} /var/lib/pulse2/imaging/bootloader-uefi64/
-  ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader-uefi64/
+    ln /usr/lib/SYSLINUX.EFI/efi32/syslinux.efi /var/lib/pulse2/imaging/bootloader-uefi32/
+    ln /usr/lib/syslinux/modules/efi32/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.e32,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff.c32} /var/lib/pulse2/imaging/bootloader-uefi32/
+    ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader-uefi32/
 
-  # Create the symlink for pxelinux to find the bootmenus
-  cd /var/lib/pulse2/imaging/bootloader/; ln -s ../bootmenus pxelinux.cfg
-  cd /var/lib/pulse2/imaging/bootloader-uefi32/; ln -s ../bootmenus pxelinux.cfg
-  cd /var/lib/pulse2/imaging/bootloader-uefi64/; ln -s ../bootmenus pxelinux.cfg
+    ln /usr/lib/SYSLINUX.EFI/efi64/syslinux.efi /var/lib/pulse2/imaging/bootloader-uefi64/
+    ln /usr/lib/syslinux/modules/efi64/{inventory.c32,libgpl.c32,libutil.c32,reboot.c32,ldlinux.e64,liblua.c32,vesamenu.c32,hdt.c32,libcom32.c32,libmenu.c32,poweroff.c32} /var/lib/pulse2/imaging/bootloader-uefi64/
+    ln /usr/share/misc/pci.ids  /var/lib/pulse2/imaging/bootloader-uefi64/
 
-        # Create the utilities.menu
-        cp /usr/share/doc/pulse2-common/contrib/imaging/template/utilities.menu.in /var/lib/pulse2/imaging/tools/utilities.menu
-        sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu
+    # Create the symlink for pxelinux to find the bootmenus
+    cd /var/lib/pulse2/imaging/bootloader/; ln -s ../bootmenus pxelinux.cfg
+    cd /var/lib/pulse2/imaging/bootloader-uefi32/; ln -s ../bootmenus pxelinux.cfg
+    cd /var/lib/pulse2/imaging/bootloader-uefi64/; ln -s ../bootmenus pxelinux.cfg
 
-        colored_echo green "### INFO Configuring pxelinux... Done"
+    # Create the utilities.menu
+    cp /usr/share/doc/pulse2-common/contrib/imaging/template/utilities.menu.in /var/lib/pulse2/imaging/tools/utilities.menu
+    sed -i "s/@@TFTP_SERVER_IP@@/${IP_ADDRESS}/" /var/lib/pulse2/imaging/tools/utilities.menu
+
+    colored_echo green "### INFO Configuring pxelinux... Done"
 }
 
 configure_clonezilla() {
