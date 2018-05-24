@@ -1555,6 +1555,9 @@ generate_agent() {
 
 	local XMPP_DOMAIN=$1
 
+    # Configuration of inventory
+	cp /var/lib/pulse2/clients/config/inventory.ini.in /var/lib/pulse2/clients/config/inventory.ini
+
 	# Generate full and minimal versions of the agent
 	/var/lib/pulse2/clients/generate-pulse-agent.sh --conf-xmppserver=${SERVER_FQDN} \
 		--conf-xmpppasswd=${MASTER_PASSWORD} \
