@@ -1902,10 +1902,9 @@ if [ $# -eq 0 ]; then
 	display_usage
 	exit 0
 else
+    apt install net-tools
 	check_arguments "$@"
 fi
-
-apt install net-tools
 
 if [[ ${BATCH_MODE} == "r" ]]; then
 	echo "Entering reset mode..."
