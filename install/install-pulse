@@ -558,7 +558,7 @@ install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	apt -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp pwgen net-tools dnsutils
+	apt -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp pwgen
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
@@ -1902,7 +1902,7 @@ if [ $# -eq 0 ]; then
 	display_usage
 	exit 0
 else
-    apt install net-tools
+    apt install net-tools dnsutils
 	check_arguments "$@"
 fi
 
