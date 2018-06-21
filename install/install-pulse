@@ -1263,8 +1263,7 @@ configure_guacamole() {
   echo "mysql-password: ${ROOT_PASSWORD}" >> /etc/guacamole/guacamole.properties
 
 	# Setup Tomcat
-	sed -i 's/Connector port="8080"/Connector port="8081"/' /etc/tomcat${TOMCAT_VERSION}/server.xml
-	sed -i '/Connector port="8081"/ s/$/ address="127.0.0.1"/' /etc/tomcat${TOMCAT_VERSION}/server.xml
+	sed -i 's/Connector port="8080"/Connector port="8081" address="127.0.0.1"/' /etc/tomcat${TOMCAT_VERSION}/server.xml
 	service tomcat${TOMCAT_VERSION} restart
 
 	# Setup Apache
