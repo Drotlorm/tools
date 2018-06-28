@@ -1,0 +1,3 @@
+Instructions:
+1. Create a new package and upload Pulse-Agent-windows-FULL-latest.exe and reset_fusion.reg
+2. Copy the contents of package_command.txt to the command section of the package
