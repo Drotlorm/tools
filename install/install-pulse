@@ -1255,6 +1255,8 @@ configure_guacamole() {
   sed -i '/^mysql-.*$/d' /etc/guacamole/guacamole.properties
   sed -i '/^lib-directory:.*$/d' /etc/guacamole/guacamole.properties
   sed -i '/^noauth-config:.*$/d' /etc/guacamole/guacamole.properties
+  echo "mysql-disallow-simultaneous-connections: false"  >> /etc/guacamole/guacamole.properties
+  echo "mysql-disallow-duplicate-connections: false"  >> /etc/guacamole/guacamole.properties
   echo -e "lib-directory: /var/lib/guacamole/classpath\n" >> /etc/guacamole/guacamole.properties
   echo "mysql-hostname: localhost" >> /etc/guacamole/guacamole.properties
   echo "mysql-port: 3306" >> /etc/guacamole/guacamole.properties
