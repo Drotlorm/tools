@@ -8,12 +8,16 @@ echo '================================='
 
 driverspath="/opt/sysprep/drivers/$1"
 # Detect the correct driver path
-if [ -d "/mnt/Windows/inf/driverpack" ]; then
+if [ -d "/mnt/Windows/inf" ]; then
         driverspathcible='/mnt/Windows/inf/driverpack'
-else
+        mkdir /mnt/Windows/inf/driverpack
+elif [ -d "/mnt/Windows/Inf" ]; then
+        mkdir /mnt/Windows/Inf/driverpack
         driverspathcible='/mnt/Windows/Inf/driverpack'
+else
+        mkdir /mnt/Windows/INF/driverpack
+        driverspathcible='/mnt/Windows/INF/driverpack'
 fi
-
 
 manufacturer=`dmidecode --type=system|sed -n 's/Manufacturer:\(.*\)/\1/p'|sed -e 's/^[ \t]*//' -e 's/[ \t]*$//'|awk '{for(i=1;i<NF;i++)printf "%s_",$i; if (NF) printf "%s",$NF; printf ORS}'|sed "s/[^_|a-z|A-Z|0-9]//g;"|head -n1`
 
