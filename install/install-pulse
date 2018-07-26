@@ -954,8 +954,8 @@ install_syncthing() {
     systemctl enable syncthing@syncthing.service
 
     # Install syncthingmanager
-    apt install python3-pip python3-setuptools python3-wheel
-    apt install python3-chardet python-dateutil
+    apt -y install python3-pip python3-setuptools python3-wheel
+    apt -y install python3-chardet python-dateutil
     pip3 install syncthingmanager # TODO: Replace pip3 install by apt install
 
     if [[ ${SERVER} == "pulse" ]]; then
