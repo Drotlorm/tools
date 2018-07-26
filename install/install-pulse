@@ -522,7 +522,7 @@ configure_repos() {
                                 echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
                         fi
                         # Syncthing
-                        curl -s https://syncthing.net/release-key.txt | apt-key add -
+                        wget -qO - https://syncthing.net/release-key.txt | apt-key add -
                         echo "deb https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list
 			;;
 		*)
