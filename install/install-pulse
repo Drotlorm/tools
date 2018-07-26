@@ -960,7 +960,7 @@ install_syncthing() {
 
     if [[ ${SERVER} == 'pulse' ]]; then
         # TODO: Install syncthing discovery server
-        #apt install syncthing-discosrv
+        apt install syncthing-discosrv
     fi
 
 	colored_echo green "### INFO Installing Syncthing... Done"
