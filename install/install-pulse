@@ -1943,10 +1943,6 @@ create_package_server_cert() {
 }
 
 configure_multisite() {
-	# Grant ssh without password from Pulse multisite to Pulse
-	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
-	sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${PULSEMAIN_IP}
-
 	check_mysql_connection
 
 	if [[ ${CREATE_ENTITY} == "y" ]]; then
@@ -1962,6 +1958,10 @@ configure_multisite() {
 }
 
 copy_ssh_keys() {
+    # Grant ssh without password from Pulse multisite to Pulse
+	ssh-keyscan ${PULSEMAIN_IP} >> /root/.ssh/known_hosts
+	sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${PULSEMAIN_IP}
+
 	# Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
 	ssh -t ${PULSEMAIN_IP} "ssh-keyscan ${IP_REMOTE_SERVER} >> /root/.ssh/known_hosts"
 	ssh -t ${PULSEMAIN_IP} sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${IP_REMOTE_SERVER}
@@ -2034,9 +2034,9 @@ else
 	# Pulse multi-site installation
 	install_multisite_dependencies
 	install_multisite
+	copy_ssh_keys
 	configure_multisite_dependencies
 	configure_multisite
-	copy_ssh_keys
 	if [[ ${REMOTE_BACKUPPC} == "y" ]]; then
 		install_backuppc
 		configure_backuppc
