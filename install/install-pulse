@@ -958,7 +958,7 @@ install_syncthing() {
     apt install python3-chardet python-dateutil
     pip3 install syncthingmanager # TODO: Replace pip3 install by apt install
 
-    if [[ ${SERVER} == 'pulse' ]]; then
+    if [[ ${SERVER} == "pulse" ]]; then
         # TODO: Install syncthing discovery server
         apt install syncthing-discosrv
     fi
