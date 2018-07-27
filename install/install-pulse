@@ -1415,6 +1415,13 @@ configure_syncthing() {
     systemctl start syncthing@syncthing.service
     sleep 10
 
+    # Setup a username and password for accessing syncthing
+    xmlstarlet ed --inplace -s "configuration/gui" -t elem -n user -v root /var/lib/syncthing/.config/syncthing/config.xml
+    local ENCRYPTED_PASS=$(htpasswd -bnBC 10 "" ${ROOT_PASSWORD} | tr -d ':\n' | sed 's/$2y/$2a/')
+    xmlstarlet ed --inplace -s "configuration/gui" -t elem -n password -v ${ENCRYPTED_PASS} /var/lib/syncthing/.config/syncthing/config.xml
+    systemctl restart syncthing@syncthing.service
+    sleep 2
+
     # Configure syncthingmanager
     local API_KEY=$(xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml)
     stman configure -k ${API_KEY}
@@ -1436,6 +1443,7 @@ configure_syncthing() {
         # Auto-accept shares coming from pulsemain
         xmlstarlet ed --inplace -u "configuration/device[@id='${PULSEMAIN_DEVICE_ID}']/autoAcceptFolders" -v true /var/lib/syncthing/.config/syncthing/config.xml
         systemctl restart syncthing@syncthing.service
+        sleep 2
     fi
 
     # Add the shares
