@@ -1366,16 +1366,21 @@ configure_syncthing() {
     local API_KEY=$(xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml)
     stman configure -k ${API_KEY}
 
+    # Get device ID and change the name to use the same as the XMPP domain
+    local LOCAL_DEVICE_ID=$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)
+    stman device edit -n ${ENTITY} ${LOCAL_DEVICE_ID}
+
     # Add device to pool if relay server
     if [[ ${ENTITY} != 'pulse' ]]; then
-        # Get device ID
-        local LOCAL_DEVICE_ID=$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)
         # Add device to pool on pulsemain
         local SSH_COMMAND="stman device add --name ${ENTITY} --dynamic ${LOCAL_DEVICE_ID}"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-        # Auto-accept shares coming from pulsemain
+        # Find pulsemain device id
         local SSH_COMMAND="syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id"
         local PULSEMAIN_DEVICE_ID=$(ssh ${PULSEMAIN_IP} ${SSH_COMMAND})
+        # Add pulsemain to local pool
+        stman device add --name pulse --dynamic ${PULSEMAIN_DEVICE_ID}
+        # Auto-accept shares coming from pulsemain
         xmlstarlet ed --inplace -u "configuration/device[@id='${PULSEMAIN_DEVICE_ID}']/autoAcceptFolders" -v true /var/lib/syncthing/.config/syncthing/config.xml
         systemctl restart syncthing@syncthing.service
     fi
