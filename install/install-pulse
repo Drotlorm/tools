@@ -1439,7 +1439,7 @@ configure_syncthing() {
         local SSH_COMMAND="syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id"
         local PULSEMAIN_DEVICE_ID=$(ssh ${PULSEMAIN_IP} ${SSH_COMMAND})
         # Add pulsemain to local pool
-        stman device add --name pulse --dynamic ${PULSEMAIN_DEVICE_ID}
+        stman device add --name pulse --dynamic --introducer ${PULSEMAIN_DEVICE_ID}
         # Auto-accept shares coming from pulsemain
         xmlstarlet ed --inplace -u "configuration/device[@id='${PULSEMAIN_DEVICE_ID}']/autoAcceptFolders" -v true /var/lib/syncthing/.config/syncthing/config.xml
         systemctl restart syncthing@syncthing.service
