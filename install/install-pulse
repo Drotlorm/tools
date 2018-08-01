@@ -1374,13 +1374,15 @@ configure_syncthing_share_bootmenus() {
     # Get local device id
     local LOCAL_DEVICE_ID=$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)
 
-    # Share packages folder
+    # Do not synch default boot menu
+    echo "default" >> /var/lib/pulse2/imaging/bootmenus/.stignore
+    # Share bootmenus folder
     chgrp -R syncthing /var/lib/pulse2/imaging/bootmenus/
     chmod -R g+rwx /var/lib/pulse2/imaging/bootmenus/
     if [[ ${ENTITY} == 'pulse' ]]; then
-        stman folder add --label bootmenus --foldertype readonly /var/lib/pulse2/imaging/bootmenus/ pulsemaster_bootmenus
+        stman folder add --label bootmenus --foldertype readwrite /var/lib/pulse2/imaging/bootmenus/ pulsemaster_bootmenus
     else
-        # Share packages to new device from pulsemain
+        # Share bootmenus to new device from pulsemain
         local SSH_COMMAND="stman folder share pulsemaster_bootmenus ${LOCAL_DEVICE_ID}"
 		ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
@@ -1390,7 +1392,6 @@ configure_syncthing_share_bootmenus() {
             sleep 2
         done
         systemctl stop syncthing@syncthing.service
-        rm -rf /var/lib/pulse2/imaging/bootmenus/*
         mv /var/lib/syncthing/bootmenus/{.,}* /var/lib/pulse2/imaging/bootmenus/
         xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_bootmenus']/@path" -v "/var/lib/pulse2/imaging/bootmenus" /var/lib/syncthing/.config/syncthing/config.xml
         systemctl restart syncthing@syncthing.service
