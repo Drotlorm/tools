@@ -954,13 +954,11 @@ install_syncthing() {
     systemctl enable syncthing@syncthing.service
 
     # Install syncthingmanager
-    apt -y install python3-pip python3-setuptools python3-wheel
-    apt -y install python3-chardet python-dateutil
-    pip3 install syncthingmanager # TODO: Replace pip3 install by apt install
+    apt -y install syncthingmanager
 
     if [[ ${SERVER} == "pulse" ]]; then
         # TODO: Install syncthing discovery server
-        apt install syncthing-discosrv
+        apt -y install syncthing-discosrv
     fi
 
 	colored_echo green "### INFO Installing Syncthing... Done"
