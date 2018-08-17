@@ -1349,6 +1349,7 @@ configure_syncthing_share_packages() {
     # Share packages folder
     chgrp -R syncthing /var/lib/pulse2/packages/
     chmod -R g+rwx /var/lib/pulse2/packages/
+    chmod -R g+s /var/lib/pulse2/packages/
     if [[ ${ENTITY} == 'pulse' ]]; then
         stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
     else
@@ -1377,6 +1378,7 @@ configure_syncthing_share_bootmenus() {
     # Share bootmenus folder
     chgrp -R syncthing /var/lib/pulse2/imaging/bootmenus/
     chmod -R g+rwx /var/lib/pulse2/imaging/bootmenus/
+    chmod -R g+s /var/lib/pulse2/imaging/bootmenus/
     if [[ ${ENTITY} == 'pulse' ]]; then
         stman folder add --label bootmenus --foldertype readwrite /var/lib/pulse2/imaging/bootmenus/ pulsemaster_bootmenus
     else
