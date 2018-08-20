@@ -519,7 +519,11 @@ configure_repos() {
                                         echo "deb ${PULSE_REPO_URL} xmppmaster mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
                                 fi
                         else
-                                echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                                if [ ! -z ${GIT_BRANCH} ] && [ ${GIT_BRANCH} != "master" ]; then
+                                        echo "deb ${PULSE_REPO_URL} ${GIT_BRANCH} mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                                else
+                                        echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
+                                fi
                         fi
                         # Syncthing
                         wget -qO - https://syncthing.net/release-key.txt | apt-key add -
