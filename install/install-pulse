@@ -1347,9 +1347,8 @@ configure_syncthing_share_packages() {
     local LOCAL_DEVICE_ID=$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)
 
     # Share packages folder
-    chgrp -R syncthing /var/lib/pulse2/packages/
-    chmod -R g+rwx /var/lib/pulse2/packages/
-    chmod -R g+s /var/lib/pulse2/packages/
+    setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/packages/
+    setfacl -Rm g:syncthing:rwx /var/lib/pulse2/packages/
     if [[ ${ENTITY} == 'pulse' ]]; then
         stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
     else
@@ -1376,9 +1375,8 @@ configure_syncthing_share_bootmenus() {
     # Do not synch default boot menu
     echo "default" >> /var/lib/pulse2/imaging/bootmenus/.stignore
     # Share bootmenus folder
-    chgrp -R syncthing /var/lib/pulse2/imaging/bootmenus/
-    chmod -R g+rwx /var/lib/pulse2/imaging/bootmenus/
-    chmod -R g+s /var/lib/pulse2/imaging/bootmenus/
+    setfacl -Rdm g:syncthing:rwx /var/lib/pulse2/imaging/bootmenus/
+    setfacl -Rm g:syncthing:rwx /var/lib/pulse2/imaging/bootmenus/
     if [[ ${ENTITY} == 'pulse' ]]; then
         stman folder add --label bootmenus --foldertype readwrite /var/lib/pulse2/imaging/bootmenus/ pulsemaster_bootmenus
     else
