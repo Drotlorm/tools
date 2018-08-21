@@ -954,7 +954,7 @@ install_pulse_dependencies() {
 install_pulse() {
 	colored_echo blue "### INFO Installing Pulse..."
 
-	apt -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support pulse2-imaging-server pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers pulse-update-manager
+	apt -y install pulse2 mmc-web-backuppc mmc-web-dashboard mmc-web-glpi mmc-web-ppolicy mmc-web-services mmc-web-support pulse2-uuid-resolver python-mmc-backuppc python-mmc-dashboard python-mmc-glpi python-mmc-ppolicy python-mmc-services python-mmc-support python-mmc-guacamole python-mmc-xmppmaster mmc-web-xmppmaster pulse-xmppmaster-agentplugins pulse-xmpp-agent pulseagent-plugins-relay pulse-agent-installers pulse-update-manager
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
@@ -1713,7 +1713,7 @@ install_multisite_dependencies() {
 
 install_multisite() {
 	colored_echo blue "### INFO Installing Pulse multisite..."
-	apt -y install pulse2-package-server pulse2-imaging-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay
+	apt -y install pulse2-package-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
