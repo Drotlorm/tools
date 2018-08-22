@@ -564,7 +564,7 @@ install_system_tools() {
 	colored_echo green "### INFO Installing system tools..."
 
 	# Install needed tools
-	apt -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp pwgen xmlstarlet
+	apt -y install multitail vim rsync sshpass mysql-client expect createrepo reprepro ntp pwgen xmlstarlet acl
 
 	# Configure vim
 	sed 's/^"syntax on$/syntax on/' -i /etc/vim/vimrc
