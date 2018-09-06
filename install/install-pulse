@@ -499,6 +499,12 @@ configure_repos() {
 
 	wget -qO - ${PULSE_REPO_URL}/pubkey.txt | apt-key add -
 
+    if [ $? -eq 2 ]; then
+        echo "We failed to import the pubkey"
+        exit 1
+    fi
+
+
 	apt -y install apt-transport-https
 
 	case ${DEBIAN_VERSION} in
