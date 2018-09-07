@@ -501,6 +501,7 @@ configure_repos() {
 
     if [ $? -eq 2 ]; then
         echo "We failed to import the pubkey"
+        echo "You may need to check that http_proxy and https_proxy variables are correctly exported"
         exit 1
     fi
 
