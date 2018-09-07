@@ -29,7 +29,7 @@ model=`dmidecode --type=system|sed -n 's/Product Name:\(.*\)/\1/p'|sed -e 's/^[ 
 # If we have manufacturer/model couple, try to copy drivers
 if [ -n "$manufacturer" ] && [ -n "$model" ]; then
     model_drivers_path="$driverspath/$manufacturer/$model/"
-        echo "Model : $model"
+    echo "Model : $model"
     echo "Manufacturer :" $manufacturer
 else
     # Asking user
