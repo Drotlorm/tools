@@ -1821,6 +1821,11 @@ configure_relay_server() {
         ejabberdctl register master ${XMPP_DOMAIN} ${MASTER_PASSWORD}
     	# Generate Guacamole Baseurl
     	GUACAMOLE_BASEURL="http://${SERVER_FQDN}/guacamole/#/client/@@CUX_ID@@?username=root&password=${GUACAMOLE_ROOT_PASSWORD}"
+        # Configure package watching
+        cp /var/lib/pulse2/clients/config/package_watching.ini /etc/pulse-xmpp-agent/package_watching.ini
+        # Enable and start the package watching service
+    	systemctl enable pulse-package-watching.service
+    	service pulse-package-watching start
     fi
 
 	# Configuration of relayserver
