@@ -1447,7 +1447,9 @@ configure_syncthing() {
     sleep 10
 
     # Run syncthing discovery server
-    systemctl start syncthing-discosrv.service
+    if [[ ${ENTITY} == 'pulse' ]]; then
+        systemctl start syncthing-discosrv.service
+    fi
 
     # Use the local discovery server
     if [[ ${ENTITY} == 'pulse' ]]; then
