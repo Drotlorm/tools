@@ -24,6 +24,9 @@ for ip_address in ${ip_addresses_list}; do
 		/tmp/pulse-agent-plugins-1.8/pulse_agent_plugins/common/*.py pulse@${ip_address}:"\"c:\\Python27\\Lib\\site-packages\\pulse_xmpp_agent\\pluginsmachine\""
         scp -o IdentityFile=/root/.ssh/id_rsa -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o ConnectTimeout=10 \
 		/tmp/pulse-agent-plugins-1.8/pulse_agent_plugins/machine/*.py pulse@${ip_address}:"\"c:\\Python27\\Lib\\site-packages\\pulse_xmpp_agent\\pluginsmachine\""
+		echo "Update Agent version"
+		ssh -o IdentityFile=/root/.ssh/id_rsa -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o ConnectTimeout=10 \
+		pulse@${ip_address} "echo 1.9.6 > \"c:\Python27\Lib\site-packages\pulse_xmpp_agent\agentversion\""
 		echo "Restarting Pulse Agent"
 		ssh -o IdentityFile=/root/.ssh/id_rsa -o StrictHostKeyChecking=no -o Batchmode=yes -o PasswordAuthentication=no -o ServerAliveInterval=10 -o CheckHostIP=no -o ConnectTimeout=10 \
 		pulse@${ip_address} schtasks /Run /TN "\"Pulse Agent\""
