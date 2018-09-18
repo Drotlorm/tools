@@ -1909,7 +1909,7 @@ install_multisite_dependencies() {
 
 install_multisite() {
 	colored_echo blue "### INFO Installing Pulse multisite..."
-	apt -y install pulse2-package-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay
+	apt -y install pulse2-package-server uuid-runtime pulse2-uuid-resolver pulse-xmpp-agent pulseagent-plugins-relay python-mmc-backuppc
 	if [ ! $? -eq 0 ]; then
 		colored_echo red "### ERROR... Pulse install... failed"
 		exit 1
