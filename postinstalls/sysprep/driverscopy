@@ -103,15 +103,15 @@ fi
 # Copying generic drivers from $driverspath -> $driverspathcible
 if [ -d "$model_drivers_path/atheros" ]; then
         echo "Copying atheros drivers from $driverspathcible"
-        cp -a "$driverspath/atheros" "$driverspathcible"
+        cp -afv "$driverspath/atheros" "$driverspathcible"
 fi
 if [ -d "$model_drivers_path/common" ]; then
         echo "Copying common drivers from $driverspathcible"
-        cp -a "$driverspath/common" "$driverspathcible"
+        cp -afv "$driverspath/common" "$driverspathcible"
 fi
 if [ -d "$model_drivers_path" ]; then
-    echo "Copying drivers for $manufacturer_$model from $model_drivers_path"
-    cp -a "$model_drivers_path" "$driverspathcible"
+    echo "Copying drivers for $manufacturer_$model from $model_drivers_path" to $driverspathcible
+    cp -afv "$model_drivers_path" "$driverspathcible"
 else
     # No drivers found, creating directories
     echo "Model not found, creating directory."
