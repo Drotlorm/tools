@@ -1331,21 +1331,23 @@ configure_guacamole() {
 	# Setup Apache
 	echo "<Location /guacamole/>" > /etc/apache2/conf-available/guacamole.conf
   echo "    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
-  [[ ${PULSEMAIN_IP} -ne ${SERVER_FQDN} ]] ; echo "    SetEnvIf Referer \"^https?://${PULSEMAIN_IP}/\" GUACAMOLE_MAIN" >> /etc/apache2/conf-available/guacamole.conf
+  if [[ -v PULSEMAIN_IP ]]; then
+      echo "    SetEnvIf Referer \"^https?://${PULSEMAIN_IP}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+  fi
   echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
   echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
   echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
-  [[ ${PULSEMAIN_IP} -ne ${SERVER_FQDN} ]] ; echo "    Allow from env=GUACAMOLE_MAIN" >> /etc/apache2/conf-available/guacamole.conf
   echo "    ProxyPass http://localhost:8081/guacamole/ max=20 flushpackets=on" >> /etc/apache2/conf-available/guacamole.conf
   echo "    ProxyPassReverse http://localhost:8081/guacamole/" >> /etc/apache2/conf-available/guacamole.conf
   echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
   echo "<Location /guacamole/websocket-tunnel>" >> /etc/apache2/conf-available/guacamole.conf
   echo "    SetEnvIf Referer \"^https?://${SERVER_FQDN}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
-  [[ ${PULSEMAIN_IP} -ne ${SERVER_FQDN} ]] ; echo "    SetEnvIf Referer \"^https?://${PULSEMAIN_IP}/\" GUACAMOLE_MAIN" >> /etc/apache2/conf-available/guacamole.conf
+  if [[ -v PULSEMAIN_IP ]]; then
+      echo "    SetEnvIf Referer \"^https?://${PULSEMAIN_IP}/\" GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
+  fi
   echo "    Order Deny,Allow" >> /etc/apache2/conf-available/guacamole.conf
   echo "    Deny from all" >> /etc/apache2/conf-available/guacamole.conf
   echo "    Allow from env=GUACAMOLE_ALLOWED" >> /etc/apache2/conf-available/guacamole.conf
-  [[ ${PULSEMAIN_IP} -ne ${SERVER_FQDN} ]] ; echo "    Allow from env=GUACAMOLE_MAIN" >> /etc/apache2/conf-available/guacamole.conf
   echo "    ProxyPass ws://localhost:8081/guacamole/websocket-tunnel" >> /etc/apache2/conf-available/guacamole.conf
   echo "    ProxyPassReverse ws://localhost:8081/guacamole/websocket-tunnel" >> /etc/apache2/conf-available/guacamole.conf
   echo "</Location>" >> /etc/apache2/conf-available/guacamole.conf
