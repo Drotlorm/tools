@@ -1563,7 +1563,7 @@ reset_glpi_db() {
 	dpkg-reconfigure -fnoninteractive glpi
 
 	# Upgrade database if needed
-	php /usr/share/glpi/tools/cliupdate.php
+	php /usr/share/glpi/scripts/cliupdate.php
 
     # Create the view for glpi 9.2
     mysql -uroot < /usr/share/doc/pulse2/contrib/glpi-92.sql
