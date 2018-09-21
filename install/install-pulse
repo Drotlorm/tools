@@ -1565,6 +1565,9 @@ reset_glpi_db() {
 	# Upgrade database if needed
 	php /usr/share/glpi/tools/cliupdate.php
 
+    # Create the view for glpi 9.2
+    mysql -uroot < /usr/share/doc/pulse2/contrib/glpi-92.sql
+
 	# Clean glpi users/profiles apart from glpi superadmin
 	local GLPI_SUPERADMIN_ID=`echo "select name,id from glpi_users;" | mysql -uroot glpi --silent | grep "^glpi[[:space:]]\+" | awk -F'\t' '{ print $2 }'`
 	echo "${GLPI_SUPERADMIN_ID}" | grep -q '^[0-9]\+$'
