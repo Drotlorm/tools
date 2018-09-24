@@ -36,6 +36,7 @@ if ([string]::IsNullOrEmpty($EXTRACT_METHOD)) {
 }
 
 # Grant acces 
+Enable-PSRemoting -Force
 Enable-WSManCredSSP  -Role "Client" -DelegateComputer $SERVER_ADDRESS -force  | Out-Null
 
 Write-Debug "Share path : $SHARE"
@@ -69,7 +70,7 @@ $computerSystem = (Get-WmiObject -Class:Win32_ComputerSystem)
 
 # Determine computer manufacturer
 $MANUF = ($computerSystem.Manufacturer -replace " ","_") 
-$MANUF  -replace ".",""
+$MANUF = $MANUF -replace ".",""
 Write-Debug "Manufacturer : $MANUF"
 
 # Determine computer manufacturer
