@@ -10,12 +10,12 @@ driverspath="/opt/sysprep/drivers/$1"
 # Detect the correct driver path
 if [ -d "/mnt/Windows/inf" ]; then
         driverspathcible='/mnt/Windows/inf/driverpack'
-        mkdir /mnt/Windows/inf/driverpack
+        mkdir -p /mnt/Windows/inf/driverpack
 elif [ -d "/mnt/Windows/Inf" ]; then
-        mkdir /mnt/Windows/Inf/driverpack
+        mkdir -p /mnt/Windows/Inf/driverpack
         driverspathcible='/mnt/Windows/Inf/driverpack'
 else
-        mkdir /mnt/Windows/INF/driverpack
+        mkdir -p /mnt/Windows/INF/driverpack
         driverspathcible='/mnt/Windows/INF/driverpack'
 fi
 
