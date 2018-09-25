@@ -1,4 +1,4 @@
-#### EXTRACT DRIVERS AND CERTIFICATE SCRPIT
+#### EXTRACT DRIVERS AND CERTIFICATE SCRIPT
 
 # DEFINE PULSE SERVER IP
 Set-Variable -Name "SERVER_ADDRESS" -Value ""
@@ -36,8 +36,11 @@ if ([string]::IsNullOrEmpty($EXTRACT_METHOD)) {
 }
 
 # Grant acces 
+Disable-WSManCredSSP -Role Server 
+Disable-WSManCredSSP -Role Client 
 Enable-PSRemoting -Force
-Enable-WSManCredSSP  -Role "Client" -DelegateComputer $SERVER_ADDRESS -force  | Out-Null
+Enable-WSManCredSSP Server -force
+Enable-WSManCredSSP  -Role "Client"  -DelegateComputer $SERVER_ADDRESS -force
 
 Write-Debug "Share path : $SHARE"
 
