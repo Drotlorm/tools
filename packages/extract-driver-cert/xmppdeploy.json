@@ -13,7 +13,7 @@
         "licenses": "", 
         "metagenerator": "expert", 
         "targetrestart": "MA", 
-        "name": "Extract drivers et certifcats"
+        "name": "Extract drivers and certificates"
     }, 
     "win": {
         "sequence": [
