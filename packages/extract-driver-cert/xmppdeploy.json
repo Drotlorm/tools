@@ -1,6 +1,6 @@
 {
     "info": {
-        "software": "Extract drivers et certifcats", 
+        "software": "Extract drivers and certificates", 
         "set": "add@__@agentconf.ini@__@global@__@log_level@__@INFO", 
         "description": "3rd party Driver and  Trusted Publisher Certificate", 
         "methodetransfert": "pullcurl", 
@@ -13,7 +13,7 @@
         "licenses": "", 
         "metagenerator": "expert", 
         "targetrestart": "MA", 
-        "name": "Extract drivers et certifcats"
+        "name": "Extract drivers and certificates"
     }, 
     "win": {
         "sequence": [
