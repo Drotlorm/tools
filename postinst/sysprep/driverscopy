@@ -110,8 +110,10 @@ if [ -d "$model_drivers_path/common" ]; then
         cp -afv "$driverspath/common" "$driverspathcible"
 fi
 if [ -d "$model_drivers_path" ]; then
-    echo "Copying drivers for $manufacturer_$model from $model_drivers_path" to $driverspathcible
-    cp -afv "$model_drivers_path" "$driverspathcible"
+	echo "Copying drivers for $manufacturer_$model"
+	echo "From $model_drivers_path"
+	echo "To $driverspathcible"
+	cp -afv "$model_drivers_path" "$driverspathcible"
 else
     # No drivers found, creating directories
     echo "Model not found, creating directory."
