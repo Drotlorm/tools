@@ -1651,11 +1651,12 @@ configure_relay_server() {
 	fi
 	sed -i "/^pluginlist.*/ s/$/ guacamoleconf/" /etc/pulse-xmpp-agent/relayconf.ini
 	cp /var/lib/pulse2/clients/config/guacamoleconf.ini.in /etc/pulse-xmpp-agent/guacamoleconf.ini
-	sed -i "s/@@PLUGIN_GUACAMOLE_DBHOST@@/localhost/" /etc/pulse-xmpp-agent/guacamoleconf.ini
-	sed -i "s/@@PLUGIN_GUACAMOLE_DBPORT@@/3306/" /etc/pulse-xmpp-agent/guacamoleconf.ini
-	sed -i "s/@@PLUGIN_GUACAMOLE_DBNAME@@/guacamole/" /etc/pulse-xmpp-agent/guacamoleconf.ini
-	sed -i "s/@@PLUGIN_GUACAMOLE_DBUSER@@/guacamole/" /etc/pulse-xmpp-agent/guacamoleconf.ini
-	sed -i "s/@@PLUGIN_GUACAMOLE_DBPASSWD@@/${ROOT_PASSWORD}/" /etc/pulse-xmpp-agent/guacamoleconf.ini
+    echo "[parameters]" > /etc/pulse-xmpp-agent/guacamoleconf.ini.local
+    echo "guacamole_dbhost = localhost" >> /etc/pulse-xmpp-agent/guacamoleconf.ini.local
+    echo "guacamole_dbport = 3306" >> /etc/pulse-xmpp-agent/guacamoleconf.ini.local
+    echo "guacamole_dbname = guacamole" >> /etc/pulse-xmpp-agent/guacamoleconf.ini.local
+    echo "guacamole_dbuser = guacamole" >> /etc/pulse-xmpp-agent/guacamoleconf.ini.local
+    echo "guacamole_dbpasswd = ${ROOT_PASSWORD}" >> /etc/pulse-xmpp-agent/guacamoleconf.ini.local
 
 	# Update hosts file
 	if [ ${XMPP_DOMAIN} == "pulse" ]; then
