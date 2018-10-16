@@ -1604,6 +1604,7 @@ reset_glpi_db() {
         (${SuperAdmin},'plugin_fusioninventory_deploymirror',23), \
         (${SuperAdmin},'plugin_fusioninventory_esx',23), \
         (${SuperAdmin},'plugin_fusioninventory_group',23), \
+        (${SuperAdmin},'plugin_fusioninventory_ignoredimportdevice',23), \
         (${SuperAdmin},'plugin_fusioninventory_importxml',4), \
         (${SuperAdmin},'plugin_fusioninventory_iprange',23), \
         (${SuperAdmin},'plugin_fusioninventory_lock',23), \
@@ -1618,8 +1619,10 @@ reset_glpi_db() {
         (${SuperAdmin},'plugin_fusioninventory_ruleentity',23), \
         (${SuperAdmin},'plugin_fusioninventory_ruleimport',23), \
         (${SuperAdmin},'plugin_fusioninventory_rulelocation',23), \
+        (${SuperAdmin},'plugin_fusioninventory_selfpackage',1), \
         (${SuperAdmin},'plugin_fusioninventory_task',23), \
         (${SuperAdmin},'plugin_fusioninventory_unmanaged',31), \
+        (${SuperAdmin},'plugin_fusioninventory_userinteractiontemplate',23), \
         (${SuperAdmin},'plugin_fusioninventory_wol',1)" | mysql glpi
   php /usr/share/glpi/plugins/fusioninventory/scripts/cli_install.php
   echo "update glpi_plugin_fusioninventory_entities SET  agent_base_url = 'http://127.0.0.1/glpi' , transfers_id_auto = '1'  WHERE id='1';" | mysql glpi
