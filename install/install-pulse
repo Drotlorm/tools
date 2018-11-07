@@ -1172,6 +1172,9 @@ configure_mmc() {
 	sed 's/^disabled_panels.*/disabled_panels = shortcuts appstream/' -i /etc/mmc/plugins/dashboard.ini
 	systemctl restart mmc-agent.service
 	colored_echo green "### INFO Configuring mmc... Done"
+
+	# Configure server name as base path for breadcrumb trail
+	sed "s/^description.*$/description = $(hostname -f)/"  /etc/mmc/mmc.ini
 }
 
 configure_xmpp_server() {
