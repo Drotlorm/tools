@@ -1,7 +1,7 @@
 regedit /s "reset_fusion.reg"
 
 cp Pulse-Agent-windows-FULL-latest.exe /cygdrive/c/Windows/Temp/
-schtasks /Create /RU "SYSTEM" /SC ONCE /ST 23:00 /TN "Pulse Agent Install" /TR "C:\Windows\Temp\Pulse-Agent-windows-FULL-latest.exe /S"
+schtasks /Create /RU "SYSTEM" /SC ONCE /ST 10:00 /TN "Pulse Agent Install" /TR "C:\Windows\Temp\Pulse-Agent-windows-FULL-latest.exe /S"
 schtasks /Run /TN "Pulse Agent Install"
 
 sc delete sshd
