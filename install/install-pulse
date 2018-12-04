@@ -1254,7 +1254,7 @@ configure_xmpp_server() {
 	# Go to /etc/ejabberd
   pushd /etc/ejabberd/
   # Generate a key
-  openssl genrsa -des3 -passout pass:${ROOT_PASSWORD} -out ${XMPP_DOMAIN}.key 2048 -noout
+  openssl genrsa -des3 -passout pass:${ROOT_PASSWORD} -out ${XMPP_DOMAIN}.key 2048
   # Create the csr
   openssl req -new -key ${XMPP_DOMAIN}.key -out ${XMPP_DOMAIN}.csr -passin pass:${ROOT_PASSWORD} \
     -subj "/C=${COUNTRY}/ST=${STATE}/L=${LOCALITY}/O=${ORGANIZATION}/OU=${ORGANIZATIONALUNIT}/CN=${XMPP_DOMAIN}/emailAddress=${MAIL_ADDRESS}"
