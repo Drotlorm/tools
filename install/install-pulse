@@ -1309,6 +1309,7 @@ configure_guacamole() {
   a2enconf guacamole.conf
   a2enmod proxy
   a2enmod proxy_http
+  a2enmod proxy_wstunnel
   systemctl restart apache2.service
 
   colored_echo green "### INFO Setting up Guacamole... Done"
