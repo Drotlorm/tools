@@ -1105,6 +1105,8 @@ configure_samba() {
 	echo -ne "${DRIVERS_PASSWORD}\n${DRIVERS_PASSWORD}\n" | smbpasswd -a -s drivers
 	systemctl restart smbd.service
 
+    systemctl enable smbd.service
+
 	colored_echo green "### INFO Configuring Samba server... Done"
 }
 
