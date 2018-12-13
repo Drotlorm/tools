@@ -1729,10 +1729,6 @@ reset_pulse_db() {
 	echo "[chatroom]" >> /etc/mmc/plugins/xmppmaster.ini.local
 	echo "password = ${MUC_ROOM_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
 	echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
-	echo "[master]" >> /etc/mmc/plugins/xmppmaster.ini.local
-	echo "showinfo = True" >> /etc/mmc/plugins/xmppmaster.ini.local
-	echo "showplugins = True" >> /etc/mmc/plugins/xmppmaster.ini.local
-	echo "" >> /etc/mmc/plugins/xmppmaster.ini.local
 	echo "[defaultconnection]" >> /etc/mmc/plugins/xmppmaster.ini.local
 	echo "serverip = ${IP_ADDRESS}" >> /etc/mmc/plugins/xmppmaster.ini.local
 	echo "password = ${MASTER_PASSWORD}" >> /etc/mmc/plugins/xmppmaster.ini.local
