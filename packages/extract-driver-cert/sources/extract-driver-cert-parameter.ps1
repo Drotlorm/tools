@@ -38,7 +38,7 @@ if ([string]::IsNullOrEmpty($EXTRACT_METHOD)) {
 # Grant acces 
 Disable-WSManCredSSP -Role Server 
 Disable-WSManCredSSP -Role Client 
-Enable-PSRemoting -Force
+Enable-PSRemoting -Force -SkipNetworkProfileCheck
 Enable-WSManCredSSP Server -force
 Enable-WSManCredSSP  -Role "Client"  -DelegateComputer $SERVER_ADDRESS -force
 
