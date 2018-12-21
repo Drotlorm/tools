@@ -10,7 +10,7 @@ Pram(
 $DebugPreference = "SilentlyContinue"
 
 Set-Variable -Name "PASSWORD" -Value "s3cr3t"
-Set-Variable -Name "USER" -Value "driver"
+Set-Variable -Name "USER" -Value "drivers"
 Set-Variable -Name "SHARE" -Value "\\$SERVER_ADDRESS\drivers"
 
 Write-Debug "SERVER_ADDRESS : $SERVER_ADDRESS" 
@@ -50,7 +50,7 @@ Write-Debug "Drive list in used : $DRIVE_LIST"
 
 # Create credential object
 $userPassword = ConvertTo-SecureString -String $PASSWORD -AsPlainText -Force
-$credential= New-Object System.Management.Automation.PSCredential("drivers", $userPassword)
+$credential= New-Object System.Management.Automation.PSCredential($USER, $userPassword)
 
 # Find first free drive letter
 Foreach ($DRIVE_LETTER in "ZYXWVUTSRQPONMLKJIHGFED".ToCharArray()) { 
