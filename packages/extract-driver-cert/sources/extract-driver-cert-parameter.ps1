@@ -10,10 +10,10 @@ Pram(
 $DebugPreference = "SilentlyContinue"
 
 Set-Variable -Name "PASSWORD" -Value "s3cr3t"
-Set-Variable -Name "USER" -Value "driver"
+Set-Variable -Name "USER" -Value "drivers"
 Set-Variable -Name "SHARE" -Value "\\$SERVER_ADDRESS\drivers"
 
-Write-Debug "SERVER_ADDRESS : $SERVER_ADDRESS" 
+Write-Debug "SERVER_ADDRESS : $SERVER_ADDRESS"
 Write-Debug "PASSWORD : $PASSWORD"
 
 # Check if $SERVER_ADDRESS is full filled
@@ -35,33 +35,33 @@ if ([string]::IsNullOrEmpty($EXTRACT_METHOD)) {
     Write-Host ""
 }
 
-# Grant acces 
-Disable-WSManCredSSP -Role Server 
-Disable-WSManCredSSP -Role Client 
-Enable-PSRemoting -Force
+# Grant acces
+Disable-WSManCredSSP -Role Server
+Disable-WSManCredSSP -Role Client
+Enable-PSRemoting -Force -SkipNetworkProfileCheck
 Enable-WSManCredSSP Server -force
 Enable-WSManCredSSP  -Role "Client"  -DelegateComputer $SERVER_ADDRESS -force
 
 Write-Debug "Share path : $SHARE"
 
 # Get the list of drive letter used or reserved
-$DRIVE_LIST=(Get-PSDrive -PSProvider filesystem).Name 
+$DRIVE_LIST=(Get-PSDrive -PSProvider filesystem).Name
 Write-Debug "Drive list in used : $DRIVE_LIST"
 
 # Create credential object
 $userPassword = ConvertTo-SecureString -String $PASSWORD -AsPlainText -Force
-$credential= New-Object System.Management.Automation.PSCredential("drivers", $userPassword)
+$credential= New-Object System.Management.Automation.PSCredential($USER, $userPassword)
 
 # Find first free drive letter
-Foreach ($DRIVE_LETTER in "ZYXWVUTSRQPONMLKJIHGFED".ToCharArray()) { 
-    If ($DRIVE_LIST -notcontains $DRIVE_LETTER) { 
+Foreach ($DRIVE_LETTER in "ZYXWVUTSRQPONMLKJIHGFED".ToCharArray()) {
+    If ($DRIVE_LIST -notcontains $DRIVE_LETTER) {
         Write-Debug "Drive letter will be used : $DRIVE_LETTER"
-        
+
         # Mount Pulse driver folder on the drive
-        New-PSDrive -Name $DRIVE_LETTER -PSProvider filesystem  -Root $SHARE -Persist -Scope Global -Credential $credential 
+        New-PSDrive -Name $DRIVE_LETTER -PSProvider filesystem  -Root $SHARE -Persist -Scope Global -Credential $credential
         break
-    } 
-} 
+    }
+}
 
 # Determine Windows OS
 $SHORT_OS = (Get-WmiObject Win32_OperatingSystem).name -split ' '
@@ -72,12 +72,12 @@ Write-Debug "Windows OS used as folder : $WINDOWS_FOLDER"
 $computerSystem = (Get-WmiObject -Class:Win32_ComputerSystem)
 
 # Determine computer manufacturer
-$MANUF = ($computerSystem.Manufacturer -replace " ","_") 
+$MANUF = ($computerSystem.Manufacturer -replace " ","_")
 $MANUF = $MANUF -replace ".",""
 Write-Debug "Manufacturer : $MANUF"
 
 # Determine computer manufacturer
-$MODEL = ($computerSystem.Model -replace " ","_") 
+$MODEL = ($computerSystem.Model -replace " ","_")
 Write-Debug "Model : $MODEL"
 
 # Deternime base path for export
@@ -100,7 +100,7 @@ If ($EXTRACT_METHOD -eq "pnp") {
 
   & ".\ddc.exe" b /target:$DRIVER_PATH 2>&1 | Out-Null
 
-} 
+}
 
 #### EXTRACT CERTIFICAT
 
@@ -114,14 +114,14 @@ New-Item -Path $CERT_PATH -ItemType directory -Force | Out-Null
 # Find all Cert thumbprint
 $CertToExport  = (Get-ChildItem -Path Cert:\LocalMachine\TrustedPublisher | Where-Object {$_.Subject -like "*"}).Thumbprint
 
-# For in list of Cert Thumbprint 
+# For in list of Cert Thumbprint
 foreach($CertToExport in $CertToExport)
 {
     # Get the Name of the Cert
-    $CertName = (Get-ChildItem -Path Cert:\LocalMachine\TrustedPublisher | Where-Object {$_.Thumbprint -eq "$CertToExport"}).DnsNameList.Punycode  
+    $CertName = (Get-ChildItem -Path Cert:\LocalMachine\TrustedPublisher | Where-Object {$_.Thumbprint -eq "$CertToExport"}).DnsNameList.Punycode
     # Get the Cert object
-    $CertToExport = dir cert:\LocalMachine\TrustedPublisher | where {$_.ThumbPrint -eq "$CertToExport"}    
-    # Export the Cert In Bytes For The CER format   
+    $CertToExport = dir cert:\LocalMachine\TrustedPublisher | where {$_.ThumbPrint -eq "$CertToExport"}
+    # Export the Cert In Bytes For The CER format
     $CertToExportInBytesForCERFile = $CertToExport.export("Cert")
     # Deternime certificate path and name for export
     $CERT_PATH_NAME = $CERT_PATH + $CertName + ".cer"
@@ -147,5 +147,3 @@ Get-PSDrive $DRIVE_LETTER |Remove-PSDrivearam(
 [string]$EXTRACT_METHOD,
 [string]$SERVER_ADDRESS
 )
-
-

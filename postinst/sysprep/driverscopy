@@ -10,12 +10,12 @@ driverspath="/opt/sysprep/drivers/$1"
 # Detect the correct driver path
 if [ -d "/mnt/Windows/inf" ]; then
         driverspathcible='/mnt/Windows/inf/driverpack'
-        mkdir /mnt/Windows/inf/driverpack
+        mkdir -p /mnt/Windows/inf/driverpack
 elif [ -d "/mnt/Windows/Inf" ]; then
-        mkdir /mnt/Windows/Inf/driverpack
+        mkdir -p /mnt/Windows/Inf/driverpack
         driverspathcible='/mnt/Windows/Inf/driverpack'
 else
-        mkdir /mnt/Windows/INF/driverpack
+        mkdir -p /mnt/Windows/INF/driverpack
         driverspathcible='/mnt/Windows/INF/driverpack'
 fi
 
@@ -35,17 +35,17 @@ else
     # Asking user
 
     # Choosing manufacturer
-    echo 'Cannot detect system model, please choose system manufacturer or choose 0 to skip drivers copy:' 
+    echo 'Cannot detect system model, please choose system manufacturer or choose 0 to skip drivers copy:'
     i=1
     cd "$driverspath"
     # Show manufacturer list
     count=`ls -d */|wc -l`
     echo $count
     for z in `ls -d */`; do
-        echo "$i) $z" 
+        echo "$i) $z"
         i=$((i+1))
     done
-    echo -n 'Your choice : ' 
+    echo -n 'Your choice : '
     read input
 
     # Checing if valid input
@@ -97,6 +97,12 @@ else
 fi
 
 # =========================================================
+# Copying install tools
+# =========================================================
+
+cp -vf /opt/winutils/install-driver-cert.ps1 $driverspathcible
+
+# =========================================================
 # Copying drivers from drivers path
 # =========================================================
 
@@ -110,8 +116,10 @@ if [ -d "$model_drivers_path/common" ]; then
         cp -afv "$driverspath/common" "$driverspathcible"
 fi
 if [ -d "$model_drivers_path" ]; then
-    echo "Copying drivers for $manufacturer_$model from $model_drivers_path" to $driverspathcible
-    cp -afv "$model_drivers_path" "$driverspathcible"
+	echo "Copying drivers for $manufacturer_$model"
+	echo "From $model_drivers_path"
+	echo "To $driverspathcible"
+	cp -afv "$model_drivers_path" "$driverspathcible"
 else
     # No drivers found, creating directories
     echo "Model not found, creating directory."
@@ -121,4 +129,3 @@ else
     echo '    System32/drivers     : Copy it from C:\Windows\System32\' >> "$model_drivers_path/README"
     echo '    System32/DriverStore : Copy it from C:\Windows\System32\' >> "$model_drivers_path/README"
 fi
-     

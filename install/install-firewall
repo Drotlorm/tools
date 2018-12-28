@@ -1,13 +1,17 @@
 #!/bin/bash
 
+
 #############################################
 echo "Installation Pulse shorewall mono-site"
 #############################################
-aptitude update >/dev/null
+apt update >/dev/null
 which shorewall > /dev/null
 if [ $? -eq 0 ]; then echo "Shorewall is already installed, check it first"; exit 0;fi
-aptitude install shorewall -y  > /dev/null
+apt install shorewall -y  > /dev/null
 cp /usr/share/doc/shorewall/examples/one-interface/{shorewall.conf.gz,interfaces,zones,policy,rules} /etc/shorewall/
+
+interface=`ls /sys/class/net |grep -v lo`
+sed "s/ethO/$interface/g" -i /etc/shorewall/interfaces
 
 ########################
 echo "Shorewall startup"
@@ -42,10 +46,9 @@ cat <<EOT >> rules
 ############## rules
 # Permit all ICMP traffic FROM Pulse to client network
 ACCEPT          \$FW             net     icmp    8
-
 # SSH SERVER
 ACCEPT          \$FW             net     tcp     22
-
+ACCEPT          net		\$FW     tcp     22
 # IMAGING SERVER
 # TFTP
 ACCEPT          net             \$FW     udp     69
@@ -53,22 +56,32 @@ ACCEPT          net             \$FW     udp     69
 ACCEPT          net             \$FW     tcp     111,2049
 ACCEPT          net             \$FW     udp     111,2049
 
-# Get information during imaging from PSERVER
-ACCEPT          net             \$FW     tcp     9990
+# XMPP communication
+ACCEPT          \$FW             net     tcp     5222
 
+# XMPP communication between relay
+ACCEPT          \$FW             net     tcp     5269
+
+# SAMBA SHARE
+ACCEPT          \$FW             net     tcp     139,145
+
+# Imaging BOOTPS TFTP
+ACCEPT          \$FW             net     udp     67,69
+
+# Imaging NFS
+ACCEPT          \$FW             net     udp     111,2049
+
+# Get information during imaging from PSERVER
+ACCEPT          net             \$FW     tcp     9990,7080
 # SERVER WEB
 # HTTP(S)
 ACCEPT          net             \$FW     tcp     80,443
-
 # INVENTORY SERVER
 ACCEPT          net             \$FW     tcp     9999
-
 # UDP-SENDER
-ACCEPT          \$FW             net     udp     2232,2234
-
+#ACCEPT          \$FW             net     udp     2232,2234
 # WARRIOR TO PULSE
-ACCEPT          net             \$FW     tcp     8100:8200
-
+#ACCEPT          net             \$FW     tcp     8100:8200
 # MULTICAST
 ACCEPT          \$FW             all:224.0.0.0/4
 ACCEPT          all             \$FW:224.0.0.0/4
@@ -77,4 +90,3 @@ EOT
 service shorewall start
 tail -n1 /var/log/syslog
 popd
-

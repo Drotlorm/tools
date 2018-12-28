@@ -1,0 +1,40 @@
+@echo off
+
+set SERVER_ADDRESS=
+
+set PASSWORD=s3cr3t
+IF [%SERVER_ADDRESS%]==[] (goto failed)
+set PASSWORD=s3cr3t
+
+REM =============================================================
+
+REM Mount network share for copying the drivers
+net use * \\%SERVER_ADDRESS%\drivers /user:\drivers %PASSWORD%
+
+REM Create the folder structure
+for /f "tokens=2" %%i in ('net use ^| findstr "drivers" ^| findstr "OK"') do set DRIVE_LETTER=%%i
+for /f "tokens=2,3" %%i in ('wmic os get Caption /value ^| find "="') do set WINDOWS_FOLDER=%%i %%j
+set WINDOWS_FOLDER=%WINDOWS_FOLDER: =%
+
+for /f "tokens=2 delims==" %%i in ('wmic computersystem get manufacturer /value ^| find "="') do set "MANUF=%%i"
+set MANUF=%MANUF: =_%
+set MANUF=%MANUF:.=%
+
+for /f "tokens=2 delims==" %%i in ('wmic computersystem get model /value ^| find "="') do set "MODEL=%%i"
+set MODEL=%MODEL: =_%
+
+mkdir "%DRIVE_LETTER%\%WINDOWS_FOLDER%\%MANUF%\%MODEL%"
+
+REM Extract the drivers
+ddc.exe b /target:"%DRIVE_LETTER%\%WINDOWS_FOLDER%\%MANUF%\%MODEL%"
+
+echo " OS : "%WINDOWS_FOLDER%
+echo " Manufacter : " %MANUF%
+echo " Model : " %MODEL%
+tree "%DRIVE_LETTER%\%WINDOWS_FOLDER%\%MANUF%\%MODEL%"
+
+REM Finally unmount the network share
+net use /DELETE %DRIVE_LETTER%
+
+:failed
+echo CHANGE THE FOLLOWING "SERVER_ADDRESS" PARAMETERS IN THIS PACKAGE ACCORDING TO SERVER YOUR SETTINGS
