@@ -12,6 +12,7 @@ mysqldump --compact --complete-insert --no-create-info imaging BootServiceOnImag
 mysqldump --compact --complete-insert --no-create-info --where='is_master=1' imaging Image |grep ^INSERT >> imaging.sql
 mysqldump --compact --complete-insert --no-create-info imaging ImageOnImagingServer |grep ^INSERT >> imaging.sql
 mysqldump --compact --complete-insert --no-create-info --lock-all-tables --where='fk_image in (select id from Image where is_master=1)' imaging MasteredOn |grep ^INSERT >> imaging.sql
+echo "UPDATE MasteredOn set fk_imaging_log=1;" >> imaging.sql
 echo "COMMIT;" >> imaging.sql
 echo "set FOREIGN_KEY_CHECKS = 1;" >> imaging.sql
 
