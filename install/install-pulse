@@ -669,10 +669,10 @@ install_system_tools() {
                 install_package multitail vim rsync sshpass mysql-client vim-common expect createrepo reprepro ntp pwgen net-tools
                 ;;
             "mageia")
-                install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen net-tools
+                install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen net-tools bind-utils
                 ;;
             "rhel")
-                install_package multitail vim rsync sshpass mariadb vim-common expect createrepo reprepro ntp pwgen net-tools
+                install_package multitail vim rsync sshpass mariadb vim-common expect createrepo reprepro ntp pwgen net-tools bind-utils
                 ;;
         esac
 
