@@ -1259,7 +1259,7 @@ install_syncthing() {
     # FIXME: Will be available in mageia 7
     pip3 install syncthingmanager # TODO: Replace pip3 install by apt install
 
-    if [[ ${SERVER} == 'pulse' ]]; then
+    if [[ ${SERVER} == "pulse" ]]; then
         # TODO: Install syncthing discovery server
         case ${LINUX_DISTRO} in
         "debian")
