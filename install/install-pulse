@@ -1676,7 +1676,8 @@ configure_syncthing() {
     systemctl reload apache2.service
 
     # Run syncthing service
-    systemctl restart syncthing@syncthing.service
+    systemctl start syncthing@syncthing.service
+    sleep 10
 
     # Configure syncthingmanager
     local API_KEY=$(xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml)
