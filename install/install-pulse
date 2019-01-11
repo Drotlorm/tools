@@ -1708,7 +1708,7 @@ configure_syncthing() {
                ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
 
         # Wait until the share is added to stop the server and move the folder
-        while [[ ${SHARE_ADDED} -gt 0 ]]; do
+        while [[ ${SHARE_ADDED} == 0 ]]; do
             local SHARE_ADDED=$(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
             sleep 2
         done
