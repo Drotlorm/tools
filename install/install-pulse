@@ -548,7 +548,7 @@ configure_repos() {
                     fi
 
                     # Syncthing
-                    curl -s https://syncthing.net/release-key.txt | apt-key add -
+                    wget -qO https://syncthing.net/release-key.txt | apt-key add -
                     echo "deb https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list
 
                     ;;
