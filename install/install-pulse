@@ -1935,7 +1935,7 @@ configure_relay_server() {
 
     local XMPP_DOMAIN=$1
 
-    if [[ XMPP_DOMAIN != 'pulse' ]]; then
+    if [[ ${XMPP_DOMAIN} != 'pulse' ]]; then
 	    # Obtain MASTER_PASSWORD and MUC_ROOM_PASSWORD from Pulse main server
         local SSH_COMMAND="sed -n -e 's/^.*password = //p' /etc/pulse-xmpp-agent/relayconf.ini | head -1"
         MASTER_PASSWORD=`ssh ${PULSEMAIN_IP} ${SSH_COMMAND}`
