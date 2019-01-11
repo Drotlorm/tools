@@ -546,6 +546,11 @@ configure_repos() {
                     else
                         echo "deb ${PULSE_REPO_URL} stretch mmc-core pulse 3rdparty" > /etc/apt/sources.list.d/pulse.list
                     fi
+
+                    # Syncthing
+                    curl -s https://syncthing.net/release-key.txt | apt-key add -
+                    echo "deb https://apt.syncthing.net/ syncthing stable" | tee /etc/apt/sources.list.d/syncthing.list
+
                     ;;
                 *)
                     ;;
@@ -666,13 +671,13 @@ install_system_tools() {
         # Install needed tools
         case ${LINUX_DISTRO} in
             "debian")
-                install_package multitail vim rsync sshpass mysql-client vim-common expect createrepo reprepro ntp pwgen net-tools
+                install_package multitail vim rsync sshpass mysql-client vim-common expect createrepo reprepro ntp pwgen xmlstarlet
                 ;;
             "mageia")
-                install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen net-tools 
+                install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen
                 ;;
             "rhel")
-                install_package multitail vim rsync sshpass mariadb vim-common expect createrepo reprepro ntp pwgen net-tools
+                install_package multitail vim rsync sshpass mariadb vim-common expect createrepo reprepro ntp pwgen
                 ;;
         esac
 
@@ -1229,6 +1234,39 @@ install_guacamole_server() {
         colored_echo green "### INFO Installing Guacamole server... Done"
 }
 
+install_syncthing() {
+    colored_echo blue "### INFO Installing Syncthing..."
+
+       local SERVER=$1
+
+    # Install Syncthing
+    apt update
+    install_package syncthing
+       if [ ! $? -eq 0 ]; then
+               colored_echo red "### ER... Syncthing inst... failed"
+               exit 1
+       fi
+
+    # Create a syncthing unprivileged account
+    useradd syncthing -md /var/lib/syncthing -s /bin/false
+    # Syncthing config will be in /var/lib/syncthing/.config/
+    # Create syncthing service run by syncthing account
+    systemctl enable syncthing@syncthing.service
+
+    # Install syncthingmanager
+    install_package python3-pip python3-setuptools python3-wheel
+    install_packagei python3-chardet python-dateutil
+    # FIXME: Will be available in mageia 7
+    pip3 install syncthingmanager # TODO: Replace pip3 install by apt install
+
+    if [[ ${SERVER} == 'pulse' ]]; then
+        # TODO: Install syncthing discovery server
+        #apt install syncthing-discosrv
+    fi
+
+       colored_echo green "### INFO Installing Syncthing... Done"
+}  
+
 install_pulse_dependencies() {
         # Install components needed by Pulse
         install_pulse2-setup_deps
@@ -1245,6 +1283,7 @@ install_pulse_dependencies() {
         install_clonezilla
         install_xmpp_server pulse
         install_guacamole_server
+        install_syncthing pulse
         configure_mysql_access
 }
 
@@ -1613,6 +1652,65 @@ configure_webfilemanager() {
     colored_echo green "### INFO Setting up webfilemanager... Done"
 }
 
+configure_syncthing() {
+    colored_echo blue "### INFO Setting up syncthing..."
+
+    local ENTITY=${1,,}
+
+    # Configure Apache for syncthing
+    echo "ProxyPass /syncthing/ http://localhost:8384/" > /etc/apache2/conf-available/syncthing.conf
+    echo "<Location /syncthing/>" >> /etc/apache2/conf-available/syncthing.conf
+    echo "    ProxyPassReverse http://localhost:8384/" >> /etc/apache2/conf-available/syncthing.conf
+    echo "    Require all granted" >> /etc/apache2/conf-available/syncthing.conf
+    echo "</Location>" >> /etc/apache2/conf-available/syncthing.conf
+    a2enconf syncthing
+    systemctl reload apache2.service
+
+    # Run syncthing service
+    systemctl restart syncthing@syncthing.service
+
+    # Configure syncthingmanager
+    local API_KEY=$(xmlstarlet sel -t -v "configuration/gui/apikey" /var/lib/syncthing/.config/syncthing/config.xml)
+    stman configure -k ${API_KEY}
+
+    # Add device to pool if relay server
+    if [[ ${ENTITY} != 'pulse' ]]; then
+        # Get device ID
+        local LOCAL_DEVICE_ID=$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)
+        # Add device to pool on pulsemain
+        local SSH_COMMAND="stman device add --name ${ENTITY} --dynamic ${LOCAL_DEVICE_ID}"
+               ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+        # Auto-accept shares coming from pulsemain
+        local SSH_COMMAND="syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id"
+        local PULSEMAIN_DEVICE_ID=$(ssh ${PULSEMAIN_IP} ${SSH_COMMAND})
+        xmlstarlet ed --inplace -u "configuration/device[@id='${PULSEMAIN_DEVICE_ID}']/autoAcceptFolders" -v true /var/lib/syncthing/.config/syncthing/config.xml
+        systemctl restart syncthing@syncthing.service
+    fi
+
+    # Share packages folder
+    chgrp -R syncthing /var/lib/pulse2/packages/
+    chmod -R g+rwx /var/lib/pulse2/packages/
+    if [[ ${ENTITY} == 'pulse' ]]; then
+        stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
+    else
+        # Share packages to new device from pulsemain
+        local SSH_COMMAND="stman folder share pulsemaster_packages ${LOCAL_DEVICE_ID}"
+               ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+
+        # Wait until the share is added to stop the server and move the folder
+        while [[ ${SHARE_ADDED} -gt 0 ]]; do
+            local SHARE_ADDED=$(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+            sleep 2
+        done
+        systemctl stop syncthing@syncthing.service
+        mv /var/lib/syncthing/packages/{.,}* /var/lib/pulse2/packages/
+        xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_packages']/@path" -v "/var/lib/pulse2/packages" /var/lib/syncthing/.config/syncthing/config.xml
+        systemctl restart syncthing@syncthing.service
+    fi
+
+       colored_echo green "### INFO Setting up syncthing... Done"
+}
+
 configure_pulse_dependencies() {
     # Configure components needed by Pulse
     configure_samba
@@ -1623,6 +1721,7 @@ configure_pulse_dependencies() {
     configure_xmpp_server pulse
     configure_guacamole
     configure_webfilemanager
+    configure_syncthing pulse
 }
 
 generate_pki() {
@@ -2023,6 +2122,7 @@ install_multisite_dependencies() {
     install_samba
     install_xmpp_server ${MULTISITE_ENTITY}
     install_guacamole_server
+    configure_syncthing ${MULTISITE_ENTITY}
 }
 
 install_multisite() {
@@ -2177,38 +2277,10 @@ configure_multisite() {
     systemctl restart pulse2-package-server.service
 }
 
-sync_package_server() {
-    # Enable package synchronisation between Pulse package server and multisite(s) package server
-
+copy_ssh_keys() {
     # Grant ssh without password from Pulse to Pulse multisite. Done on Pulse main server.
     ssh -t ${PULSEMAIN_IP} "ssh-keyscan ${IP_REMOTE_SERVER} >> /root/.ssh/known_hosts"
     ssh -t ${PULSEMAIN_IP} sshpass -p ${ROOT_PASSWORD} ssh-copy-id ${IP_REMOTE_SERVER}
-
-    local SSH_COMMAND="[ ! -d /var/data/mmc ] && mkdir -p /var/data/mmc/"
-    ssh ${PULSEMAIN_IP} "${SSH_COMMAND}"
-
-    # Test if the sync configuration is already configured on Pulse. Done on Pulse main server.
-    SSH_COMMAND='grep -Gq "^package_detect_activate = 1" /etc/mmc/pulse2/package-server/package-server.ini.local'
-    ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-
-    # Enable sync configuration or add ip address for multiple multisite package server. Done on Pulse main server.
-    if [ $? -ne 0 ]; then
-        local SYNC_CONF="sed -i '1 a\\
-# Sync package server \\
-package_detect_activate = 1 \\
-package_detect_loop = 20 \\
-package_mirror_loop = 5 \\
-package_mirror_target = ${IP_REMOTE_SERVER} \\
-package_mirror_command = /usr/bin/rsync \\
-package_mirror_command_options = -ar --delete \\
-package_mirror_level0_command_options = -d --delete \\
-package_mirror_command_options_ssh_options = IdentityFile=/root/.ssh/id_rsa StrictHostKeyChecking=no Batchmode=yes PasswordAuthentication=no ServerAliveInterval=10 CheckHostIP=no ConnectTimeout=10 \\
-# END Sync' /etc/mmc/pulse2/package-server/package-server.ini.local"
-        ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
-    else
-        SYNC_CONF="sed '/^package_mirror_target.*/ s/$/ ${IP_REMOTE_SERVER}/' -i /etc/mmc/pulse2/package-server/package-server.ini.local"
-        ssh ${PULSEMAIN_IP} "${SYNC_CONF}"
-    fi
 }
 
 # And finally we run the functions
@@ -2292,7 +2364,7 @@ else
     install_multisite
     configure_multisite_dependencies
     configure_multisite
-    sync_package_server
+    copy_ssh_keys
     if [[ ${REMOTE_BACKUPPC} == "y" ]]; then
         install_backuppc
         configure_backuppc
