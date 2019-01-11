@@ -2218,10 +2218,10 @@ if [ $# -eq 0 ]; then
     display_usage
     exit 0
 else
+    install_package net-tools
     check_arguments "$@"
 fi
 
-install_package net-tools
 
 if [[ ${BATCH_MODE} == "r" ]]; then
     echo "Entering reset mode..."
