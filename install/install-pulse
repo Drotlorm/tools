@@ -669,10 +669,10 @@ install_system_tools() {
                 install_package multitail vim rsync sshpass mysql-client vim-common expect createrepo reprepro ntp pwgen net-tools
                 ;;
             "mageia")
-                install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen net-tools bind-utils
+                install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen net-tools 
                 ;;
             "rhel")
-                install_package multitail vim rsync sshpass mariadb vim-common expect createrepo reprepro ntp pwgen net-tools bind-utils
+                install_package multitail vim rsync sshpass mariadb vim-common expect createrepo reprepro ntp pwgen net-tools
                 ;;
         esac
 
@@ -2218,7 +2218,16 @@ if [ $# -eq 0 ]; then
     display_usage
     exit 0
 else
-    install_package net-tools
+    case ${LINUX_DISTRO} in
+        "debian")
+            install_package net-tools dnsutils
+            ;;
+        "mageia" | "rhel")
+             install_package net-tools bind-utils
+        *)
+            ;;
+    esac
+
     check_arguments "$@"
 fi
 
