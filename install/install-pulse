@@ -1661,6 +1661,59 @@ configure_webfilemanager() {
     colored_echo green "### INFO Setting up webfilemanager... Done"
 }
 
+configure_syncthing_share_packages() {
+    # Get local device id
+    local LOCAL_DEVICE_ID=$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)
+
+    # Share packages folder
+    chgrp -R syncthing /var/lib/pulse2/packages/
+    chmod -R g+rwx /var/lib/pulse2/packages/
+    if [[ ${ENTITY} == 'pulse' ]]; then
+        stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
+    else
+        # Share packages to new device from pulsemain
+        local SSH_COMMAND="stman folder share pulsemaster_packages ${LOCAL_DEVICE_ID}"
+               ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+
+        # Wait until the share is added to stop the server and move the folder
+        while [[ ${SHARE_ADDED} == 0 ]]; do
+            local SHARE_ADDED=$(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+            sleep 2
+        done
+        systemctl stop syncthing@syncthing.service
+        mv /var/lib/syncthing/packages/{.,}* /var/lib/pulse2/packages/
+        xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_packages']/@path" -v "/var/lib/pulse2/packages" /var/lib/syncthing/.config/syncthing/config.xml
+        systemctl restart syncthing@syncthing.service
+    fi
+}
+
+configure_syncthing_share_bootmenus() {
+    # Get local device id
+    local LOCAL_DEVICE_ID=$(syncthing -home=/var/lib/syncthing/.config/syncthing/ -device-id)
+
+    # Share packages folder
+    chgrp -R syncthing /var/lib/pulse2/imaging/bootmenus/
+    chmod -R g+rwx /var/lib/pulse2/imaging/bootmenus/
+    if [[ ${ENTITY} == 'pulse' ]]; then
+        stman folder add --label bootmenus --foldertype readonly /var/lib/pulse2/imaging/bootmenus/ pulsemaster_bootmenus
+    else
+        # Share packages to new device from pulsemain
+        local SSH_COMMAND="stman folder share pulsemaster_bootmenus ${LOCAL_DEVICE_ID}"
+               ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
+
+        # Wait until the share is added to stop the server and move the folder
+        while [[ ${SHARE_ADDED} == 0 ]]; do
+            local SHARE_ADDED=$(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_bootmenus']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
+            sleep 2
+        done
+        systemctl stop syncthing@syncthing.service
+        rm -rf /var/lib/pulse2/imaging/bootmenus/*
+        mv /var/lib/syncthing/bootmenus/{.,}* /var/lib/pulse2/imaging/bootmenus/
+        xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_bootmenus']/@path" -v "/var/lib/pulse2/imaging/bootmenus" /var/lib/syncthing/.config/syncthing/config.xml
+        systemctl restart syncthing@syncthing.service
+    fi
+}
+
 configure_syncthing() {
     colored_echo blue "### INFO Setting up syncthing..."
 
@@ -1702,28 +1755,10 @@ configure_syncthing() {
         systemctl restart syncthing@syncthing.service
     fi
 
-    # Share packages folder
-    chgrp -R syncthing /var/lib/pulse2/packages/
-    chmod -R g+rwx /var/lib/pulse2/packages/
-    if [[ ${ENTITY} == 'pulse' ]]; then
-        stman folder add --label packages --foldertype readonly /var/lib/pulse2/packages/ pulsemaster_packages
-    else
-        # Share packages to new device from pulsemain
-        local SSH_COMMAND="stman folder share pulsemaster_packages ${LOCAL_DEVICE_ID}"
-               ssh ${PULSEMAIN_IP} ${SSH_COMMAND}
-
-        # Wait until the share is added to stop the server and move the folder
-        while [[ ${SHARE_ADDED} == 0 ]]; do
-            local SHARE_ADDED=$(xmlstarlet sel -t -c "configuration/folder[@id='pulsemaster_packages']/device[@id='${LOCAL_DEVICE_ID}']" /var/lib/syncthing/.config/syncthing/config.xml |wc -c)
-            sleep 2
-        done
-        systemctl stop syncthing@syncthing.service
-        mv /var/lib/syncthing/packages/{.,}* /var/lib/pulse2/packages/
-        xmlstarlet ed --inplace -u "configuration/folder[@id='pulsemaster_packages']/@path" -v "/var/lib/pulse2/packages" /var/lib/syncthing/.config/syncthing/config.xml
-        systemctl restart syncthing@syncthing.service
-    fi
-
-       colored_echo green "### INFO Setting up syncthing... Done"
+    # Add the shares
+    configure_syncthing_share_packages
+    configure_syncthing_share_bootmenus
+    colored_echo green "### INFO Setting up syncthing... Done"
 }
 
 configure_pulse_dependencies() {
