@@ -1261,7 +1261,16 @@ install_syncthing() {
 
     if [[ ${SERVER} == 'pulse' ]]; then
         # TODO: Install syncthing discovery server
-        #apt install syncthing-discosrv
+        case ${LINUX_DISTRO} in
+        "debian")
+            install_package syncthing-discosrv
+            ;;
+        "mageia" | "rhel")
+             install_package syncthing
+        *)
+            ;;
+    esac
+
     fi
 
        colored_echo green "### INFO Installing Syncthing... Done"
