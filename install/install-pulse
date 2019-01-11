@@ -1459,7 +1459,7 @@ configure_mmc() {
 configure_xmpp_server() {
     colored_echo blue "### INFO Configuring XMPP server..."
 
-    local XMPP_DOMAIN=$1
+    local XMPP_DOMAIN=${1,,}
 
     # Reset ejabberd
     service ejabberd stop
@@ -1495,25 +1495,25 @@ configure_xmpp_server() {
     # Go to /etc/ejabberd
     pushd /etc/ejabberd/
         # Generate a key
-        openssl genrsa -des3 -passout pass:${ROOT_PASSWORD} -out pulse.key 2048 -noout
+        openssl genrsa -des3 -passout pass:${ROOT_PASSWORD} -out ${XMPP_DOMAIN}.key 2048 -noout
         # Create the csr
-        openssl req -new -key pulse.key -out pulse.csr -passin pass:${ROOT_PASSWORD} \
+        openssl req -new -key ${XMPP_DOMAIN}.key -out ${XMPP_DOMAIN}.csr -passin pass:${ROOT_PASSWORD} \
             -subj "/C=${COUNTRY}/ST=${STATE}/L=${LOCALITY}/O=${ORGANIZATION}/OU=${ORGANIZATIONALUNIT}/CN=${XMPP_DOMAIN}/emailAddress=${MAIL_ADDRESS}"
         # Self sign the certificate
-        openssl x509 -req -days 3650 -in pulse.csr -signkey pulse.key -out pulse.crt -passin pass:${ROOT_PASSWORD}
+        openssl x509 -req -days 3650 -in ${XMPP_DOMAIN}.csr -signkey ${XMPP_DOMAIN}.key -out ${XMPP_DOMAIN}.crt -passin pass:${ROOT_PASSWORD}
         # Remove passphrase from the key and generate the pem
-        openssl rsa -in pulse.key -passin pass:${ROOT_PASSWORD} -out pulse.pem
-        cat pulse.crt >> pulse.pem
+        openssl rsa -in ${XMPP_DOMAIN}.key -passin pass:${ROOT_PASSWORD} -out ${XMPP_DOMAIN}.pem
+        cat ${XMPP_DOMAIN}.crt >> ${XMPP_DOMAIN}.pem
         # Set permissions on pulse.pem
-        chmod 640 pulse.pem
-        chown root:ejabberd pulse.pem
+        chmod 640 ${XMPP_DOMAIN}.pem
+        chown root:ejabberd ${XMPP_DOMAIN}.pem
         # Do some cleanup
-        rm -f pulse.crt pulse.key pulse.csr
+        rm -f ${XMPP_DOMAIN}.crt ${XMPP_DOMAIN}.key ${XMPP_DOMAIN}.csr
         # Go back to where we were initially
     popd
 
     # Replace ejabberd.pem by the certificate generated above
-    sed -i 's/ejabberd.pem/pulse.pem/' /etc/ejabberd/ejabberd.yml
+    sed -i "s/ejabberd.pem/${XMPP_DOMAIN}.pem/" /etc/ejabberd/ejabberd.yml
 
     # Restart ejabberd
     service ejabberd restart
