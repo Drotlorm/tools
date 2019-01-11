@@ -1255,7 +1255,7 @@ install_syncthing() {
 
     # Install syncthingmanager
     install_package python3-pip python3-setuptools python3-wheel
-    install_packagei python3-chardet python-dateutil
+    install_package python3-chardet python-dateutil
     # FIXME: Will be available in mageia 7
     pip3 install syncthingmanager # TODO: Replace pip3 install by apt install
 
