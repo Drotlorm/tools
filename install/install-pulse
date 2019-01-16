@@ -836,7 +836,7 @@ install_apache() {
                         install_package apache2 php${PHP_VERSION}
                         ;;
                 "mageia")
-                        install_packageapache php-cgi
+                        install_package apache php-cgi
                         ;;
                 "rhel")
                         install_package httpd php
@@ -1267,6 +1267,7 @@ install_syncthing() {
             ;;
         "mageia" | "rhel")
              install_package syncthing
+	     ;;
         *)
             ;;
     esac
@@ -2355,6 +2356,7 @@ else
             ;;
         "mageia" | "rhel")
              install_package net-tools bind-utils
+	     ;;
         *)
             ;;
     esac
