@@ -1130,7 +1130,7 @@ install_pxelinux() {
             install_package pxelinux syslinux-common syslinux-efi
             ;;
         "mageia"|"rhel")
-            install_package pxelinux syslinux-efi64 syslinux-tftpboot extlinux
+            install_package pxelinux syslinux-efi clusterscripts-server-pxe extlinux
             ;;
     esac
 
