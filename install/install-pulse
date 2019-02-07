@@ -1023,17 +1023,22 @@ install_backuppc() {
 
 initialise_glpi_db() {
     if [ ! -f /usr/share/glpi/install/cliinstall.php ]; then
+    			#check if the directory exist or not for the pushd
+    			if [ ! -d /usr/share/glpi/install/ ]; then
+    				if [ ! -d /usr/share/glpi/ ]; then
+    					mkdir /usr/share/glpi/
+    				fi
+    				mkdir /usr/share/glpi/install/
+    			fi
                 pushd /usr/share/glpi/install/
-		        #TODO: Update for new glpi version
-                        wget https://raw.githubusercontent.com/glpi-project/glpi/0.90/bugfixes/tools/cliinstall.php
+                    wget https://raw.githubusercontent.com/glpi-project/glpi/9.1/bugfixes/tools/cliinstall.php
                 popd
     fi
 
-    # Install for glpi 0.90 ( mageia 6 )
-    echo "CREATE user 'glpi'@'localhost';" | mysql -uroot -p${ROOT_PASSWORD}
+    # Install for glpi 9.1.6 ( mageia 6 )
+    echo "CREATE user 'glpi'@'localhost';" | mysql -u root -p${ROOT_PASSWORD}
 
-	#TODO: Update for new glpi version
-    sed -i 's!glpi-0.90.1-empty!glpi-0.90-empty!' /usr/share/glpi/install/cliinstall.php
+    sed -i 's!glpi-9.1.6-empty!glpi-9.1-empty!' /usr/share/glpi/install/cliinstall.php
     php /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
 }
 
@@ -1056,7 +1061,11 @@ install_glpi() {
         initialise_glpi_db
     fi
     # Install glpi
-    install_package glpi fusioninventory-for-glpi
+    if [[ $LINUX_DISTRO == "mageia" ]]; then
+		install_package glpi glpi-plugin-fusioninventory
+	  else
+		   install_package glpi fusioninventory-for-glpi
+	  fi
     if [ ! $? -eq 0 ]; then
         colored_echo red "### ERROR... GLPI install... failed"
         exit 1
@@ -1129,7 +1138,10 @@ install_pxelinux() {
         "debian")
             install_package pxelinux syslinux-common syslinux-efi
             ;;
-        "mageia"|"rhel")
+        "rhel")
+            install_package pxelinux syslinux-efi64 syslinux-tftpboot extlinux
+            ;;
+        "mageia")
             install_package pxelinux syslinux-efi clusterscripts-server-pxe extlinux
             ;;
     esac
