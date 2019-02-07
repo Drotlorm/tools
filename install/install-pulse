@@ -636,8 +636,8 @@ configure_mail_monitoring() {
                         install_package ssmtp xfs-defrag mailutils
                         ;;
                 "mageia"|"rhel")
-                        # Find mageias for xfs-defrag mailutils
-                        install_package ssmtp
+                        # Find mageias for xfs-defrag->     mailutils->nail
+                        install_package ssmtp xfs nail
                         ;;
         esac
 
@@ -1225,9 +1225,7 @@ install_guacamole_server() {
                                 ;;
                 esac
         else
-                echo "Not Implemented"
-		exit 1
-	        #TBD
+              install_package guacamole guacd
         fi
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ER... Guacamole server inst... failed"
