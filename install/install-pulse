@@ -2248,7 +2248,7 @@ else
             install_package net-tools dnsutils
             ;;
         "mageia" | "rhel")
-             install_package net-tools bind-utils
+             install_package net-tools bind-utils openssh-server
 	     ;;
         *)
             ;;
