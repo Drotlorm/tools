@@ -767,7 +767,7 @@ define_version_settings() {
                 "mageia")
                         TOMCAT_VERSION='6'
                         PHP_INI="/etc/php.ini"
-                        APACHE_DAEMON="apache"
+                        APACHE_DAEMON="httpd"
                         ;;
                 "rhel")
                         TOMCAT_VERSION='6'
@@ -1005,15 +1005,23 @@ install_backuppc() {
         chown -R backuppc:backuppc /var/lib/backuppc/
 
         # Configure Apache for backuppc
+
         if [ ! -e /etc/${APACHE_DAEMON}/conf-available/backuppc.conf ]; then
                 ln -s /etc/backuppc/apache.conf /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
+        elif [! -e /etc/${APACHE_DAEMON}/conf/backuppc.conf ]; then
+              ln -s /etc/backuppc/apache.conf /etc/${APACHE_DAEMON}/conf/backuppc.conf
         fi
         a2enconf backuppc.conf
 
         if [[ ${INSTALL_TYPE} == "p" ]]; then
                 # Allow MMC to connect to backuppc
-                sed "$ i\        Allow from 127.0.0.1" -i /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
-                sed "$ i\        Satisfy any" -i /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
+                if [[ $LINUX_DISTRO == "mageia" ]]; then
+                  sed "$ i\        Allow from 127.0.0.1" -i /etc/${APACHE_DAEMON}/conf/backuppc.conf
+                  sed "$ i\        Satisfy any" -i /etc/${APACHE_DAEMON}/conf/backuppc.conf
+                else
+                  sed "$ i\        Allow from 127.0.0.1" -i /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
+                  sed "$ i\        Satisfy any" -i /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
+                fi
         fi
 
         # Delete localhost backup
