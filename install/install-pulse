@@ -1053,7 +1053,7 @@ initialise_glpi_db() {
     echo "CREATE user 'glpi'@'localhost';" | mysql -u root -p${ROOT_PASSWORD}
 
     sed -i 's!glpi-9.1.6-empty!glpi-9.1-empty!' /usr/share/glpi/install/cliinstall.php
-    ./usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
+    /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
 }
 
 install_glpi() {
