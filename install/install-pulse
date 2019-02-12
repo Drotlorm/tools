@@ -635,9 +635,14 @@ configure_mail_monitoring() {
                         dpkg --purge exim4
                         install_package ssmtp xfs-defrag mailutils
                         ;;
-                "mageia"|"rhel")
-                        # Find mageias for xfs-defrag->     mailutils->nail
-                        install_package ssmtp xfs nail
+                "mageia")
+                        # Find mageias for xfs-defrag->     mailutils- >nail
+                        install_package ssmtp  nail
+                        ;;
+                "rhel")
+                       #TBD
+                        colored_echo red "### Not implemented yet ..."
+                        exit 1
                         ;;
         esac
 
@@ -669,7 +674,7 @@ install_system_tools() {
                 install_package multitail vim rsync sshpass mysql-client vim-common expect createrepo reprepro ntp pwgen
                 ;;
             "mageia")
-                install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen
+                install_package multitail vim rsync sshpass mariadb-client vim-common expect createrepo reprepro ntp pwgen php-cli
                 ;;
             "rhel")
                 install_package multitail vim rsync sshpass mariadb vim-common expect createrepo reprepro ntp pwgen
@@ -1040,7 +1045,7 @@ initialise_glpi_db() {
     echo "CREATE user 'glpi'@'localhost';" | mysql -u root -p${ROOT_PASSWORD}
 
     sed -i 's!glpi-9.1.6-empty!glpi-9.1-empty!' /usr/share/glpi/install/cliinstall.php
-    php /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
+    ./usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
 }
 
 install_glpi() {
