@@ -1050,6 +1050,7 @@ initialise_glpi_db() {
     fi
 
     # Install for glpi 9.1.6 ( mageia 6 )
+    chmod 700 /usr/share/glpi/install/cliinstall.php
     echo "CREATE user 'glpi'@'localhost';" | mysql -u root -p${ROOT_PASSWORD}
 
     sed -i 's!glpi-9.1.6-empty!glpi-9.1-empty!' /usr/share/glpi/install/cliinstall.php
@@ -1240,10 +1241,12 @@ install_guacamole_server() {
         else
               install_package guacamole guacd
         fi
+
         if [ ! $? -eq 0 ]; then
                 colored_echo red "### ER... Guacamole server inst... failed"
                 exit 1
         fi
+
         if [ "$(grep -c "GUACAMOLE_HOME" /etc/default/tomcat${TOMCAT_VERSION})" -eq 0 ]; then
                 echo "" >> /etc/default/tomcat${TOMCAT_VERSION}
                 echo "# Guacamole env variable" >> /etc/default/tomcat${TOMCAT_VERSION}
