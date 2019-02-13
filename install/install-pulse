@@ -1049,12 +1049,13 @@ initialise_glpi_db() {
                 popd
     fi
 
-    # Install for glpi 9.1.6 ( mageia 6 )
     chmod 700 /usr/share/glpi/install/cliinstall.php
-    echo "CREATE user 'glpi'@'localhost';" | mysql -u root -p${ROOT_PASSWORD}
+    # Install for glpi 0.90 ( mageia 6 )
+    echo "CREATE user 'glpi'@'localhost';" | mysql -uroot -p${ROOT_PASSWORD}
 
-    sed -i 's!glpi-9.1.6-empty!glpi-9.1-empty!' /usr/share/glpi/install/cliinstall.php
-    /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
+	#TODO: Update for new glpi version
+    sed -i 's!glpi-0.90.1-empty!glpi-0.90-empty!' /usr/share/glpi/install/cliinstall.php
+    php /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
 }
 
 install_glpi() {
