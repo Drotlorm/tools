@@ -1009,15 +1009,15 @@ install_backuppc() {
         if [ ! -e /etc/${APACHE_DAEMON}/conf-available/backuppc.conf ]; then
                 ln -s /etc/backuppc/apache.conf /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
         elif [! -e /etc/${APACHE_DAEMON}/conf/backuppc.conf ]; then
-              ln -s /etc/backuppc/apache.conf /etc/${APACHE_DAEMON}/conf/backuppc.conf
+              ln -s /etc/backuppc/apache.conf /etc/${APACHE_DAEMON}/conf/sites.d/backuppc.conf
         fi
         a2enconf backuppc.conf
 
         if [[ ${INSTALL_TYPE} == "p" ]]; then
                 # Allow MMC to connect to backuppc
                 if [[ $LINUX_DISTRO == "mageia" ]]; then
-                  sed "$ i\        Allow from 127.0.0.1" -i /etc/${APACHE_DAEMON}/conf/backuppc.conf
-                  sed "$ i\        Satisfy any" -i /etc/${APACHE_DAEMON}/conf/backuppc.conf
+                  sed "$ i\        Allow from 127.0.0.1" -i /etc/${APACHE_DAEMON}/conf/sites.d/backuppc.conf
+                  sed "$ i\        Satisfy any" -i /etc/${APACHE_DAEMON}/conf/sites.d/backuppc.conf
                 else
                   sed "$ i\        Allow from 127.0.0.1" -i /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
                   sed "$ i\        Satisfy any" -i /etc/${APACHE_DAEMON}/conf-available/backuppc.conf
