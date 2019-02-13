@@ -1011,7 +1011,12 @@ install_backuppc() {
         elif [! -e /etc/${APACHE_DAEMON}/conf/backuppc.conf ]; then
               ln -s /etc/backuppc/apache.conf /etc/${APACHE_DAEMON}/conf/sites.d/backuppc.conf
         fi
-        a2enconf backuppc.conf
+
+        #Enable configuration file for apache2
+        if [[ $LINUX_DISTRO == "debian" ]]; then
+            a2enconf backuppc.conf
+        fi
+
 
         if [[ ${INSTALL_TYPE} == "p" ]]; then
                 # Allow MMC to connect to backuppc
