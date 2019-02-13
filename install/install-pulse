@@ -1484,6 +1484,7 @@ configure_xmpp_server() {
     sed -i '/^[[:space:]]*## mod_register:/{s/## //}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*ip_access: trusted_network/{s/## //}' /etc/ejabberd/ejabberd.yml
     sed -i 's/max_stanza_size:.*$/max_stanza_size: 8388608/' /etc/ejabberd/ejabberd.yml
+    sed -i 's/max_fsm_queue:.*$/max_fsm_queue: 5000/' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*welcome_message:/{s/## //}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*subject:/{s/## //;s/subject:.*$/subject: ""/}' /etc/ejabberd/ejabberd.yml
     sed -i '/^[[:space:]]*##[[:space:]]*body:/{s/## //;s/body:.*$/body: ""/}' /etc/ejabberd/ejabberd.yml
