@@ -1082,11 +1082,11 @@ install_glpi() {
 
     # Install glpi
     if [[ $LINUX_DISTRO == "mageia" ]]; then
-		install_package glpi glpi-plugin-fusioninventory
+        install_package glpi glpi-plugin-fusioninventory
         initialise_glpi_db
-	  else
+    else
 		   install_package glpi fusioninventory-for-glpi
-	  fi
+    fi
     if [ ! $? -eq 0 ]; then
         colored_echo red "### ERROR... GLPI install... failed"
         exit 1
