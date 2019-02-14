@@ -1078,12 +1078,12 @@ install_glpi() {
         echo "glpi glpi/dbconfig-install boolean true" | debconf-set-selections
         echo "glpi glpi/webserver multiselect apache, apache-ssl, apache-perl, apache2" | debconf-set-selections
         echo "glpi glpi/configuration note" | debconf-set-selections
-    else
-        initialise_glpi_db
     fi
+
     # Install glpi
     if [[ $LINUX_DISTRO == "mageia" ]]; then
 		install_package glpi glpi-plugin-fusioninventory
+        initialise_glpi_db
 	  else
 		   install_package glpi fusioninventory-for-glpi
 	  fi
