@@ -1050,14 +1050,19 @@ initialise_glpi_db() {
     				mkdir /usr/share/glpi/install/
     			fi
                 pushd /usr/share/glpi/install/
-                    wget https://raw.githubusercontent.com/glpi-project/glpi/9.1/bugfixes/tools/cliinstall.php
+                    wget https://raw.githubusercontent.com/glpi-project/glpi/0.90/bugfixes/tools/cliinstall.php
                 popd
     fi
 
     chmod 700 /usr/share/glpi/install/cliinstall.php
     # Install for glpi 0.90 ( mageia 6 )
     echo "CREATE user 'glpi'@'localhost';" | mysql -uroot -p${ROOT_PASSWORD}
-
+    
+    #Make the directory and put the missing script for GLPI command line install
+    mkdir /usr/share/pear
+    mkdir /usr/share/pear/CAS
+    cp /usr/share/php/cas/CAS/Autoload.php /usr/share/pear/CAS/Autoload.php
+    
 	#TODO: Update for new glpi version
     sed -i 's!glpi-0.90.1-empty!glpi-0.90-empty!' /usr/share/glpi/install/cliinstall.php
     php /usr/share/glpi/install/cliinstall.php --db=glpi --user='root' --pass=${ROOT_PASSWORD} --lang=fr_FR --force
